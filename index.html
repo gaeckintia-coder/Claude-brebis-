@@ -45,6 +45,10 @@ textarea{min-height:90px}
 .lien.deter{box-shadow:inset 0 0 0 3px var(--bad)}
 .tag.famok{border:6px dashed var(--ok)} .tag.fambad{border:6px dashed var(--bad)}
 .lien.famok{outline:3px dashed var(--ok);outline-offset:-3px} .lien.fambad{outline:3px dashed var(--bad);outline-offset:-3px}
+.tag.or{background:linear-gradient(135deg,#fbe38a 0%,#d4a017 45%,#fff0b3 60%,#b8860b 100%);border:4px solid #7a5a06;color:#2b1d00}
+.tag.or::after{content:'★';position:absolute;top:6px;right:12px;font-size:28px;color:#7a5a06}
+.lien.or{background:#e8b923;color:#3a2a00;box-shadow:inset 0 0 0 2px #8a6508}
+.chip.c-or{color:#8a6508;background:#fff3c4}
 .tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -118,6 +122,7 @@ tr.sel td{background:var(--okbg)}
 
   <!-- TROUPEAU -->
   <section id="v-troupeau" class="card" hidden>
+    <div id="t-alert"></div>
     <h2>Lots</h2>
     <div id="t-lots" class="lots"></div>
     <h2>Trier et filtrer</h2>
@@ -126,7 +131,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option>Brebis</option><option>Antenaise</option><option>Antenais</option><option>Bélier</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
-      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">Avec un niveau de suivi</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option></select>
+      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">À suivre (hors réformes)</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option><option value="mam">Mammites traitées</option><option value="or">Brebis d'or</option></select>
       <select id="f-agn" aria-label="Lot d'agnelage"><option value="">Tous lots d'agnelage</option></select>
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
@@ -141,6 +146,13 @@ tr.sel td{background:var(--okbg)}
       <button id="t-mp" class="btn2" type="button">⚠ Mauvais pis – ne pas garder la suite</button>
       <span id="t-mst" class="state"></span>
     </div>
+    <details id="t-bel"><summary><h2 style="display:inline">Classement des pères (d'après leurs filles)</h2></summary>
+      <div class="row"><select id="b-tri" aria-label="Trier les pères"><option value="am">Tri : amélioration des filles / mères</option><option value="niv">Tri : niveau des filles</option><option value="n">Tri : nombre de filles</option></select>
+      <select id="b-min" aria-label="Minimum de filles"><option value="1">Au moins 1 fille en lait</option><option value="3" selected>Au moins 3 filles en lait</option><option value="5">Au moins 5 filles en lait</option></select>
+      <select id="b-st" aria-label="Statut"><option value="">Tous les pères</option><option value="pres">Béliers présents</option></select></div>
+      <div class="tbl"><table><thead><tr><th>Père</th><th>Filles (en lait)</th><th>Niveau filles</th><th>Filles / mères</th><th>Statut</th></tr></thead><tbody id="b-body"></tbody></table></div>
+      <div class="hint">Niveau : écart des filles aux brebis du même nombre de lactations (1re lactation : à leur génération). Filles / mères : points gagnés ou perdus par rapport à leur mère. À lire avec prudence sous 5 filles.</div>
+    </details>
     <h2>Mouvements à envoyer à Claude</h2>
     <div id="t-mv" class="hint">Aucun.</div>
     <div class="row">
@@ -213,7 +225,15 @@ let tab='fiche';
 let LOTS=LS.get('cb_lots',{}); let MV=LS.get('cb_moves',[]); let MP=LS.get('cb_mpis',{});
 const MPLOT='Risque réforme – mauvais pis';
 const mpis=k=>{const x=A()[k];return !!(MP[k]&&MP[k].on)||(!!(x&&x.mpis)&&!(MP[k]&&MP[k].on===false))};
-const garde=k=>{const x=A()[k];return !!(x&&x.garde)&&!mpis(k)};
+const garde=k=>{const x=A()[k];return !!(x&&(x.garde||x.or))&&!mpis(k)};
+let MT=LS.get('cb_mam',{});
+const REMORQUE=8;
+const isoDe=fr=>{const [j,m,a]=fr.split('/');return a+'-'+m+'-'+j};
+const frDe=iso=>{const [a,m,j]=iso.split('-');return j+'/'+m+'/'+a};
+function mam(k){const l=MT[k]; if(l) return l.off?null:l; const x=A()[k]; return x&&x.mam?{d:isoDe(x.mam.d),delai:x.mam.delai}:null}
+function finMam(m){const d=new Date(m.d+'T12:00:00');d.setDate(d.getDate()+(+m.delai||0));return d}
+function restMam(m){const t=new Date();t.setHours(12,0,0,0);return Math.round((finMam(m)-t)/86400000)}
+const reforme=k=>{const x=A()[k];return /réformer/i.test(x&&x.niveau||'')};
 function setMP(k,on){const d=fdate();MP[k]={on,d};LS.set('cb_mpis',MP)} let sel=new Set();
 const lotOf=p=>LOTS[p]!==undefined?LOTS[p]:((A()[p]||{}).lot||'');
 let liste=LS.get('cb_liste',{debut:null,items:[],dbl:0});
@@ -285,8 +305,8 @@ function famille_val(k){const x=A()[k]; if(!jeune(x)) return null; const all=Obj
  if(rm!=null) g.push(['mère',rm,1,1]); if(so) g.push(['sœurs par la mère',so.m,so.n,Math.min(so.n,3)*0.5]); if(sp) g.push(['demi-sœurs par le père',sp.m,sp.n,sp.n/(sp.n+4)*2]); if(x.ipere) g.push(['index du père IA ('+x.ipere+')',0.5*(x.ipere-103)*0.00072,1,1.5]); else if(male(x.pere)){const tp=tendF(x.pere); if(tp) g.push(['amélioration des filles du père',tp.m,tp.n,Math.min(tp.n,5)*0.3])}
  if(moi!=null) g.push(['elle-même par rapport à sa génération',moi,1,1]); if(x.ioff!=null&&x.ioff!=='') g.push(['son index officiel ('+x.ioff+')',(parseFloat(x.ioff)-103)*0.00072,1,1]);
  if(!g.length) return null; const w=g.reduce((a,b)=>a+b[3],0); return {m:g.reduce((a,b)=>a+b[1]*b[3],0)/w,g}}
-function lisere(k){const xx=A()[k]; if(/réformer/i.test(xx&&xx.niveau||'')) return ' deter reforme'; if(mpis(k)) return ' deter'; if(xx&&xx.niveau){const l0=lisere0(k);return l0===' amel'||l0===' famok'?'':l0}
- return lisere0(k)}
+function lisere(k){const xx=A()[k]; if(/réformer/i.test(xx&&xx.niveau||'')) return ' deter reforme'; if(mpis(k)) return ' deter'; if((xx&&xx.niveau)||mam(k)){const l0=lisere0(k);return l0===' amel'||l0===' famok'?'':l0}
+ return xx&&xx.or?' or':lisere0(k)}
 function lisere0(k){ const fv=famille_val(k); if(fv&&!tendF(k)) return fv.m>=0.05?' famok':fv.m<=-0.05?' fambad':''; const t=tendF(k); if(!t) return ''; const x=A()[k], moi=x&&x.cat!=='Bélier'?rel(x):nivF(k), f=nivF(k);
  if(t.m>=0.05&&moi!=null&&moi>=0) return ' amel';
  if(t.m<=-0.05&&f!=null&&f<0) return ' deter';
@@ -311,9 +331,13 @@ function fiche(p,nav,el='#fiche'){
   const desc=Object.entries(A()).filter(([k,v])=>enfant(v,p)).sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true}));
   const st=/Présent/.test(x.statut)?'c-ok':'c-bad';
   const fvx=famille_val(p); const famTxt=fvx?`<div class="tend ${fvx.m>=0?'c-ok':'c-warn'}">Valeur famille (jeune) : <b>${fvx.m>=0?'+':''}${Math.round(fvx.m*100)} %</b> · ${fvx.g.map(([n,v,c])=>n+' '+(v>=0?'+':'')+Math.round(v*100)+' %'+(c>1?' ('+c+')':'')).join(' · ')}</div>`:'';
-  const niv=(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
+  const mm=mam(p), mr=mm?restMam(mm):null;
+  const mamTxt=mm&&!reforme(p)?`<span class="chip ${mr<=7?'c-bad':'c-warn'}">Mammite traitée le ${frDe(mm.d)} · délai viande ${mm.delai} j → ${finMam(mm).toLocaleDateString('fr-FR')} ${mr>7?'(J-'+mr+')':mr>0?'· fini dans '+mr+' j : réformer ?':'· délai fini : réformer ?'}</span>`:'';
+  const orTxt=x.or&&!reforme(p)&&!mpis(p)?`<span class="chip c-or">★ Brebis d'or – garder ses agnelles${/^ARR\/ARR$/i.test(x.prp||'')?' et son mâle':' · mâle : génotype à vérifier'}</span>`:'';
+  const niv=orTxt+mamTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
   $(el).innerHTML=retour+`<div class="tag${lisere(p)}"><small>FR 450000</small><b>${esc(p)}</b></div>
-   <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="${mpis(p)?'btn2':'btn2'}" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button></div>
+   <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="btn2" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button><button type="button" class="btn2" data-mamo="${p}">${mm?'↩ Retirer la mammite':'💉 Mammite traitée'}</button></div>
+  <div class="row mamf" data-mamf="${p}" hidden><label>Traitée le <input type="date" class="mam-d" value="${new Date().toISOString().slice(0,10)}"></label><label>Délai viande <input type="number" class="mam-j" min="0" inputmode="numeric" style="width:5em" placeholder="jours"> j</label><button type="button" class="btn" data-mamok="${p}">Valider</button><span class="state"></span></div>
    <div class="lot">${esc(lotOf(p)||'Sans lot')}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
    <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
@@ -332,6 +356,8 @@ function fiche(p,nav,el='#fiche'){
 
 ['#fiche','#sheet-body'].forEach(el=>$(el).addEventListener('click',e=>{const S=ST[el],g=e.target.closest('[data-go]');
   const top=()=>el==='#fiche'?window.scrollTo({top:0}):$('.sheet-in').scrollTo({top:0});
+  const mo=e.target.closest('[data-mamo]'); if(mo){const k=mo.dataset.mamo; if(mam(k)){MT[k]={off:1,d0:fdate()};LS.set('cb_mam',MT);fiche(k,'nav',el);render()} else {const f=$(el).querySelector('[data-mamf]');f.hidden=!f.hidden} return}
+  const mok=e.target.closest('[data-mamok]'); if(mok){const k=mok.dataset.mamok,f=$(el).querySelector('[data-mamf]'),d=f.querySelector('.mam-d').value,j=f.querySelector('.mam-j').value; if(!d||j===''){f.querySelector('.state').textContent='Indique la date et le délai viande.';f.querySelector('.state').className='state err';return} MT[k]={d,delai:+j};LS.set('cb_mam',MT);fiche(k,'nav',el);render();return}
   const mpb=e.target.closest('[data-mp]'); if(mpb){const k=mpb.dataset.mp;setMP(k,!mpis(k));fiche(k,'nav',el);render();return}
   if(g){S.pile.push(S.cour);fiche(g.dataset.go,'nav',el);top();return}
   if(e.target.closest('[data-back]')){fiche(S.pile.pop(),'nav',el);top()}}));
@@ -397,21 +423,37 @@ function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEac
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||x.cat===f('cat'))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
-   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):!!x.niveau))&&(!f('agn')||x.lotagn===f('agn')));
+   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||x.lotagn===f('agn')));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
   const t=f('tri'); r.sort((a,b)=>t==='agn'?dj(a[1].agn).localeCompare(dj(b[1].agn)):t==='idx'?(b[1].idx??-1e9)-(a[1].idx??-1e9):t==='lot'?lotOf(a[0]).localeCompare(lotOf(b[0])):a[0].localeCompare(b[0],'fr',{numeric:true}));
   return r}
+function renderPeres(){ if(!$('#t-bel').open) return;
+  const g={}; Object.entries(A()).forEach(([k,v])=>{if(v.pere&&v.cat!=='Bélier'&&v.cat!=='Antenais'){(g[v.pere]=g[v.pere]||[]).push([k,v])}});
+  const mn=+$('#b-min').value, st=$('#b-st').value, tr=$('#b-tri').value;
+  let r=Object.entries(g).map(([c,f])=>{const rl=f.map(([k,v])=>relGen(v)).filter(x=>x!=null);const am=amelio(f);const x=A()[c];const mal=x&&(x.cat==='Bélier'||x.cat==='Antenais');
+    return {c,n:f.length,nl:rl.length,niv:rl.length?rl.reduce((a,b)=>a+b,0)/rl.length:null,am:am?am.m:null,na:am?am.n:0,stt:(()=>{const o=((DB.peres||{})[c]||[]).map(e=>e==='450000'?'maison':'élevage '+e).join(' ou ');return mal?x.statut+(x.type?' · '+x.type:''):(o?o+' (hors base)':'origine inconnue')})(),pres:mal&&pres(x),mal}})
+   .filter(o=>o.nl>=mn&&(!st||o.pres));
+  r.sort((a,b)=>tr==='n'?b.nl-a.nl:tr==='niv'?(b.niv??-9)-(a.niv??-9):(b.am??-9)-(a.am??-9));
+  const pc=v=>v==null?'—':(v>=0?'+':'')+Math.round(v*100);
+  $('#b-body').innerHTML=r.map(o=>`<tr><td><b ${o.mal?`data-fiche="${o.c}" class="lien"`:''}>${o.c}</b></td><td>${o.n} (${o.nl})</td><td class="${o.niv>=0?'c-ok':'c-bad'}">${pc(o.niv)} %</td><td class="${o.am==null?'':o.am>=0?'c-ok':'c-bad'}">${o.am==null?'—':pc(o.am)+' pts ('+o.na+')'}</td><td>${esc(o.stt)}</td></tr>`).join('')||'<tr><td colspan="5" class="hint">Aucun père avec ce minimum.</td></tr>';
+}
+$('#t-bel').addEventListener('toggle',renderPeres); ['#b-tri','#b-min','#b-st'].forEach(i=>$(i).addEventListener('change',renderPeres));
 function renderTroupeau(){
   const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0), cur=$('#f-lot').value;
+  const ref=Object.keys(A()).filter(k=>pres(A()[k])&&reforme(k)).length;
+  const bient=Object.keys(A()).filter(k=>pres(A()[k])&&!reforme(k)&&mam(k)&&restMam(mam(k))<=7).sort((a,b)=>restMam(mam(a))-restMam(mam(b)));
+  $('#t-alert').innerHTML=bient.length?`<div class="tend c-bad" style="border:2px solid var(--bad);border-radius:12px;padding:10px;margin-bottom:10px"><b>⚠ Mammites : délai viande bientôt fini – réformer ?</b><div class="nums">${bient.map(k=>`<button type="button" class="lien" data-fiche="${k}">${k} · ${restMam(mam(k))>0?'J-'+restMam(mam(k)):'fini'} ›</button>`).join('')}</div>Réformes déjà décidées : <b>${ref}</b> / ${REMORQUE} pour la remorque${ref+bient.length>=REMORQUE?' · <b>la remorque serait pleine avec elles</b>':''}.</div>`:'';
   const nmp=Object.keys(A()).filter(k=>pres(A()[k])&&mpis(k)).length;
   $('#t-lots').innerHTML=`<button type="button" data-l="" aria-pressed="${!cur}"><span>Troupeau total (présents)</span><b>${tot}</b></button>`+L.map(([l,n])=>`<button type="button" data-l="${esc(l)}" aria-pressed="${cur===l}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+(nmp?`<button type="button" data-mpl="1" aria-pressed="${$('#f-suivi').value==='mpis'}"><span class="c-bad">${MPLOT}</span><b>${nmp}</b></button>`:'');
   fillSel('#f-lot',L.map(x=>x[0])); fillSel('#t-dest',L.map(x=>x[0]));
   fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
-  const r=filtre(); $('#t-n').textContent=r.length;
+  renderPeres(); const r=filtre(); $('#t-n').textContent=r.length;
   $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
   $('#t-sel').textContent=sel.size;
   const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
-  const chm=mpChg(); const mpTxt=chm.length?`<div><b class="c-bad">Mauvais pis (${chm.filter(([k,v])=>v.on).length} ajoutée(s), ${chm.filter(([k,v])=>!v.on).length} retirée(s))</b><div class="nums">${tri(chm.map(([k])=>k)).map(p=>`<span>${p}</span>`).join('')}</div></div>`:'';
+  const mcc=mamChg(); const mamTx=mcc.length?`<div><b class="c-warn">Mammites (${mcc.length})</b><div class="nums">${mcc.map(([k,v])=>`<span>${k}${v.off?' retirée':' · '+v.delai+' j'}</span>`).join('')}</div></div>`:'';
+  const chm=mpChg(); const mpTxt0=chm.length?`<div><b class="c-bad">Mauvais pis (${chm.filter(([k,v])=>v.on).length} ajoutée(s), ${chm.filter(([k,v])=>!v.on).length} retirée(s))</b><div class="nums">${tri(chm.map(([k])=>k)).map(p=>`<span>${p}</span>`).join('')}</div></div>`:'';
+  const mpTxt=mamTx+mpTxt0;
   $('#t-mv').innerHTML=mpTxt+(MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):(mpTxt?'':'Aucun.'));
 }
 $('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.mpl){$('#f-lot').value='';$('#f-suivi').value='mpis';render();return}$('#f-lot').value=b.dataset.l;if($('#f-suivi').value==='mpis')$('#f-suivi').value='';render()});
@@ -427,13 +469,14 @@ $('#t-move').onclick=()=>{const dest=$('#t-new').value.trim()||$('#t-dest').valu
   $('#t-mst').textContent=n+' animal(aux) déplacé(s) vers '+dest;$('#t-mst').className='state ok';showBase();render()};
 $('#t-mp').onclick=()=>{if(!sel.size){$('#t-mst').textContent='Coche d’abord des animaux.';$('#t-mst').className='state err';return}
   const n=sel.size; sel.forEach(k=>setMP(k,true)); sel.clear(); $('#t-mst').textContent=n+' marquée(s) mauvais pis';$('#t-mst').className='state ok';render()};
+const mamChg=()=>Object.entries(MT).filter(([k,v])=>!v.sent);
 const mpChg=()=>Object.entries(MP).filter(([k,v])=>!v.sent&&!!v.on!==!!(A()[k]&&A()[k].mpis));
-$('#t-send').onclick=e=>{const ch=mpChg(); if(!MV.length&&!ch.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
+$('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(); if(!MV.length&&!ch.length&&!mc.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
   const on=ch.filter(([k,v])=>v.on).map(([k])=>k), off=ch.filter(([k,v])=>!v.on).map(([k])=>k);
-  envoyer('Claude Brebis – mouvements de lots\n\n'+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):''),e.target)};
+  envoyer('Claude Brebis – mouvements de lots\n\n'+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
 $('#t-clr').onclick=()=>$('#t-confirm').hidden=false;
 $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
-$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);$('#t-confirm').hidden=true;render()};
+$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
 function render(){
