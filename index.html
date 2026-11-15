@@ -245,7 +245,7 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
@@ -275,11 +275,14 @@ function tendF(k){const d=Object.entries(A()).filter(([kk,v])=>enfant(v,k)); ret
 // Jeunes : antenaises, ou brebis nées en 2024 ou après avec 0 ou 1 lactation (1re campagne à 1 an)
 function jeune(x){if(!x) return false; if(x.cat==='Antenaise') return true; const an=parseInt((x.ne||'').slice(-4)); return x.cat==='Brebis'&&(parseInt(x.nblact)||0)<=1&&an>=2024}
 const moyR=l=>{const r=l.map(rel).filter(n=>n!=null);return r.length?{m:r.reduce((a,b)=>a+b,0)/r.length,n:r.length}:null};
+let _gen=null;
+function relGen(x){if(!_gen){_gen={};const g={};Object.values(A()).forEach(v=>{const l=LJ(v);if(l!=null&&v.cat==='Brebis'&&(parseInt(v.nblact)||0)===1){const y=(v.ne||'').slice(-4);(g[y]=g[y]||[]).push(l)}});Object.entries(g).forEach(([y,a])=>{if(a.length>=5)_gen[y]=a.reduce((p,q)=>p+q,0)/a.length})}
+ const l=LJ(x),r=_gen[(x.ne||'').slice(-4)];return l!=null&&r&&(parseInt(x.nblact)||0)===1?l/r-1:rel(x)}
 function famille_val(k){const x=A()[k]; if(!jeune(x)) return null; const all=Object.entries(A()).filter(([kk])=>kk!==k).map(([kk,v])=>v);
  const g=[]; const mere=x.mere&&A()[x.mere]; const rm=mere?rel(mere):null;
- const so=x.mere?moyR(all.filter(v=>v.mere===x.mere)):null; const sp=x.pere?moyR(all.filter(v=>v.pere===x.pere&&v.mere!==x.mere)):null; const moi=rel(x);
+ const so=x.mere?moyR(all.filter(v=>v.mere===x.mere)):null; const sp=x.pere?moyR(all.filter(v=>v.pere===x.pere&&v.mere!==x.mere)):null; const moi=relGen(x);
  if(rm!=null) g.push(['mère',rm,1,1]); if(so) g.push(['sœurs par la mère',so.m,so.n,Math.min(so.n,3)*0.5]); if(sp) g.push(['demi-sœurs par le père',sp.m,sp.n,sp.n/(sp.n+4)*2]); if(x.ipere) g.push(['index du père IA ('+x.ipere+')',0.5*(x.ipere-103)*0.00072,1,1.5]); else if(male(x.pere)){const tp=tendF(x.pere); if(tp) g.push(['amélioration des filles du père',tp.m,tp.n,Math.min(tp.n,5)*0.3])}
- if(moi!=null) g.push(['elle-même (1re lactation)',moi,1,0.5]);
+ if(moi!=null) g.push(['elle-même par rapport à sa génération',moi,1,1]); if(x.ioff!=null&&x.ioff!=='') g.push(['son index officiel ('+x.ioff+')',(parseFloat(x.ioff)-103)*0.00072,1,1]);
  if(!g.length) return null; const w=g.reduce((a,b)=>a+b[3],0); return {m:g.reduce((a,b)=>a+b[1]*b[3],0)/w,g}}
 function lisere(k){if(mpis(k)) return ' deter'; const fv=famille_val(k); if(fv&&!tendF(k)) return fv.m>=0.05?' famok':fv.m<=-0.05?' fambad':''; const t=tendF(k); if(!t) return ''; const x=A()[k], moi=x&&x.cat!=='Bélier'?rel(x):nivF(k), f=nivF(k);
  if(t.m>=0.05&&moi!=null&&moi>=0) return ' amel';
