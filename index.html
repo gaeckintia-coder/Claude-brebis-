@@ -237,6 +237,14 @@ function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
+function famille(p,x){
+  const M=x.mere,P=x.pere, all=Object.entries(A()).filter(([k])=>k!==p);
+  const ch=(l,lab)=>l.length?`<h2>${lab} (${l.length})</h2><div class="nums">${l.sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true})).map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${v.ne&&v.ne===x.ne&&v.mere===M?' (jumeau·elle)':''}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`:'';
+  const plein=all.filter(([k,v])=>M&&P&&v.mere===M&&v.pere===P);
+  const dm=all.filter(([k,v])=>M&&v.mere===M&&!(P&&v.pere===P));
+  const dp=all.filter(([k,v])=>P&&v.pere===P&&!(M&&v.mere===M));
+  return ch(plein,'Frères et sœurs (même mère et même père)')+ch(dm,'Demi-frères et sœurs par la mère')+ch(dp,'Demi-frères et sœurs par le père');
+}
 const ST={'#fiche':{pile:[],cour:null},'#sheet-body':{pile:[],cour:null}};
 function lien(id){ if(!id) return 'inconnu'; return A()[id]?`<button type="button" class="lien" data-go="${id}">${id} ›</button>`:`${esc(id)} <span class="hint">(hors base)</span>`; }
 function fiche(p,nav,el='#fiche'){
@@ -256,6 +264,7 @@ function fiche(p,nav,el='#fiche'){
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
    <dt>Mère</dt><dd>${lien(x.mere)}</dd><dt>Père</dt><dd>${lien(x.pere)}</dd></dl>
+   ${famille(p,x)}
    ${desc.length?`<h2>Descendants dans la base (${desc.length})</h2><div class="nums">${desc.map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`:''}`;
 }
 
