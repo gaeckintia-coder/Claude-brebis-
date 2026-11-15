@@ -39,6 +39,10 @@ textarea{min-height:90px}
 .tag{align-self:flex-start;background:var(--tag);color:var(--tagfg);border-radius:18px 18px 26px 26px;padding:10px 22px 12px;position:relative}
 .tag::before{content:"";position:absolute;top:8px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--bg)}
 .tag small{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-align:center;margin-top:8px}
+.tag.amel{border:6px solid var(--ok)}
+.tag.deter{border:6px solid var(--bad)}
+.lien.amel{box-shadow:inset 0 0 0 3px var(--ok)}
+.lien.deter{box-shadow:inset 0 0 0 3px var(--bad)}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;border:1.5px solid currentColor}
@@ -57,6 +61,7 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .nums span{font-variant-numeric:tabular-nums;font-weight:700;padding:4px 8px;border-radius:8px;background:var(--bg)}
 .nums span.ok{background:var(--okbg);color:var(--ok)} .nums span.warn{background:var(--warnbg);color:var(--warn)}
 .hint{font-size:13px;color:var(--mute)}
+.tend{font-size:15px}
 .lien{background:var(--okbg);color:var(--ok);padding:4px 10px;border-radius:8px;font-variant-numeric:tabular-nums}
 #retour,.retour{align-self:flex-start}
 #sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
@@ -118,7 +123,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option>Brebis</option><option>Antenaise</option><option>Antenais</option><option>Bélier</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
-      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">Avec un niveau de suivi</option></select>
+      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">Avec un niveau de suivi</option><option value="deter">Détérioratrices (filles moins bonnes)</option></select>
       <select id="f-agn" aria-label="Lot d'agnelage"><option value="">Tous lots d'agnelage</option></select>
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
@@ -226,7 +231,7 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
@@ -237,6 +242,20 @@ function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
+const LJ=v=>{const l=parseFloat(v.laitmoy),d=parseFloat(v.dureemoy);return l>0&&d>0?l/d:null};
+const fLJ=n=>n==null?'':n.toFixed(2).replace('.',',');
+function moyLJ(l){const v=l.map(([k,x])=>LJ(x)).filter(n=>n!=null);return v.length?{m:v.reduce((a,b)=>a+b,0)/v.length,n:v.length}:null}
+let _troupLJ=null,_rang=null;
+const rangL=v=>Math.min(parseInt(v.nblact)||0,5);
+function refRang(){if(!_rang){_rang={};const g={};Object.values(A()).forEach(v=>{const l=LJ(v),r=rangL(v);if(l!=null&&r>0&&v.cat==='Brebis'){(g[r]=g[r]||[]).push(l)}});Object.entries(g).forEach(([r,a])=>_rang[r]=a.reduce((x,y)=>x+y,0)/a.length)}return _rang}
+function rel(v){const x=v&&LJ(v),r=v&&refRang()[rangL(v)];return x!=null&&r?x/r-1:null}
+function amelio(l){const d=l.map(([k,v])=>{const f=rel(v),m=rel(A()[v.mere]);return f!=null&&m!=null?f-m:null}).filter(n=>n!=null);return d.length?{m:d.reduce((a,b)=>a+b,0)/d.length,n:d.length}:null}
+const SEUIL_DET=-0.10;
+function deter(k){const x=A()[k]; if(!x) return null; const d=Object.entries(A()).filter(([kk,v])=>v.mere===k||v.pere===k); const am=amelio(d); return am&&am.m<=SEUIL_DET?am:null}
+function tendF(k){const d=Object.entries(A()).filter(([kk,v])=>v.mere===k||v.pere===k); return amelio(d)}
+function lisere(k){const t=tendF(k); return !t?'':t.m>=0.05?' amel':t.m<=-0.05?' deter':''}
+function ecart(l){const R=refRang(),e=l.map(([k,v])=>{const x=LJ(v),r=R[rangL(v)];return x!=null&&r?x/r-1:null}).filter(n=>n!=null);return e.length?e.reduce((a,b)=>a+b,0)/e.length:null}
+function troupLJ(){if(_troupLJ===null){_troupLJ=moyLJ(Object.entries(A()).filter(([k,x])=>x.cat==='Brebis'&&/Présent/.test(x.statut)))||false}return _troupLJ}
 function famille(p,x){
   const M=x.mere,P=x.pere, all=Object.entries(A()).filter(([k])=>k!==p);
   const ch=(l,lab)=>l.length?`<h2>${lab} (${l.length})</h2><div class="nums">${l.sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true})).map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${v.ne&&v.ne===x.ne&&v.mere===M?' (jumeau·elle)':''}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`:'';
@@ -254,18 +273,23 @@ function fiche(p,nav,el='#fiche'){
   if(!x){$(el).innerHTML=retour+`<div class="big warn">${esc(p)}<small>Inconnu dans la base</small></div>`;return}
   const desc=Object.entries(A()).filter(([k,v])=>v.mere===p||v.pere===p).sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true}));
   const st=/Présent/.test(x.statut)?'c-ok':'c-bad';
-  const niv=x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'';
-  $(el).innerHTML=retour+`<div class="tag"><small>FR 450000</small><b>${esc(p)}</b></div>
+  const niv=(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
+  $(el).innerHTML=retour+`<div class="tag${lisere(p)}"><small>FR 450000</small><b>${esc(p)}</b></div>
    <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>
    <div class="lot">${esc(lotOf(p)||'Sans lot')}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
    <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
-   ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j':'')}
+   ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour)':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
    <dt>Mère</dt><dd>${lien(x.mere)}</dd><dt>Père</dt><dd>${lien(x.pere)}</dd></dl>
    ${famille(p,x)}
-   ${desc.length?`<h2>Descendants dans la base (${desc.length})</h2><div class="nums">${desc.map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`:''}`;
+   ${desc.length?(()=>{const mo=moyLJ(desc),t=troupLJ();
+     return `<h2>Descendants dans la base (${desc.length})</h2>
+     ${mo?(()=>{const e=ecart(desc);return `<div class="tend ${e!=null&&e>=0?'c-ok':'c-warn'}"><b>${fLJ(mo.m)} L/jour</b> en moyenne sur ${mo.n} descendante${mo.n>1?'s':''} avec lactation${e!=null?` · <b>${e>=0?'+':''}${Math.round(e*100)} %</b> par rapport aux brebis du même nombre de lactations`:''}</div>${(()=>{const am=amelio(desc);const pc=v=>(v>=0?'+':'')+Math.round(v*100)+' %';
+       if(am&&/Brebis|Antenaise/.test(x.cat)&&rel(x)!=null){const fm=am.m+rel(x);return `<div class="tend ${am.m>=0?'c-ok':'c-warn'}">${am.n>1?'Moyenne de ses '+am.n+' filles':'Sa fille'} : <b>${pc(fm)}</b> · elle-même : <b>${pc(rel(x))}</b> → <b>${am.m>=0?'+':''}${Math.round(am.m*100)} points</b></div>`}
+       return am?`<div class="tend ${am.m>=0?'c-ok':'c-warn'}">Filles par rapport à leurs mères : <b>${am.m>=0?'+':''}${Math.round(am.m*100)} points</b> en moyenne sur ${am.n} couple${am.n>1?'s':''} fille-mère</div>`:'<div class="hint">Pas encore de couple fille-mère avec des données de lait des deux côtés.</div>'})()}<div class="hint">Comparaison à nombre de lactations égal${t?` (troupeau toutes lactations : ${fLJ(t.m)} L/jour)`:''}. À lire avec prudence quand il y a peu de filles.</div>`})():'<div class="hint">Aucune descendante avec des données de lait pour l’instant.</div>'}
+     <div class="nums">${desc.map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${LJ(v)!=null?' · '+fLJ(LJ(v))+' L/j':''}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`})():''}`;
 }
 
 ['#fiche','#sheet-body'].forEach(el=>$(el).addEventListener('click',e=>{const S=ST[el],g=e.target.closest('[data-go]');
@@ -332,7 +356,7 @@ function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEac
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||x.cat===f('cat'))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
-   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):!!x.niveau))&&(!f('agn')||x.lotagn===f('agn')));
+   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):!!x.niveau))&&(!f('agn')||x.lotagn===f('agn')));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
   const t=f('tri'); r.sort((a,b)=>t==='agn'?dj(a[1].agn).localeCompare(dj(b[1].agn)):t==='idx'?(b[1].idx??-1e9)-(a[1].idx??-1e9):t==='lot'?lotOf(a[0]).localeCompare(lotOf(b[0])):a[0].localeCompare(b[0],'fr',{numeric:true}));
   return r}
@@ -342,7 +366,7 @@ function renderTroupeau(){
   fillSel('#f-lot',L.map(x=>x[0])); fillSel('#t-dest',L.map(x=>x[0]));
   fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
   const r=filtre(); $('#t-n').textContent=r.length;
-  $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
+  $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
   $('#t-sel').textContent=sel.size;
   const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
   $('#t-mv').innerHTML=MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):'Aucun.';
