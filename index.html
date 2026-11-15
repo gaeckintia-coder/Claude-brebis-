@@ -614,7 +614,7 @@ function carteSoin(a){const x=A()[a]; const L=actifsT(a); const pr=PH().proto;
     if(e.cat==='traite') h+=`<button type="button" class="btn" style="width:100%;margin-top:8px" data-straite="${t.id}">Passée à la traite (marque verte)</button>`;
     h+=`<div class="hint" style="margin-top:6px">Fin d’attente lait : <b>${e.interdit&&!e.lait?'interdit':frJ(e.lait)||'—'}</b> · viande : <b>${frJ(e.viande)||'—'}</b>${e.fini?'':' (si le traitement va jusqu’au bout)'}</div>`;
     if(t.doses.length) h+=`<div class="hint">${t.doses.map((d,i)=>`J${i+1} le ${frJ(d.d.slice(0,10))} : ${d.prod.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + ')}`).join('<br>')}</div>`;
-    h+=`<div class="row" style="margin-top:6px"><button type="button" class="btn2" data-sstop="${t.id}">${t.stopAsk?'Confirmer l’arrêt du traitement':'Arrêter ce traitement'}</button>${t.doses.length&&e.faitAuj?`<button type="button" class="btn2" data-sannule="${t.id}">Annuler la dose d’aujourd’hui</button>`:''}</div></div>`});
+    h+=`<div class="row" style="margin-top:6px"><button type="button" class="btn2" data-sstop="${t.id}">${t.stopAsk?'Confirmer l’arrêt du traitement':'Arrêter ce traitement'}</button>${t.doses.length&&e.faitAuj?`<button type="button" class="btn2" data-sannule="${t.id}">Annuler la dose d’aujourd’hui</button>`:''}<button type="button" class="btn2 c-bad" data-sdel="${t.id}">${t.delAsk?'Confirmer : effacer (erreur)':'🗑 Effacer (erreur de saisie)'}</button></div></div>`});
   const st=[['mammite','','Mammite'],['agnelage','Non-délivrance','Non-délivrance'],['agnelage','Césarienne','Césarienne'],['agnelage','Agnelage difficile','Agnelage difficile'],['agnelage','Agneau mort dedans','Agneau mort dedans'],['coli','','Diarrhée agneau']];
   h+=`<div class="hint" style="margin-top:10px">Démarrer un traitement :</div><div class="row" style="flex-wrap:wrap">${st.map(([p,m,l])=>`<button type="button" class="btn2" data-sstart="${p}|${m}">${l}</button>`).join('')}</div>`;
   return h}
@@ -652,6 +652,7 @@ $('#v-soins').addEventListener('click',e=>{const b=e.target.closest('button'); i
     const n=new Date(); t.doses.push({d:isoJ(n)+'T'+pad2(n.getHours())+':'+pad2(n.getMinutes()),prod,par:LS.get('cb_spar','')}); saveSO(); bip(); renderSoins(); render(); return}
   if(b.dataset.straite){T(b.dataset.straite).traite=auj(); saveSO(); renderSoins(); return}
   if(b.dataset.sannule){const t=T(b.dataset.sannule); t.doses.pop(); saveSO(); renderSoins(); return}
+  if(b.dataset.sdel){const t=T(b.dataset.sdel); if(t.delAsk){SO.T=SO.T.filter(x=>x!==t)} else {t.delAsk=1; setTimeout(()=>{if(t.delAsk){delete t.delAsk;renderSoins()}},5000)} saveSO(); renderSoins(); render(); return}
   if(b.dataset.sstop){const t=T(b.dataset.sstop); if(t.stopAsk){t.clos=1; t.arret=auj(); delete t.stopAsk} else t.stopAsk=1; saveSO(); renderSoins(); return}
   if(b.dataset.sstart){const [p,m]=b.dataset.sstart.split('|'); if(!actifsT(S_CUR).some(t=>t.p===p&&(t.motif||'')===m)) demarrer(S_CUR,p,m); renderSoins(); return}
   if(b.id==='s-send'){const R=[]; SO.T.forEach(t=>t.doses.forEach((d,i)=>{if(!d.s) R.push(frJ(d.d.slice(0,10))+' '+d.d.slice(11,16)+' · '+t.a+' · '+nomT(t)+' J'+(i+1)+' : '+d.prod.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + '))}));
