@@ -43,6 +43,8 @@ textarea{min-height:90px}
 .tag.deter{border:6px solid var(--bad)}
 .lien.amel{box-shadow:inset 0 0 0 3px var(--ok)}
 .lien.deter{box-shadow:inset 0 0 0 3px var(--bad)}
+.tag.famok{border:6px dashed var(--ok)} .tag.fambad{border:6px dashed var(--bad)}
+.lien.famok{outline:3px dashed var(--ok);outline-offset:-3px} .lien.fambad{outline:3px dashed var(--bad);outline-offset:-3px}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;border:1.5px solid currentColor}
@@ -123,7 +125,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option>Brebis</option><option>Antenaise</option><option>Antenais</option><option>Bélier</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
-      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">Avec un niveau de suivi</option><option value="deter">Détérioratrices (filles moins bonnes)</option></select>
+      <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">Avec un niveau de suivi</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option></select>
       <select id="f-agn" aria-label="Lot d'agnelage"><option value="">Tous lots d'agnelage</option></select>
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
@@ -135,6 +137,7 @@ tr.sel td{background:var(--okbg)}
       <select id="t-dest" aria-label="Lot de destination"><option value="">— Lot existant —</option></select>
       <input id="t-new" class="row" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px" placeholder="ou nom d'un nouveau lot (ex. Bergerie – à vendre)">
       <button id="t-move" class="btn" type="button">Déplacer</button>
+      <button id="t-mp" class="btn2" type="button">⚠ Mauvais pis – ne pas garder la suite</button>
       <span id="t-mst" class="state"></span>
     </div>
     <h2>Mouvements à envoyer à Claude</h2>
@@ -174,7 +177,7 @@ tr.sel td{background:var(--okbg)}
       <button id="r-go" class="btn" type="button">Commencer la recherche</button>
     </div>
     <div id="r-run" hidden>
-      <h2 id="r-title">Recherche</h2>
+      <div class="row"><h2 id="r-title" style="flex:1">Recherche</h2><button id="r-son" class="btn2" type="button">🔊 Son activé</button></div>
       <div id="r-last"></div>
       <div class="count"><div><b id="r-f">0</b>trouvées</div><div><b id="r-m">0</b>manquantes</div><div><b id="r-x">0</b>en trop</div></div>
       <h2>Manquantes</h2><div id="r-mn" class="nums"></div>
@@ -206,7 +209,11 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='fiche';
-let LOTS=LS.get('cb_lots',{}); let MV=LS.get('cb_moves',[]); let sel=new Set();
+let LOTS=LS.get('cb_lots',{}); let MV=LS.get('cb_moves',[]); let MP=LS.get('cb_mpis',{});
+const MPLOT='Risque réforme – mauvais pis';
+const mpis=k=>{const x=A()[k];return !!(MP[k]&&MP[k].on)||(!!(x&&x.mpis)&&!(MP[k]&&MP[k].on===false))};
+const garde=k=>{const x=A()[k];return !!(x&&x.garde)&&!mpis(k)};
+function setMP(k,on){const d=fdate();MP[k]={on,d};LS.set('cb_mpis',MP)} let sel=new Set();
 const lotOf=p=>LOTS[p]!==undefined?LOTS[p]:((A()[p]||{}).lot||'');
 let liste=LS.get('cb_liste',{debut:null,items:[],dbl:0});
 let rech=LS.get('cb_rech',null);         // {titre, cible:[...], trouvees:[], trop:[]}
@@ -220,6 +227,13 @@ function plaqueDe(raw){
   return d;
 }
 const tri=a=>[...a].sort((x,y)=>x.localeCompare(y,'fr',{numeric:true}));
+let AC=null; let SON=LS.get('cb_son',true);
+function audio(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}}
+document.addEventListener('pointerdown',audio,{once:false,passive:true});
+function ton(seq){if(!SON)return;audio();if(!AC)return;let t=AC.currentTime;seq.forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d);t+=d+0.05})}
+const sonTrouve=()=>ton([[880,0.12],[1320,0.12],[1760,0.25]]);
+const sonDeja=()=>ton([[880,0.1]]);
+const sonHors=()=>ton([[220,0.25]]);
 function bip(){ if(navigator.vibrate) try{navigator.vibrate(60)}catch(e){} }
 function alerte(){ if(navigator.vibrate) try{navigator.vibrate([200,100,200])}catch(e){} }
 
@@ -243,6 +257,7 @@ function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
 const LJ=v=>{const l=parseFloat(v.laitmoy),d=parseFloat(v.dureemoy);return l>0&&d>0?l/d:null};
+const nC=v=>parseInt(v&&v.nblact)||0; const fC=n=>n+' campagne'+(n>1?'s':'');
 const fLJ=n=>n==null?'':n.toFixed(2).replace('.',',');
 function moyLJ(l){const v=l.map(([k,x])=>LJ(x)).filter(n=>n!=null);return v.length?{m:v.reduce((a,b)=>a+b,0)/v.length,n:v.length}:null}
 let _troupLJ=null,_rang=null;
@@ -251,9 +266,25 @@ function refRang(){if(!_rang){_rang={};const g={};Object.values(A()).forEach(v=>
 function rel(v){const x=v&&LJ(v),r=v&&refRang()[rangL(v)];return x!=null&&r?x/r-1:null}
 function amelio(l){const d=l.map(([k,v])=>{const f=rel(v),m=rel(A()[v.mere]);return f!=null&&m!=null?f-m:null}).filter(n=>n!=null);return d.length?{m:d.reduce((a,b)=>a+b,0)/d.length,n:d.length}:null}
 const SEUIL_DET=-0.10;
-function deter(k){const x=A()[k]; if(!x) return null; const d=Object.entries(A()).filter(([kk,v])=>v.mere===k||v.pere===k); const am=amelio(d); return am&&am.m<=SEUIL_DET?am:null}
-function tendF(k){const d=Object.entries(A()).filter(([kk,v])=>v.mere===k||v.pere===k); return amelio(d)}
-function lisere(k){const t=tendF(k); return !t?'':t.m>=0.05?' amel':t.m<=-0.05?' deter':''}
+const male=k=>{const x=A()[k];return !!x&&(x.cat==='Bélier'||x.cat==='Antenais')};
+const enfant=(v,k)=>male(k)?v.pere===k:v.mere===k;
+function nivF(k){const r=Object.values(A()).filter(v=>enfant(v,k)).map(rel).filter(n=>n!=null);return r.length?r.reduce((a,b)=>a+b,0)/r.length:null}
+// Rouge seulement si les filles restent sous la moyenne du troupeau ; vert seulement si la brebis est elle-même au-dessus de la moyenne
+function deter(k){const x=A()[k]; if(!x) return null; const am=tendF(k), f=nivF(k); return am&&am.m<=SEUIL_DET&&f!=null&&f<0?am:null}
+function tendF(k){const d=Object.entries(A()).filter(([kk,v])=>enfant(v,k)); return amelio(d)}
+// Jeunes : antenaises, ou brebis nées en 2024 ou après avec 0 ou 1 lactation (1re campagne à 1 an)
+function jeune(x){if(!x) return false; if(x.cat==='Antenaise') return true; const an=parseInt((x.ne||'').slice(-4)); return x.cat==='Brebis'&&(parseInt(x.nblact)||0)<=1&&an>=2024}
+const moyR=l=>{const r=l.map(rel).filter(n=>n!=null);return r.length?{m:r.reduce((a,b)=>a+b,0)/r.length,n:r.length}:null};
+function famille_val(k){const x=A()[k]; if(!jeune(x)) return null; const all=Object.entries(A()).filter(([kk])=>kk!==k).map(([kk,v])=>v);
+ const g=[]; const mere=x.mere&&A()[x.mere]; const rm=mere?rel(mere):null;
+ const so=x.mere?moyR(all.filter(v=>v.mere===x.mere)):null; const sp=x.pere?moyR(all.filter(v=>v.pere===x.pere&&v.mere!==x.mere)):null; const moi=rel(x);
+ if(rm!=null) g.push(['mère',rm,1,1]); if(so) g.push(['sœurs par la mère',so.m,so.n,Math.min(so.n,3)*0.5]); if(sp) g.push(['demi-sœurs par le père',sp.m,sp.n,sp.n/(sp.n+4)*2]); if(x.ipere) g.push(['index du père IA ('+x.ipere+')',0.5*(x.ipere-103)*0.00072,1,1.5]); else if(male(x.pere)){const tp=tendF(x.pere); if(tp) g.push(['amélioration des filles du père',tp.m,tp.n,Math.min(tp.n,5)*0.3])}
+ if(moi!=null) g.push(['elle-même (1re lactation)',moi,1,0.5]);
+ if(!g.length) return null; const w=g.reduce((a,b)=>a+b[3],0); return {m:g.reduce((a,b)=>a+b[1]*b[3],0)/w,g}}
+function lisere(k){if(mpis(k)) return ' deter'; const fv=famille_val(k); if(fv&&!tendF(k)) return fv.m>=0.05?' famok':fv.m<=-0.05?' fambad':''; const t=tendF(k); if(!t) return ''; const x=A()[k], moi=x&&x.cat!=='Bélier'?rel(x):nivF(k), f=nivF(k);
+ if(t.m>=0.05&&moi!=null&&moi>=0) return ' amel';
+ if(t.m<=-0.05&&f!=null&&f<0) return ' deter';
+ return ''}
 function ecart(l){const R=refRang(),e=l.map(([k,v])=>{const x=LJ(v),r=R[rangL(v)];return x!=null&&r?x/r-1:null}).filter(n=>n!=null);return e.length?e.reduce((a,b)=>a+b,0)/e.length:null}
 function troupLJ(){if(_troupLJ===null){_troupLJ=moyLJ(Object.entries(A()).filter(([k,x])=>x.cat==='Brebis'&&/Présent/.test(x.statut)))||false}return _troupLJ}
 function famille(p,x){
@@ -271,29 +302,31 @@ function fiche(p,nav,el='#fiche'){
   const x=A()[p];
   const retour=pile.length?`<button type="button" class="btn2 retour" data-back="1">← Retour à ${pile[pile.length-1]}</button>`:'';
   if(!x){$(el).innerHTML=retour+`<div class="big warn">${esc(p)}<small>Inconnu dans la base</small></div>`;return}
-  const desc=Object.entries(A()).filter(([k,v])=>v.mere===p||v.pere===p).sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true}));
+  const desc=Object.entries(A()).filter(([k,v])=>enfant(v,p)).sort((a,b)=>a[0].localeCompare(b[0],'fr',{numeric:true}));
   const st=/Présent/.test(x.statut)?'c-ok':'c-bad';
-  const niv=(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
+  const fvx=famille_val(p); const famTxt=fvx?`<div class="tend ${fvx.m>=0?'c-ok':'c-warn'}">Valeur famille (jeune) : <b>${fvx.m>=0?'+':''}${Math.round(fvx.m*100)} %</b> · ${fvx.g.map(([n,v,c])=>n+' '+(v>=0?'+':'')+Math.round(v*100)+' %'+(c>1?' ('+c+')':'')).join(' · ')}</div>`:'';
+  const niv=(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
   $(el).innerHTML=retour+`<div class="tag${lisere(p)}"><small>FR 450000</small><b>${esc(p)}</b></div>
-   <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>
+   <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="${mpis(p)?'btn2':'btn2'}" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button></div>
    <div class="lot">${esc(lotOf(p)||'Sans lot')}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
    <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
-   ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour)':''):'')}
+   ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
    <dt>Mère</dt><dd>${lien(x.mere)}</dd><dt>Père</dt><dd>${lien(x.pere)}</dd></dl>
    ${famille(p,x)}
    ${desc.length?(()=>{const mo=moyLJ(desc),t=troupLJ();
      return `<h2>Descendants dans la base (${desc.length})</h2>
-     ${mo?(()=>{const e=ecart(desc);return `<div class="tend ${e!=null&&e>=0?'c-ok':'c-warn'}"><b>${fLJ(mo.m)} L/jour</b> en moyenne sur ${mo.n} descendante${mo.n>1?'s':''} avec lactation${e!=null?` · <b>${e>=0?'+':''}${Math.round(e*100)} %</b> par rapport aux brebis du même nombre de lactations`:''}</div>${(()=>{const am=amelio(desc);const pc=v=>(v>=0?'+':'')+Math.round(v*100)+' %';
-       if(am&&/Brebis|Antenaise/.test(x.cat)&&rel(x)!=null){const fm=am.m+rel(x);return `<div class="tend ${am.m>=0?'c-ok':'c-warn'}">${am.n>1?'Moyenne de ses '+am.n+' filles':'Sa fille'} : <b>${pc(fm)}</b> · elle-même : <b>${pc(rel(x))}</b> → <b>${am.m>=0?'+':''}${Math.round(am.m*100)} points</b></div>`}
+     ${mo?(()=>{const e=ecart(desc);return `<div class="tend ${e!=null&&e>=0?'c-ok':'c-warn'}"><b>${fLJ(mo.m)} L/jour</b> en moyenne sur ${mo.n} descendante${mo.n>1?'s':''} avec lactation (${fC(desc.filter(([k,v])=>LJ(v)!=null).reduce((a,[k,v])=>a+nC(v),0))} en tout)${e!=null?` · <b>${e>=0?'+':''}${Math.round(e*100)} %</b> par rapport aux brebis du même nombre de lactations`:''}</div>${(()=>{const am=amelio(desc);const pc=v=>(v>=0?'+':'')+Math.round(v*100)+' %';
+       if(am&&/Brebis|Antenaise/.test(x.cat)&&rel(x)!=null){const fm=am.m+rel(x);return `<div class="tend ${am.m>=0?'c-ok':'c-warn'}">${am.n>1?'Moyenne de ses '+am.n+' filles':'Sa fille'} : <b>${pc(fm)}</b> · elle-même : <b>${pc(rel(x))}</b> (${fC(nC(x))}) → <b>${am.m>=0?'+':''}${Math.round(am.m*100)} points</b></div>`}
        return am?`<div class="tend ${am.m>=0?'c-ok':'c-warn'}">Filles par rapport à leurs mères : <b>${am.m>=0?'+':''}${Math.round(am.m*100)} points</b> en moyenne sur ${am.n} couple${am.n>1?'s':''} fille-mère</div>`:'<div class="hint">Pas encore de couple fille-mère avec des données de lait des deux côtés.</div>'})()}<div class="hint">Comparaison à nombre de lactations égal${t?` (troupeau toutes lactations : ${fLJ(t.m)} L/jour)`:''}. À lire avec prudence quand il y a peu de filles.</div>`})():'<div class="hint">Aucune descendante avec des données de lait pour l’instant.</div>'}
-     <div class="nums">${desc.map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${LJ(v)!=null?' · '+fLJ(LJ(v))+' L/j':''}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`})():''}`;
+     <div class="nums">${desc.map(([k,v])=>`<button type="button" class="lien" data-go="${k}">${k}${LJ(v)!=null?' · '+fLJ(LJ(v))+' L/j ('+nC(v)+' c.)':''}${/Présent/.test(v.statut)?'':' †'} ›</button>`).join('')}</div>`})():''}`;
 }
 
 ['#fiche','#sheet-body'].forEach(el=>$(el).addEventListener('click',e=>{const S=ST[el],g=e.target.closest('[data-go]');
   const top=()=>el==='#fiche'?window.scrollTo({top:0}):$('.sheet-in').scrollTo({top:0});
+  const mpb=e.target.closest('[data-mp]'); if(mpb){const k=mpb.dataset.mp;setMP(k,!mpis(k));fiche(k,'nav',el);render();return}
   if(g){S.pile.push(S.cour);fiche(g.dataset.go,'nav',el);top();return}
   if(e.target.closest('[data-back]')){fiche(S.pile.pop(),'nav',el);top()}}));
 function ouvrirFiche(p){fiche(p,'new','#sheet-body');$('#sheet').hidden=false;$('.sheet-in').scrollTo({top:0})}
@@ -312,10 +345,10 @@ function addListe(p){
 // ---- recherche
 function addRech(p){
   if(rech.cible.includes(p)){
-    if(rech.trouvees.includes(p)){alerte(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>Déjà trouvée</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
-    else{rech.trouvees.push(p); bip(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>TROUVÉE · ${rech.trouvees.length}/${rech.cible.length}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
+    if(rech.trouvees.includes(p)){alerte(); sonDeja(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>Déjà trouvée</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
+    else{rech.trouvees.push(p); bip(); sonTrouve(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>TROUVÉE · ${rech.trouvees.length}/${rech.cible.length}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
   } else {
-    if(!rech.trop.includes(p)) rech.trop.push(p); alerte();
+    if(!rech.trop.includes(p)) rech.trop.push(p); alerte(); sonHors();
     const x=A()[p]; $('#r-last').innerHTML=`<div class="big bad">${p}<small>Pas recherchée${lotOf(p)?' · '+esc(lotOf(p)):''}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`;
   }
   LS.set('cb_rech',rech); render();
@@ -328,6 +361,8 @@ $('#r-go').addEventListener('click',()=>{
   rech={titre:$('#r-lot').value||'Liste collée',debut:new Date().toISOString(),cible:nums,trouvees:[],trop:[]};
   LS.set('cb_rech',rech); render();
 });
+function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
+$('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve()};majSon();
 $('#r-stop').onclick=()=>$('#r-confirm').hidden=false;
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
 $('#r-yes').onclick=()=>{rech=null;LS.set('cb_rech',null);$('#r-confirm').hidden=true;$('#r-last').innerHTML='';render()};
@@ -356,22 +391,24 @@ function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEac
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||x.cat===f('cat'))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
-   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):!!x.niveau))&&(!f('agn')||x.lotagn===f('agn')));
+   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):!!x.niveau))&&(!f('agn')||x.lotagn===f('agn')));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
   const t=f('tri'); r.sort((a,b)=>t==='agn'?dj(a[1].agn).localeCompare(dj(b[1].agn)):t==='idx'?(b[1].idx??-1e9)-(a[1].idx??-1e9):t==='lot'?lotOf(a[0]).localeCompare(lotOf(b[0])):a[0].localeCompare(b[0],'fr',{numeric:true}));
   return r}
 function renderTroupeau(){
   const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0), cur=$('#f-lot').value;
-  $('#t-lots').innerHTML=`<button type="button" data-l="" aria-pressed="${!cur}"><span>Troupeau total (présents)</span><b>${tot}</b></button>`+L.map(([l,n])=>`<button type="button" data-l="${esc(l)}" aria-pressed="${cur===l}"><span>${esc(l)}</span><b>${n}</b></button>`).join('');
+  const nmp=Object.keys(A()).filter(k=>pres(A()[k])&&mpis(k)).length;
+  $('#t-lots').innerHTML=`<button type="button" data-l="" aria-pressed="${!cur}"><span>Troupeau total (présents)</span><b>${tot}</b></button>`+L.map(([l,n])=>`<button type="button" data-l="${esc(l)}" aria-pressed="${cur===l}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+(nmp?`<button type="button" data-mpl="1" aria-pressed="${$('#f-suivi').value==='mpis'}"><span class="c-bad">${MPLOT}</span><b>${nmp}</b></button>`:'');
   fillSel('#f-lot',L.map(x=>x[0])); fillSel('#t-dest',L.map(x=>x[0]));
   fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
   const r=filtre(); $('#t-n').textContent=r.length;
   $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
   $('#t-sel').textContent=sel.size;
   const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
-  $('#t-mv').innerHTML=MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):'Aucun.';
+  const chm=mpChg(); const mpTxt=chm.length?`<div><b class="c-bad">Mauvais pis (${chm.filter(([k,v])=>v.on).length} ajoutée(s), ${chm.filter(([k,v])=>!v.on).length} retirée(s))</b><div class="nums">${tri(chm.map(([k])=>k)).map(p=>`<span>${p}</span>`).join('')}</div></div>`:'';
+  $('#t-mv').innerHTML=mpTxt+(MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):(mpTxt?'':'Aucun.'));
 }
-$('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$('#f-lot').value=b.dataset.l;render()});
+$('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.mpl){$('#f-lot').value='';$('#f-suivi').value='mpis';render();return}$('#f-lot').value=b.dataset.l;if($('#f-suivi').value==='mpis')$('#f-suivi').value='';render()});
 document.querySelectorAll('.filt select').forEach(s=>s.addEventListener('change',render));
 $('#t-body').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;e.target.checked?sel.add(k):sel.delete(k);render()});
 $('#t-all').onclick=()=>{filtre().forEach(([k])=>sel.add(k));render()};
@@ -382,11 +419,15 @@ $('#t-move').onclick=()=>{const dest=$('#t-new').value.trim()||$('#t-dest').valu
   const d=fdate(); let n=0; sel.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;MV.push({d,p,de,vers:dest});n++}});
   LS.set('cb_lots',LOTS);LS.set('cb_moves',MV);sel.clear();$('#t-new').value='';
   $('#t-mst').textContent=n+' animal(aux) déplacé(s) vers '+dest;$('#t-mst').className='state ok';showBase();render()};
-$('#t-send').onclick=e=>{if(!MV.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
-  envoyer('Claude Brebis – mouvements de lots\n\n'+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n'),e.target)};
+$('#t-mp').onclick=()=>{if(!sel.size){$('#t-mst').textContent='Coche d’abord des animaux.';$('#t-mst').className='state err';return}
+  const n=sel.size; sel.forEach(k=>setMP(k,true)); sel.clear(); $('#t-mst').textContent=n+' marquée(s) mauvais pis';$('#t-mst').className='state ok';render()};
+const mpChg=()=>Object.entries(MP).filter(([k,v])=>!v.sent&&!!v.on!==!!(A()[k]&&A()[k].mpis));
+$('#t-send').onclick=e=>{const ch=mpChg(); if(!MV.length&&!ch.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
+  const on=ch.filter(([k,v])=>v.on).map(([k])=>k), off=ch.filter(([k,v])=>!v.on).map(([k])=>k);
+  envoyer('Claude Brebis – mouvements de lots\n\n'+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):''),e.target)};
 $('#t-clr').onclick=()=>$('#t-confirm').hidden=false;
 $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
-$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);$('#t-confirm').hidden=true;render()};
+$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
 function render(){
