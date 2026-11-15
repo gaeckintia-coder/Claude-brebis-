@@ -45,6 +45,7 @@ textarea{min-height:90px}
 .lien.deter{box-shadow:inset 0 0 0 3px var(--bad)}
 .tag.famok{border:6px dashed var(--ok)} .tag.fambad{border:6px dashed var(--bad)}
 .lien.famok{outline:3px dashed var(--ok);outline-offset:-3px} .lien.fambad{outline:3px dashed var(--bad);outline-offset:-3px}
+.tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;border:1.5px solid currentColor}
@@ -284,7 +285,7 @@ function famille_val(k){const x=A()[k]; if(!jeune(x)) return null; const all=Obj
  if(rm!=null) g.push(['mère',rm,1,1]); if(so) g.push(['sœurs par la mère',so.m,so.n,Math.min(so.n,3)*0.5]); if(sp) g.push(['demi-sœurs par le père',sp.m,sp.n,sp.n/(sp.n+4)*2]); if(x.ipere) g.push(['index du père IA ('+x.ipere+')',0.5*(x.ipere-103)*0.00072,1,1.5]); else if(male(x.pere)){const tp=tendF(x.pere); if(tp) g.push(['amélioration des filles du père',tp.m,tp.n,Math.min(tp.n,5)*0.3])}
  if(moi!=null) g.push(['elle-même par rapport à sa génération',moi,1,1]); if(x.ioff!=null&&x.ioff!=='') g.push(['son index officiel ('+x.ioff+')',(parseFloat(x.ioff)-103)*0.00072,1,1]);
  if(!g.length) return null; const w=g.reduce((a,b)=>a+b[3],0); return {m:g.reduce((a,b)=>a+b[1]*b[3],0)/w,g}}
-function lisere(k){const xx=A()[k]; if(mpis(k)||/réformer/i.test(xx&&xx.niveau||'')) return ' deter'; if(xx&&xx.niveau){const l0=lisere0(k);return l0===' amel'||l0===' famok'?'':l0}
+function lisere(k){const xx=A()[k]; if(/réformer/i.test(xx&&xx.niveau||'')) return ' deter reforme'; if(mpis(k)) return ' deter'; if(xx&&xx.niveau){const l0=lisere0(k);return l0===' amel'||l0===' famok'?'':l0}
  return lisere0(k)}
 function lisere0(k){ const fv=famille_val(k); if(fv&&!tendF(k)) return fv.m>=0.05?' famok':fv.m<=-0.05?' fambad':''; const t=tendF(k); if(!t) return ''; const x=A()[k], moi=x&&x.cat!=='Bélier'?rel(x):nivF(k), f=nivF(k);
  if(t.m>=0.05&&moi!=null&&moi>=0) return ' amel';
