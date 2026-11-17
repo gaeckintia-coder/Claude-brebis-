@@ -35,7 +35,7 @@ textarea{min-height:90px}
 #print-reg{display:none}
 @media print{body>*:not(#print-reg){display:none!important}#print-reg{display:block!important;color:#000;background:#fff;font:11px Arial,sans-serif}
  #print-reg table{border-collapse:collapse;width:100%}#print-reg th,#print-reg td{border:1px solid #444;padding:3px;text-align:left;vertical-align:top}#print-reg h1{font-size:16px;margin:0 0 4px}@page{size:A4 landscape;margin:10mm}}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .e-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
 .e-top{display:flex;gap:8px;align-items:center}.e-top input{flex:1;min-width:0}
 .e-onlyfull{display:none} body:not(.efull) .e-onlyfull2{display:none!important}
@@ -145,6 +145,7 @@ tr.sel td{background:var(--okbg)}
     <button type="button" role="tab" data-t="troupeau" aria-selected="false">Troupeau</button>
     <button type="button" role="tab" data-t="soins" aria-selected="false">Soins</button>
     <button type="button" role="tab" data-t="echo" aria-selected="false">Écho</button>
+    <button type="button" role="tab" data-t="tests" aria-selected="false">Tests</button>
   </div>
 
   <!-- TROUPEAU -->
@@ -242,6 +243,28 @@ tr.sel td{background:var(--okbg)}
     <div class="hint" id="e-sum"></div>
     <div class="nums" id="e-list"></div>
     <div class="row" style="margin-top:12px"><button id="e-send" class="btn" type="button">Envoyer à Claude</button><button id="e-sent" class="btn2" type="button">Marquer comme envoyé</button></div></div>
+  </section>
+
+  <!-- TESTS -->
+  <section id="v-tests" class="card" hidden>
+    <h2>Tests de connexion (DAC…)</h2>
+    <p class="hint">Avant : appairer l'appareil dans Réglages → Bluetooth du téléphone (code souvent 0000 ou 1234). Ensuite, essayer les tests dans l'ordre et me les envoyer.</p>
+    <h3>1. Bluetooth classique (port série)</h3>
+    <div class="row"><select id="d-baud" aria-label="Vitesse"><option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option><option>4800</option><option>2400</option><option>1200</option></select>
+      <select id="d-fmt" aria-label="Format"><option value="8N1">8N1</option><option value="7E1">7E1</option><option value="8E1">8E1</option><option value="7O1">7O1</option></select>
+      <select id="d-mode" aria-label="Recherche"><option value="a">Recherche A</option><option value="b">Recherche B (filtre SPP)</option><option value="c">Recherche C (tout)</option></select></div>
+    <div class="row"><button id="d-cnx" class="btn" type="button">Connecter (série)</button><button id="d-dcx" class="btn2" type="button">Déconnecter</button></div>
+    <h3>2. Bluetooth basse consommation (BLE)</h3>
+    <div class="row"><button id="d-ble" class="btn" type="button">Chercher un appareil BLE</button></div>
+    <h3>3. Envoyer</h3>
+    <div class="row"><input id="d-tx" placeholder="Texte ou octets hex (ex. 02 41 03)" style="flex:1;min-width:0"><select id="d-txm" aria-label="Type d'envoi"><option value="t">Texte</option><option value="h">Hex</option></select></div>
+    <div class="row"><label><input type="checkbox" id="d-cr" checked> + CR</label><label><input type="checkbox" id="d-lf"> + LF</label><button id="d-send" class="btn" type="button">Envoyer</button></div>
+    <div class="row" style="flex-wrap:wrap"><span class="hint">Essais rapides :</span><button type="button" class="btn2" data-dq="?">?</button><button type="button" class="btn2" data-dq="AT">AT</button><button type="button" class="btn2" data-dq="ATI">ATI</button><button type="button" class="btn2" data-dqh="05">ENQ</button><button type="button" class="btn2" data-dqh="06">ACK</button><button type="button" class="btn2" data-dqh="0D">CR seul</button><button type="button" class="btn2" data-dq="HELP">HELP</button></div>
+    <div class="row" style="flex-wrap:wrap"><span class="hint">DAC Albouy (Unitronics) :</span><button type="button" class="btn2" data-dqh="27">0x27 seul</button><button type="button" class="btn2" data-dqh="2F 30 30 49 44 45 44 0D">Unitronics ID (/00IDED)</button><button type="button" class="btn2" data-dqh="2F 30 31 49 44 45 45 0D">ID n°01 (/01IDEE)</button><button type="button" class="btn2" data-dqh="2F 30 30 52 43 46 35 0D">Lire horloge (/00RCF5)</button></div>
+    <h3>4. Ce que l'appareil répond</h3>
+    <div class="row"><label><input type="checkbox" id="d-hex" checked> Voir en hexadécimal</label><button id="d-clr" class="btn2" type="button">Effacer</button></div>
+    <pre id="d-log" style="white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;max-height:45vh;overflow:auto;font-size:12px;margin:0"></pre>
+    <div class="row" style="margin-top:8px"><button id="d-claude" class="btn" type="button">Envoyer le journal à Claude</button></div>
   </section>
 
   <!-- LISTE -->
@@ -357,7 +380,7 @@ $('#file').addEventListener('change',e=>{
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
-  if(typeof eFull==='function') eFull(t==='echo'); ['fiche','liste','recherche','troupeau','soins','echo'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
+  if(typeof eFull==='function') eFull(t==='echo'); ['fiche','liste','recherche','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -772,6 +795,48 @@ $('#e-full').onclick=()=>eFull(true); $('#e-quit').onclick=()=>eFull(false);
 $('#e-f').addEventListener('submit',e=>{e.preventDefault(); lu($('#e-q').value); $('#e-q').value=''});
 $('#e-date').value=auj(); $('#e-date').addEventListener('change',()=>{eCarte();renderEcho()});
 eMaj();
+
+// ---- tests de connexion (DAC ou autre appareil)
+let DP=null, DRD=null, DBLE=null, DCHR=[], DLOG=[];
+const dhex=u=>[...u].map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+const dasc=u=>[...u].map(b=>b>=32&&b<127?String.fromCharCode(b):b===13?'␍':b===10?'␊':'·').join('');
+function dlog(sens,txt,u){const t=new Date().toLocaleTimeString('fr-FR'); DLOG.push({t,sens,txt,u:u?dhex(u):''}); if(DLOG.length>2000) DLOG.shift(); dshow()}
+function dshow(){const h=$('#d-hex').checked; $('#d-log').textContent=DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?(h?l.u+'  | ':'')+l.txt:l.txt)).join('\n'); $('#d-log').scrollTop=1e9}
+$('#d-hex').onchange=dshow; $('#d-clr').onclick=()=>{DLOG=[];dshow()};
+async function dlire(){try{while(DP&&DP.readable){DRD=DP.readable.getReader(); try{for(;;){const {value,done}=await DRD.read(); if(done)break; if(value&&value.length) dlog('←',dasc(value),value)}} finally{DRD.releaseLock()}}}
+  catch(e){dlog('!','Lecture arrêtée : '+e.message)}}
+$('#d-cnx').onclick=async()=>{ if(!('serial' in navigator)){dlog('!','Web Serial absent : il faut Chrome Android 137+ ouvert depuis GitHub (pas dans Claude).');return}
+  const SPP='00001101-0000-1000-8000-00805f9b34fb', m=$('#d-mode').value, f=$('#d-fmt').value;
+  const opt=m==='b'?{filters:[{bluetoothServiceClassId:SPP}],allowedBluetoothServiceClassIds:[SPP]}:m==='c'?{}:{allowedBluetoothServiceClassIds:[SPP]};
+  try{ if(DP) await ddcx(); DP=await navigator.serial.requestPort(opt); const info=DP.getInfo?DP.getInfo():{};
+    dlog('i','Appareil choisi : '+JSON.stringify(info));
+    await DP.open({baudRate:+$('#d-baud').value,dataBits:+f[0],parity:{N:'none',E:'even',O:'odd'}[f[1]],stopBits:+f[2]});
+    dlog('✓','Connecté en '+$('#d-baud').value+' '+f+'. J’écoute… (attendre 20 s, puis essayer les envois)'); dlire();
+    try{const sg=await DP.getSignals(); dlog('i','Signaux : '+JSON.stringify(sg))}catch(e){}
+  }catch(e){dlog('✗','Connexion impossible : '+e.name+' – '+e.message); DP=null}};
+async function ddcx(){try{if(DRD) await DRD.cancel()}catch(e){} try{if(DP) await DP.close()}catch(e){} DP=null; dlog('i','Déconnecté')}
+$('#d-dcx').onclick=ddcx;
+function dbytes(){const v=$('#d-tx').value; let u;
+  if($('#d-txm').value==='h'){u=new Uint8Array(v.split(/[\s,]+/).filter(Boolean).map(x=>parseInt(x,16)&255))} else u=new TextEncoder().encode(v);
+  const s=[...u]; if($('#d-cr').checked&&$('#d-txm').value==='t') s.push(13); if($('#d-lf').checked&&$('#d-txm').value==='t') s.push(10); return new Uint8Array(s)}
+async function denv(u){ if(DP&&DP.writable){const w=DP.writable.getWriter(); try{await w.write(u); dlog('→',dasc(u),u)}finally{w.releaseLock()} return}
+  const c=DCHR.find(c=>c.properties.write||c.properties.writeWithoutResponse); if(c){try{c.properties.writeWithoutResponse?await c.writeValueWithoutResponse(u):await c.writeValue(u); dlog('→ BLE',dasc(u),u)}catch(e){dlog('✗','Envoi BLE : '+e.message)} return}
+  dlog('!','Pas connecté.')}
+$('#d-send').onclick=()=>denv(dbytes());
+$('#v-tests').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.dq!=null){const s=[...new TextEncoder().encode(b.dataset.dq)]; if($('#d-cr').checked) s.push(13); if($('#d-lf').checked) s.push(10); denv(new Uint8Array(s))}
+  if(b.dataset.dqh) denv(new Uint8Array(b.dataset.dqh.split(' ').map(x=>parseInt(x,16))))});
+$('#d-ble').onclick=async()=>{ if(!navigator.bluetooth){dlog('!','Web Bluetooth absent sur ce navigateur.');return}
+  try{ const SV=['0000ffe0-0000-1000-8000-00805f9b34fb','6e400001-b5a3-f393-e0a9-e50e24dcca9e','49535343-fe7d-4ae5-8fa9-9fafd205e455','0000fff0-0000-1000-8000-00805f9b34fb','battery_service','device_information','generic_access'];
+    DBLE=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SV}); dlog('i','Appareil BLE : '+(DBLE.name||'(sans nom)')+' · id '+DBLE.id);
+    const g=await DBLE.gatt.connect(); dlog('✓','Connecté en BLE'); DCHR=[];
+    const svs=await g.getPrimaryServices(); dlog('i',svs.length+' service(s) accessible(s)');
+    for(const s of svs){ dlog('i','Service '+s.uuid); let cs=[]; try{cs=await s.getCharacteristics()}catch(e){}
+      for(const c of cs){const p=Object.entries(c.properties).filter(([k,v])=>v===true).map(([k])=>k).join(','); dlog('i','  Caractéristique '+c.uuid+' ['+p+']'); DCHR.push(c);
+        if(c.properties.read){try{const v=await c.readValue(); const u=new Uint8Array(v.buffer); dlog('←',dasc(u),u)}catch(e){}}
+        if(c.properties.notify||c.properties.indicate){try{await c.startNotifications(); c.addEventListener('characteristicvaluechanged',ev=>{const u=new Uint8Array(ev.target.value.buffer); dlog('← '+c.uuid.slice(4,8),dasc(u),u)}); dlog('i','  → écoute activée')}catch(e){}}}}
+  }catch(e){dlog('✗','BLE : '+e.name+' – '+e.message)}};
+$('#d-claude').onclick=e=>envoyer('Claude Brebis – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
 
 // ---- sauvegarde / restauration
 function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
