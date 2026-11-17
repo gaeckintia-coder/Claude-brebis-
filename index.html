@@ -355,7 +355,7 @@ tr.sel td{background:var(--okbg)}
     <div class="e-top"><button id="sai-x" class="btn2 b-retour" type="button">← Annuler</button><b id="sai-t" style="flex:1;text-align:center"></b></div>
     <input id="sai-nom" type="text" placeholder="Nom" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;margin-top:8px">
     <div id="sai-coulb"><div class="hint">Couleur (facultatif, ex. la couleur de la bombe) :</div><div id="sai-coul"></div></div>
-    <div class="hint" style="margin-top:8px">Bipez les brebis, ou tapez un numéro :</div>
+    <div class="hint" style="margin-top:8px">Bipez les brebis, ou tapez un numéro (on peut aussi créer le lot ou le groupe vide, pour plus tard) :</div>
     <form id="sai-f" class="row"><input id="sai-q" inputmode="numeric" autocomplete="off" placeholder="Numéro" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
     <div id="sai-last"></div>
     <div class="hint" style="margin-top:8px">ou les prendre dans un lot ou un groupe :</div>
@@ -752,7 +752,11 @@ $('#r-send').onclick=e=>{const m=tri(rech.cible.filter(p=>!rech.trouvees.include
 const pres=x=>/Présent/.test(x.statut||'');
 const sexeOf=x=>/Brebis|Antenaise/.test(x.cat)?'F':'M';
 const etatOf=x=>x.agn?'pleine':(/Vide/.test(x.echo||'')?'vide':'sans');
-function lotsList(){const c={};Object.entries(A()).forEach(([k,x])=>{if(!pres(x))return;const l=lotOf(k)||'Sans lot';c[l]=(c[l]||0)+1});return Object.entries(c).sort((a,b)=>b[1]-a[1])}
+// registre des lots : un lot existe même vide (créé à l'avance, ou vidé), jusqu'à ce qu'on le supprime
+let LREG=LS.get('cb_lreg',{});
+function lotsList(){const c={};Object.entries(A()).forEach(([k,x])=>{if(!pres(x))return;const l=lotOf(k)||'Sans lot';c[l]=(c[l]||0)+1});
+  let neuf=false; Object.keys(c).forEach(l=>{if(l!=='Sans lot'&&!LREG[l]){LREG[l]={};neuf=true}}); if(neuf) LS.set('cb_lreg',LREG);
+  Object.keys(LREG).forEach(l=>{if(!(l in c)) c[l]=0}); return Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}
 function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=first?first(v):v;s.append(o)});s.value=cur}
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||(f('cat')==='adultes'?!jeuneCat(x):f('cat')==='jeunes'?jeuneCat(x):catAff(x)===f('cat')))
@@ -1213,8 +1217,8 @@ function renderLots(){const el=$('#lg-lots'), S=LG.lots;
   const l=S.sel, M=membresLot(l);
   el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><details${LG.lots.co?' open':''}><summary class="hint">Couleur du lot</summary>${pastilles(coulLot(l),'data-lgcoul')}</details>
     <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
-    ${lgListe('lots',M)}
-    <div class="lg-act"><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
+    ${M.length?lgListe('lots',M):`<div class="hint" style="margin:10px 0">Ce lot est vide pour l’instant.</div><button type="button" class="btn b-valid" data-lgdellot="1" style="width:100%">${S.ask==='dellot'?'Confirmer : supprimer le lot':'Supprimer ce lot vide'}</button>`}
+    <div class="lg-act"${M.length?'':' hidden'}><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
     <details class="lg-act"><summary><b>Regrouper ou renommer ce lot</b></summary>
       <div class="hint">Regrouper : toutes ses bêtes passent dans l'autre lot, ce lot disparaît.</div>${destSel('lg-lr','lots',l)}<button type="button" class="btn b-valid" data-lgreg="1" style="width:100%;margin-top:6px">${S.ask==='reg'?'Confirmer : regrouper':'Regrouper'}</button>
       <div class="hint" style="margin-top:8px">Renommer : les bêtes ne bougent pas.</div><input id="lg-rn" type="text" placeholder="Nouveau nom" style="font:inherit;padding:8px;width:100%;box-sizing:border-box"><button type="button" class="btn2 b-retour" data-lgren="1" style="width:100%;margin-top:6px">Renommer</button></details>
@@ -1257,9 +1261,10 @@ function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} 
   if(b.dataset.lgmove){const dest=lgDest('lg-ld'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!dest) return lgMsg(kind,'Choisis le lot de destination.');
     let n=0; S.ck.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest; mvPush({d,p,de,vers:dest}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.ck.clear(); render(); lgMsg(kind,n+' bête(s) déplacée(s) vers « '+dest+' ».',1); showBase(); return}
   if(b.dataset.lgreg){const dest=lgDest('lg-lr'); if(!dest) return lgMsg(kind,'Choisis le lot dans lequel regrouper.'); if(!lgAsk(kind,'reg')){$('#lg-lr').value=dest; return}
-    const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
+    const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); delete LREG[l]; delete COUL['l:'+l]; LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
   if(b.dataset.lgren){const nv=$('#lg-rn').value.trim(), l=S.sel; if(!nv) return lgMsg(kind,'Tape le nouveau nom.'); if(lotsNoms().includes(nv)) return lgMsg(kind,'« '+nv+' » existe déjà : utilise Regrouper.');
-    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); if(COUL['l:'+l]){COUL['l:'+nv]=COUL['l:'+l]; delete COUL['l:'+l]; LS.set('cb_coul',COUL)} S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
+    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); if(COUL['l:'+l]){COUL['l:'+nv]=COUL['l:'+l]; delete COUL['l:'+l]; LS.set('cb_coul',COUL)} LREG[nv]=LREG[l]||{}; delete LREG[l]; LS.set('cb_lreg',LREG); S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
+  if(b.dataset.lgdellot){if(membresLot(S.sel).length) return; if(!lgAsk(kind,'dellot')) return; delete LREG[S.sel]; delete COUL['l:'+S.sel]; LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=null; render(); return}
   if(b.dataset.lgret){if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); let n=0; S.ck.forEach(p=>n+=grpDel(p,S.sel)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis retirée(s) du groupe.',1); return}
   if(b.dataset.lgadd){const g=lgDest('lg-gd'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!g) return lgMsg(kind,'Choisis le groupe.'); let n=0; S.ck.forEach(p=>n+=grpAdd(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis ajoutée(s) au groupe « '+g+' ».',1); return}
   if(b.dataset.lgvid){if(!lgAsk(kind,'vid')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,'Groupe « '+g+' » vidé.',1); return}
@@ -1309,11 +1314,12 @@ $('#v-sai').addEventListener('click',e=>{const b=e.target.closest('button'); if(
   if(b.dataset.saitout||b.dataset.saicoch){const L=[...$('#sai-srcl').querySelectorAll('[data-saick]')].filter(i=>b.dataset.saitout||i.checked).map(i=>i.dataset.saick); L.forEach(p=>{if(!SAI.items.includes(p)) SAI.items.push(p)}); saiMaj(); $('#sai-srcl').querySelectorAll('[data-saick]').forEach(i=>i.checked=false); return}
   if(b.id==='sai-ok'){const nom=SAI.neuf?$('#sai-nom').value.trim():SAI.nom, st=$('#sai-st');
     if(!nom){st.textContent='Tape le nom.';st.className='state err';return}
-    if(!SAI.items.length){st.textContent='Choisis au moins une brebis.';st.className='state err';return}
+    if(!SAI.items.length&&!SAI.neuf){st.textContent='Choisis au moins une brebis.';st.className='state err';return}
+    if(SAI.neuf&&SAI.kind==='lot'&&lotsNoms().includes(nom)){st.textContent='Le lot « '+nom+' » existe déjà.';st.className='state err';return}
     const d=fdate(); let n=0;
     if(SAI.neuf&&SAI.coul){COUL[(SAI.kind==='lot'?'l:':'g:')+nom]=SAI.coul; LS.set('cb_coul',COUL)}
-    if(SAI.kind==='lot'){SAI.items.forEach(p=>{const de=lotOf(p); if(de!==nom){LOTS[p]=nom; mvPush({d,p,de,vers:nom}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); LG.lots.sel=nom}
-    else {SAI.items.forEach(p=>n+=grpAdd(p,nom)); saveG(); LG.groupes.sel=nom}
+    if(SAI.kind==='lot'){LREG[nom]=LREG[nom]||{cree:auj()}; LS.set('cb_lreg',LREG); SAI.items.forEach(p=>{const de=lotOf(p); if(de!==nom){LOTS[p]=nom; mvPush({d,p,de,vers:nom}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); LG.lots.sel=nom}
+    else {if(!GRP[nom]){GRP[nom]={}; GMETA[nom]={camp:CV}; LS.set('cb_gmeta',GMETA)} SAI.items.forEach(p=>n+=grpAdd(p,nom)); saveG(); LG.groupes.sel=nom}
     showBase(); saiFermer(); return}
 });
 
