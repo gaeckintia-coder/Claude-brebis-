@@ -35,7 +35,27 @@ textarea{min-height:90px}
 #print-reg{display:none}
 @media print{body>*:not(#print-reg){display:none!important}#print-reg{display:block!important;color:#000;background:#fff;font:11px Arial,sans-serif}
  #print-reg table{border-collapse:collapse;width:100%}#print-reg th,#print-reg td{border:1px solid #444;padding:3px;text-align:left;vertical-align:top}#print-reg h1{font-size:16px;margin:0 0 4px}@page{size:A4 landscape;margin:10mm}}
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.e-top{display:flex;gap:8px;align-items:center}.e-top input{flex:1;min-width:0}
+.e-onlyfull{display:none} body:not(.efull) .e-onlyfull2{display:none!important}
+body:not(.efull) #e-quit{display:none}
+body.efull .wrap>*:not(#v-echo){display:none!important}
+body.efull #v-echo{position:fixed;inset:0;z-index:15;margin:0;border-radius:0;display:flex;flex-direction:column;gap:6px;padding:8px 10px;overflow:hidden}
+body.efull .e-nofull{display:none!important} body.efull .e-onlyfull{display:flex}
+body.efull #e-card{flex:1;min-height:0;overflow:hidden} body.efull #e-card .big{font-size:18px!important;padding:6px}
+body.efull #e-card .tag{font-size:30px!important;padding:4px 14px!important}
+body.efull .e-grid{display:flex;flex-direction:column;gap:6px;margin:0}
+body.efull #e-st{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+body.efull #e-nb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+body.efull .e-col button{font-size:22px;padding:12px 0}
+body.efull #e-ok{margin:0!important;padding:16px!important}
+body.efull #e-msg{min-height:1.2em;font-size:14px}
+.e-col{display:flex;flex-direction:column;gap:6px}
+.e-col button{font-size:24px;padding:7px 4px;background:var(--card);border:2px solid var(--line);color:var(--ink);border-radius:12px}
+.e-col button[aria-pressed="true"]{background:var(--accent);color:var(--card);border-color:var(--accent)}
+.e-col button.vide{color:var(--bad)} .e-col button.vide[aria-pressed="true"]{background:var(--bad);color:#fff;border-color:var(--bad)}
+
 .tabs button{font-size:14px}
 .tabs button{padding:12px 4px}
 .tabs button{background:var(--card);color:var(--mute);border:1px solid var(--line)}
@@ -117,12 +137,14 @@ tr.sel td{background:var(--okbg)}
     </form>
   </div>
 
+  <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
     <button type="button" role="tab" data-t="liste" aria-selected="false">Liste</button>
     <button type="button" role="tab" data-t="recherche" aria-selected="false">Recherche</button>
     <button type="button" role="tab" data-t="troupeau" aria-selected="false">Troupeau</button>
     <button type="button" role="tab" data-t="soins" aria-selected="false">Soins</button>
+    <button type="button" role="tab" data-t="echo" aria-selected="false">Écho</button>
   </div>
 
   <!-- TROUPEAU -->
@@ -204,6 +226,24 @@ tr.sel td{background:var(--okbg)}
     <div id="s-pend" class="hint"></div>
   </section>
 
+  <!-- ECHO -->
+  <section id="v-echo" class="card" hidden>
+    <div class="e-top"><button id="e-quit" class="btn2" type="button">☰ Liste</button><input type="date" id="e-date" aria-label="Date de l'écho"><span class="hint" id="e-count"></span></div>
+    <div class="row e-nofull"><button id="e-full" class="btn" type="button" style="width:100%">← Retour à la saisie</button></div>
+    <form id="e-f" class="row e-onlyfull"><input id="e-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
+    <div id="e-card" class="e-onlyfull2"><div class="hint" style="margin-top:8px">Bipe une brebis pour saisir son écho.</div></div>
+    <div class="e-grid e-onlyfull2">
+      <div><div class="hint">Stade (jours)</div><div class="e-col" id="e-st"></div></div>
+      <div><div class="hint">Agneaux</div><div class="e-col" id="e-nb"></div></div>
+    </div>
+    <button id="e-ok" class="btn e-onlyfull2" type="button" style="width:100%;font-size:34px;padding:14px;margin-top:10px" disabled>✔</button>
+    <div id="e-msg" class="state"></div>
+    <div class="e-nofull"><h3>Échographiées ce jour · <span id="e-n">0</span></h3>
+    <div class="hint" id="e-sum"></div>
+    <div class="nums" id="e-list"></div>
+    <div class="row" style="margin-top:12px"><button id="e-send" class="btn" type="button">Envoyer à Claude</button><button id="e-sent" class="btn2" type="button">Marquer comme envoyé</button></div></div>
+  </section>
+
   <!-- LISTE -->
   <section id="v-liste" class="card" hidden>
     <h2>Liste bipée</h2>
@@ -246,6 +286,12 @@ tr.sel td{background:var(--okbg)}
     <p class="hint">Le fichier « donnees_troupeau.json » envoyé par Claude. Les données restent dans ce téléphone.</p>
     <input id="file" type="file" accept=".json,application/json">
     <span id="fst" class="state"></span>
+    <h2 style="margin-top:16px">Sauvegarde</h2>
+    <p class="hint">Copie de tout ce qui est saisi dans ce téléphone (soins, échos, listes, lots, marques). À faire au moins une fois par semaine, et à envoyer aussi à Claude.</p>
+    <div class="row"><button id="bk-save" class="btn" type="button">💾 Sauvegarder</button><button id="bk-send" class="btn2" type="button">Envoyer la sauvegarde à Claude</button></div>
+    <label class="hint" for="bk-file">Restaurer une sauvegarde (nouveau téléphone, données effacées) :</label>
+    <input id="bk-file" type="file" accept=".json,application/json">
+    <span id="bk-st" class="state"></span>
   </section>
 </div>
 
@@ -304,14 +350,14 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
-  ['fiche','liste','recherche','troupeau','soins'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
+  if(typeof eFull==='function') eFull(t==='echo'); ['fiche','liste','recherche','troupeau','soins','echo'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -517,8 +563,8 @@ $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
 $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
-function render(){
-  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins();
+function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
+  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='echo') renderEcho();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
   $('#l-nums').innerHTML=tri(liste.items).map(p=>`<span data-fiche="${p}" class="${A()[p]?'':'warn'}">${p}</span>`).join('');
@@ -536,7 +582,7 @@ function render(){
 // ---- entrée d'un numéro (lecteur ou clavier)
 function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
-  if(tab==='soins') soinsBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
+  if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
 $('#f').addEventListener('submit',e=>{e.preventDefault();lu($('#q').value);$('#q').value=''});
 
 // ---- lecteur Allflex LPR (Bluetooth série, Chrome Android 137+)
@@ -677,6 +723,71 @@ $('#s-print').addEventListener('click',()=>{const du=$('#s-du').value||'0000', a
 $('#s-mode').addEventListener('change',()=>{LS.set('cb_smode',$('#s-mode').value)});
 try{$('#s-mode').value=LS.get('cb_smode','')}catch(e){}
 
+// ---- échographie
+const E_ST=[110,100,90,80,70,60,50,40,30];
+let EC=LS.get('cb_echo',{}); const saveEC=()=>LS.set('cb_echo',EC);
+let E_CUR=null, E_SEL={st:null,nb:null};
+const eDate=()=>$('#e-date').value||auj();
+const eJour=()=>(EC[eDate()]=EC[eDate()]||{});
+const eAgn=(d,st)=>st?frJA(plusJ(d,150-st)):'';
+$('#e-st').innerHTML=E_ST.map(v=>`<button type="button" data-est="${v}">${v}</button>`).join('')+`<button type="button" class="vide" data-est="0">VIDE</button>`;
+$('#e-nb').innerHTML=[1,2,3,4].map(v=>`<button type="button" data-enb="${v}">${v}</button>`).join('');
+function eMaj(){document.querySelectorAll('[data-est]').forEach(b=>b.setAttribute('aria-pressed',String(E_SEL.st)===b.dataset.est));
+  document.querySelectorAll('[data-enb]').forEach(b=>{b.setAttribute('aria-pressed',String(E_SEL.nb)===b.dataset.enb);b.disabled=E_SEL.st===0});
+  $('#e-ok').disabled=!E_CUR||E_SEL.st==null||(E_SEL.st>0&&!E_SEL.nb)}
+function eCarte(){const p=E_CUR; if(!p){$('#e-card').innerHTML='<div class="hint" style="margin-top:8px">Bipe une brebis pour saisir son écho.</div>';return}
+  const x=A()[p], deja=eJour()[p];
+  $('#e-card').innerHTML=`<div class="row" style="align-items:center;margin-top:8px"><span class="tag${x?lisere(p):''}" style="font-size:34px;padding:6px 16px"><b>${p}</b></span><div><div class="hint">${x?esc((x.lot||x.cat)+(x.echo?' · écho précédente : '+x.echo:'')):'<span class="c-bad">Pas dans la base</span>'}</div></div></div>`+
+   (deja?`<div class="big warn" style="font-size:24px;margin-top:6px">DÉJÀ FAITE CE JOUR<small>${deja.st?deja.st+' j · '+deja.nb+' agneau'+(deja.nb>1?'x':'')+' · agnelage prévu '+eAgn(eDate(),deja.st):'Vide'} — choisis à nouveau pour corriger</small></div>`:'')}
+// mise à jour de la fiche dans le téléphone (sans attendre Claude)
+function ePrev(p){const x=A()[p]; return x?{echo:x.echo||'',agn:x.agn||'',nb:x.nb||'',lotagn:x.lotagn||''}:null}
+function eFiche(p,d,v){const x=DB&&DB.animaux[p]; if(!x) return; x.echo=v.st?v.st+' j, '+v.nb+' agn. ('+frJA(d).slice(0,5)+')':'Vide ('+frJA(d).slice(0,5)+')';
+  x.agn=v.st?frJA(plusJ(d,150-v.st)):''; x.nb=v.st?String(v.nb):''; if(!v.st) x.lotagn=''; else x.lotagn=''; LS.set('cb_data',DB)}
+function eRestaure(p,pv){const x=DB&&DB.animaux[p]; if(!x||!pv) return; Object.assign(x,pv); LS.set('cb_data',DB)}
+function eAppliquer(){Object.entries(EC).sort().forEach(([d,j])=>Object.entries(j).forEach(([p,v])=>{if(!v.s) eFiche(p,d,v)}))}
+function echoBip(p){E_CUR=p; const d=eJour()[p]; E_SEL={st:null,nb:null};
+  if(d){alerte();sonDeja()} else if(A()[p]){bip();sonTrouve()} else {alerte();sonHors()}
+  $('#e-msg').textContent=''; eCarte(); eMaj(); renderEcho()}
+$('#v-echo').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
+  if((b.dataset.est!=null||b.dataset.enb)&&$('#e-q').value.trim()){const v=$('#e-q').value; $('#e-q').value=''; lu(v)}
+  if(b.dataset.est!=null){E_SEL.st=+b.dataset.est; if(E_SEL.st===0) E_SEL.nb=0; else if(E_SEL.nb===0) E_SEL.nb=null; eMaj(); return}
+  if(b.dataset.enb){E_SEL.nb=+b.dataset.enb; eMaj(); return}
+  if(b.dataset.eb){echoBip(b.dataset.eb); window.scrollTo({top:0,behavior:'smooth'}); return}
+  if(b.dataset.edel){const k=b.dataset.edel, j=eJour(); if(j[k]&&j[k].delAsk){eRestaure(k,j[k].prev); delete j[k]} else if(j[k]){j[k].delAsk=1} saveEC(); renderEcho(); return}
+  if(b.id==='e-ok'){const p=E_CUR, n=new Date(), old=eJour()[p]; eJour()[p]={st:E_SEL.st,nb:E_SEL.nb,t:pad2(n.getHours())+':'+pad2(n.getMinutes()),prev:old?old.prev:ePrev(p)}; saveEC(); eFiche(p,eDate(),eJour()[p]);
+    $('#e-msg').textContent=p+' enregistrée : '+(E_SEL.st?E_SEL.st+' j, '+E_SEL.nb+' agn. · agnelage prévu '+eAgn(eDate(),E_SEL.st):'vide'); $('#e-msg').className='state ok';
+    bip(); E_CUR=null; E_SEL={st:null,nb:null}; eCarte(); eMaj(); renderEcho(); return}
+  if(b.id==='e-send'){const d=eDate(), j=eJour(), L=tri(Object.keys(j));
+    envoyer(`Claude Brebis – échographie du ${frJA(d)}\n${L.length} brebis (${L.filter(k=>j[k].st).length} pleines, ${L.filter(k=>!j[k].st).length} vides)\n\nplaque;stade_j;agneaux;agnelage_prevu\n`+L.map(k=>k+';'+(j[k].st||'vide')+';'+(j[k].st?j[k].nb:'')+';'+eAgn(d,j[k].st)).join('\n'),b); return}
+  if(b.id==='e-sent'){Object.values(eJour()).forEach(v=>v.s=1); saveEC(); renderEcho(); return}
+});
+function renderEcho(){ if(!$('#v-echo')) return; const d=eDate(), j=eJour(), L=tri(Object.keys(j));
+  const pl=L.filter(k=>j[k].st), ag=pl.reduce((a,k)=>a+j[k].nb,0);
+  $('#e-n').textContent=L.length; $('#e-count').textContent=L.length+' faite'+(L.length>1?'s':'');
+  $('#e-sum').textContent=L.length?`${pl.length} pleines · ${L.length-pl.length} vides · ${ag} agneaux attendus${pl.length?' ('+fml(Math.round(ag/pl.length*100)/100)+' par pleine)':''}`:'';
+  $('#e-list').innerHTML=L.map(k=>{const v=j[k];return `<span style="display:inline-flex;gap:2px"><button type="button" class="lien${v.st?'':' c-bad'}" data-eb="${k}">${k} · ${v.st?v.st+' j ×'+v.nb:'vide'}${v.s?'':' •'}</button><button type="button" class="btn2" style="padding:4px 8px" data-edel="${k}" aria-label="Effacer ${k}">${v.delAsk?'Effacer ?':'🗑'}</button></span>`}).join('');
+}
+function eFull(on){document.body.classList.toggle('efull',on); window.scrollTo(0,0)}
+$('#e-full').onclick=()=>eFull(true); $('#e-quit').onclick=()=>eFull(false);
+$('#e-f').addEventListener('submit',e=>{e.preventDefault(); lu($('#e-q').value); $('#e-q').value=''});
+$('#e-date').value=auj(); $('#e-date').addEventListener('change',()=>{eCarte();renderEcho()});
+eMaj();
+
+// ---- sauvegarde / restauration
+function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
+function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
+$('#bk-save').onclick=()=>{const t=JSON.stringify(bkData()); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'application/json'})); a.download=bkNom(); document.body.appendChild(a); a.click(); a.remove();
+  LS.set('cb_bk',auj()); $('#bk-st').textContent='Sauvegarde enregistrée dans Téléchargements : '+bkNom(); $('#bk-st').className='state ok'; bkCheck()};
+$('#bk-send').onclick=async e=>{const t=JSON.stringify(bkData()); const f=new File([t],bkNom(),{type:'application/json'});
+  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sauvegarde Claude Brebis'}); LS.set('cb_bk',auj()); bkCheck(); return} }catch(err){ if(err.name==='AbortError') return }
+  envoyer('Claude Brebis – sauvegarde du '+fdate()+'\n'+t,e.target); LS.set('cb_bk',auj()); bkCheck()};
+$('#bk-file').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(j.app!=='Claude Brebis'||!j.cles) throw new Error('ce n’est pas une sauvegarde Claude Brebis');
+    Object.entries(j.cles).forEach(([k,v])=>localStorage.setItem(k,v)); $('#bk-st').textContent='Sauvegarde du '+fdate(j.quand)+' restaurée. Rechargement…'; $('#bk-st').className='state ok'; setTimeout(()=>location.reload(),1200)}
+  catch(err){$('#bk-st').textContent='Restauration impossible : '+err.message; $('#bk-st').className='state err'}}; r.readAsText(f)});
+function bkCheck(){const d=LS.get('cb_bk',null); const saisies=(LS.get('cb_soins',{T:[]}).T||[]).length+Object.keys(LS.get('cb_echo',{})).length+(LS.get('cb_moves',[])||[]).length;
+  const j=d?Math.round((new Date(auj())-new Date(d))/86400000):null; const al=$('#bk-alert');
+  if(saisies&&(j==null||j>=7)){al.hidden=false; al.innerHTML=(j==null?'⚠ Aucune sauvegarde faite.':'⚠ Dernière sauvegarde il y a '+j+' jours.')+' <button type="button" class="btn2" id="bk-go">Sauvegarder maintenant</button>'; $('#bk-go').onclick=()=>$('#bk-save').click()} else al.hidden=true}
+bkCheck();
 showBase(); setTab(LS.get('cb_tab','fiche'));
 </script>
 </body>
