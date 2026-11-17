@@ -254,6 +254,7 @@ tr.sel td{background:var(--okbg)}
       <div class="hint">1. Sur le DAC : page Réception → Reset compteur. 2. Appuyer sur le bouton ci-dessous et choisir le DAC dans la liste. 3. Regarder l'écran du DAC pendant 2 à 3 minutes. 4. À la fin : photo de l'écran du DAC + « Envoyer le journal à Claude ».</div>
       <button id="d-auto" class="btn" type="button" style="width:100%;font-size:20px;padding:14px;margin-top:8px">▶ Lancer le test automatique</button>
       <div id="d-prog" class="big warn" style="font-size:20px;margin-top:8px" hidden></div>
+      <button id="d-auto2" class="btn2" type="button" style="width:100%;font-size:18px;padding:12px;margin-top:8px">▶ Test n°2 : demandes de lecture (VUS, PLA, PLU, GLO)</button>
     </div>
     <details><summary class="hint">Tests à la main (pour plus tard)</summary>
     <h3>1. Bluetooth classique (port série)</h3>
@@ -807,7 +808,8 @@ eMaj();
 // ---- tests de connexion (DAC ou autre appareil)
 let DP=null, DRD=null, DBLE=null, DCHR=[], DLOG=[];
 const dhex=u=>[...u].map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-const dasc=u=>[...u].map(b=>b>=32&&b<127?String.fromCharCode(b):b===13?'␍':b===10?'␊':'·').join('');
+const C0=['NUL','SOH','STX','ETX','EOT','ENQ','ACK','BEL','BS','TAB','LF','VT','FF','CR','SO','SI','DLE','DC1','DC2','DC3','DC4','NAK','SYN','ETB','CAN','EM','SUB','ESC','FS','GS','RS','US'];
+const dasc=u=>[...u].map(b=>{const c=b&127; return c>=32&&c<127?String.fromCharCode(c):'<'+C0[c]+'>'}).join('');
 function dlog(sens,txt,u){const t=new Date().toLocaleTimeString('fr-FR'); DLOG.push({t,sens,txt,u:u?dhex(u):''}); if(DLOG.length>2000) DLOG.shift(); dshow()}
 function dshow(){const h=$('#d-hex').checked; $('#d-log').textContent=DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?(h?l.u+'  | ':'')+l.txt:l.txt)).join('\n'); $('#d-log').scrollTop=1e9}
 $('#d-hex').onchange=dshow; $('#d-clr').onclick=()=>{DLOG=[];dshow()};
@@ -872,6 +874,29 @@ $('#d-auto').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){d
   dlog('i','BILAN : '+bilan.join(' · '));
   pr.className='big '+(bilan.some(b=>/reçu/.test(b))?'ok':'warn'); pr.innerHTML=`Test terminé<small>${bilan.some(b=>/reçu/.test(b))?'Le DAC a répondu !':'Pas de réponse au téléphone'} — prenez une photo de l’écran du DAC, puis « Envoyer le journal à Claude »</small>`;
   DAUTO=false; $('#d-auto').disabled=false};
+$('#d-auto2').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){dlog('!','Web Serial absent.');return}
+  const SPP='00001101-0000-1000-8000-00805f9b34fb'; let P;
+  try{ if(DP) await ddcx(); P=await navigator.serial.requestPort({allowedBluetoothServiceClassIds:[SPP]}) }catch(e){dlog('✗','Aucun appareil choisi : '+e.message);return}
+  if(!(await dlibere(P))) return;
+  DAUTO=true; $('#d-auto2').disabled=true; const pr=$('#d-prog'); pr.hidden=false; pr.className='big warn'; DLOG=[]; dshow();
+  try{await P.open({baudRate:9600})}catch(e){dlog('✗','Ouverture : '+e.message); DAUTO=false; $('#d-auto2').disabled=false; return}
+  dlog('i','TEST N°2 (parité impaire) – demandes de lecture seulement (rien n’est envoyé au DAC qui puisse modifier les rations)');
+  const rd=P.readable.getReader(); let on=true, rx=0;
+  (async()=>{try{while(on){const {value,done}=await rd.read(); if(done)break; if(value&&value.length){rx+=value.length; dlog('←',dasc(value),value)}}}catch(e){}})();
+  const enc=t=>[...new TextEncoder().encode(t)];
+  // l'automate semble parler en 7 bits + parité impaire : on met le 8e bit = parité impaire
+  const po=a=>a.map(b=>{b&=127; let n=0; for(let i=0;i<7;i++) n+=(b>>i)&1; return n%2?b:b|128});
+  const codes=['VUS','GLO','PLA','PLU'], L=[];
+  L.push(['0x27 (parité)',po([0x27])]); L.push(['CR (parité)',po([13])]); L.push(['Unitronics ID (parité)',po(enc('/00IDED\r'))]);
+  codes.forEach(c=>{L.push(['0x27 + '+c+' (parité)',po([0x27,...enc(c)])]); L.push(['0x27 + '+c+' + CR (parité)',po([0x27,...enc(c),13])]); L.push(['STX 0x27 '+c+' ETX (parité)',po([2,0x27,...enc(c),3])])});
+  L.push(['0x27 + VUS (brut)',[0x27,...enc('VUS')]]); L.push(['0x27 + VUS + CR (brut)',[0x27,...enc('VUS'),13]]);
+  let n=0; await dwait(2000);
+  for(const [nom,b] of L){ n++; pr.innerHTML=`${new Date().toLocaleTimeString('fr-FR')}<small>Essai ${n}/${L.length} : ${nom} — regardez les compteurs REC du DAC</small>`;
+    try{const w=P.writable.getWriter(); const u=new Uint8Array(b); await w.write(u); w.releaseLock(); dlog('→ '+nom,dasc(u),u)}catch(e){dlog('✗',e.message)}
+    await dwait(3000)}
+  on=false; try{await rd.cancel()}catch(e){} try{rd.releaseLock()}catch(e){} try{await P.close()}catch(e){}
+  pr.className='big ok'; pr.innerHTML='Test n°2 terminé<small>Photo de l’écran du DAC, puis « Envoyer le journal à Claude »</small>'; dlog('i','FIN TEST N°2 · '+rx+' octet(s) reçu(s)');
+  DAUTO=false; $('#d-auto2').disabled=false};
 $('#d-claude').onclick=e=>envoyer('Claude Brebis – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
 
 // ---- sauvegarde / restauration
