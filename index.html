@@ -35,26 +35,25 @@ textarea{min-height:90px}
 #print-reg{display:none}
 @media print{body>*:not(#print-reg){display:none!important}#print-reg{display:block!important;color:#000;background:#fff;font:11px Arial,sans-serif}
  #print-reg table{border-collapse:collapse;width:100%}#print-reg th,#print-reg td{border:1px solid #444;padding:3px;text-align:left;vertical-align:top}#print-reg h1{font-size:16px;margin:0 0 4px}@page{size:A4 landscape;margin:10mm}}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
-.e-top{display:flex;gap:8px;align-items:center}.e-top input{flex:1;min-width:0}
-.e-onlyfull{display:none} body:not(.efull) .e-onlyfull2{display:none!important}
-body:not(.efull) #e-quit{display:none}
-body.efull .wrap>*:not(#v-echo){display:none!important}
-body.efull #v-echo{position:fixed;inset:0;z-index:15;margin:0;border-radius:0;display:flex;flex-direction:column;gap:6px;padding:8px 10px;overflow:hidden}
-body.efull .e-nofull{display:none!important} body.efull .e-onlyfull{display:flex}
-body.efull #e-card{flex:1;min-height:0;overflow:hidden} body.efull #e-card .big{font-size:18px!important;padding:6px}
-body.efull #e-card .tag{font-size:30px!important;padding:4px 14px!important}
-body.efull .e-grid{display:flex;flex-direction:column;gap:6px;margin:0}
-body.efull #e-st{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-body.efull #e-nb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-body.efull .e-col button{font-size:22px;padding:12px 0}
-body.efull #e-ok{margin:0!important;padding:16px!important}
-body.efull #e-msg{min-height:1.2em;font-size:14px}
-.e-col{display:flex;flex-direction:column;gap:6px}
-.e-col button{font-size:24px;padding:7px 4px;background:var(--card);border:2px solid var(--line);color:var(--ink);border-radius:12px}
+.e-grid{display:flex;flex-direction:column;gap:6px}
+.e-col{display:grid;gap:6px} #e-st{grid-template-columns:repeat(5,1fr)} #e-nb{grid-template-columns:repeat(4,1fr)}
+.e-col button{font-size:22px;padding:12px 0;background:var(--card);border:2px solid var(--line);color:var(--ink);border-radius:12px}
 .e-col button[aria-pressed="true"]{background:var(--accent);color:var(--card);border-color:var(--accent)}
 .e-col button.vide{color:var(--bad)} .e-col button.vide[aria-pressed="true"]{background:var(--bad);color:#fff;border-color:var(--bad)}
+.e-top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.b-valid{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important}
+.b-retour{color:var(--warn)!important;border-color:var(--warn)!important}
+.e-v{display:none}
+body.efull .wrap>*:not(#v-echo){display:none!important}
+body.efull #e-consult{display:none}
+body.efull #v-echo{position:fixed;inset:0;z-index:15;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
+body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot #e-clot{display:flex;flex-direction:column;gap:6px;height:100%}
+#e-card{flex:1;min-height:0;overflow:hidden} #e-card .big{font-size:18px!important;padding:6px} #e-card .tag{font-size:30px!important;padding:4px 14px!important}
+#e-ok{width:100%;font-size:34px;padding:16px}
+#e-msg{min-height:1.2em;font-size:14px}
+.e-seance{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.e-seance[aria-pressed="true"]{border:2px solid var(--accent)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
 .tabs button{font-size:14px}
 .tabs button{padding:12px 4px}
@@ -229,21 +228,45 @@ tr.sel td{background:var(--okbg)}
 
   <!-- ECHO -->
   <section id="v-echo" class="card" hidden>
-    <div class="e-top"><button id="e-quit" class="btn2" type="button">☰ Liste</button><input type="date" id="e-date" aria-label="Date de l'écho"><span class="hint" id="e-count"></span></div>
-    <div class="row e-nofull"><button id="e-full" class="btn" type="button" style="width:100%">← Retour à la saisie</button></div>
-    <form id="e-f" class="row e-onlyfull"><input id="e-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
-    <div id="e-card" class="e-onlyfull2"><div class="hint" style="margin-top:8px">Bipe une brebis pour saisir son écho.</div></div>
-    <div class="e-grid e-onlyfull2">
-      <div><div class="hint">Stade (jours)</div><div class="e-col" id="e-st"></div></div>
-      <div><div class="hint">Agneaux</div><div class="e-col" id="e-nb"></div></div>
+    <!-- consultation -->
+    <div id="e-consult">
+      <h2>Échographie</h2>
+      <div id="e-ouvrir"></div>
+      <h3>Séances d'écho</h3>
+      <div id="e-seances"></div>
+      <div id="e-detail"></div>
     </div>
-    <button id="e-ok" class="btn e-onlyfull2" type="button" style="width:100%;font-size:34px;padding:14px;margin-top:10px" disabled>✔</button>
-    <div id="e-msg" class="state"></div>
-    <div class="e-nofull"><h3>Échographiées ce jour · <span id="e-n">0</span></h3>
-    <div class="hint" id="e-sum"></div>
-    <div class="nums" id="e-list"></div>
-    <div class="row" style="margin-top:12px"><button id="e-send" class="btn" type="button">Envoyer à Claude</button><button id="e-sent" class="btn2" type="button">Marquer comme envoyé</button></div></div>
+    <!-- séance en cours : saisie -->
+    <div id="e-saisie" class="e-v">
+      <div class="e-top"><button id="e-toliste" class="btn2 b-retour" type="button">☰ Liste de la séance</button><span class="hint" id="e-count"></span><button id="e-toclot" class="btn b-valid" type="button">Clôturer</button></div>
+      <form id="e-f" class="row"><input id="e-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
+      <div id="e-card"></div>
+      <div class="e-grid">
+        <div><div class="hint">Stade (jours)</div><div class="e-col" id="e-st"></div></div>
+        <div><div class="hint">Agneaux</div><div class="e-col" id="e-nb"></div></div>
+      </div>
+      <button id="e-ok" class="btn" type="button" disabled>✔</button>
+      <div id="e-msg" class="state"></div>
+    </div>
+    <!-- séance en cours : liste -->
+    <div id="e-liste" class="e-v">
+      <div class="e-top"><button id="e-tosaisie" class="btn2 b-retour" type="button">← Retour à la saisie</button></div>
+      <h3 id="e-ltitre"></h3>
+      <div class="hint" id="e-sum"></div>
+      <div class="hint">Appuyer sur un numéro pour le corriger, 🗑 pour l'effacer.</div>
+      <div class="nums" id="e-list" style="flex:1;overflow:auto;align-content:flex-start"></div>
+      <button id="e-toclot2" class="btn b-valid" type="button" style="width:100%;padding:14px;font-size:18px">✔ Clôturer la séance</button>
+    </div>
+    <!-- séance en cours : clôture -->
+    <div id="e-clot" class="e-v">
+      <h2>Clôturer la séance</h2>
+      <div id="e-clotsum" class="big warn" style="font-size:22px"></div>
+      <p class="hint">Après la clôture, la séance passe en consultation. On pourra encore la rouvrir pour corriger.</p>
+      <button id="e-clotok" class="btn b-valid" type="button" style="width:100%;padding:16px;font-size:20px">✔ Clôturer</button>
+      <button id="e-clotno" class="btn2 b-retour" type="button" style="width:100%;padding:14px;font-size:18px;margin-top:8px">← Continuer la saisie</button>
+    </div>
   </section>
+
 
   <!-- TESTS -->
   <section id="v-tests" class="card" hidden>
@@ -389,7 +412,7 @@ $('#file').addEventListener('change',e=>{
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
-  if(typeof eFull==='function') eFull(t==='echo'); ['fiche','liste','recherche','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -755,56 +778,86 @@ $('#s-print').addEventListener('click',()=>{const du=$('#s-du').value||'0000', a
 $('#s-mode').addEventListener('change',()=>{LS.set('cb_smode',$('#s-mode').value)});
 try{$('#s-mode').value=LS.get('cb_smode','')}catch(e){}
 
-// ---- échographie
+// ---- échographie : séances (saisie) et consultation
 const E_ST=[110,100,90,80,70,60,50,40,30];
 let EC=LS.get('cb_echo',{}); const saveEC=()=>LS.set('cb_echo',EC);
-let E_CUR=null, E_SEL={st:null,nb:null};
-const eDate=()=>$('#e-date').value||auj();
-const eJour=()=>(EC[eDate()]=EC[eDate()]||{});
+let ES=LS.get('cb_esess',{}); const saveES=()=>LS.set('cb_esess',ES);   // {date:{etat:'ouverte'|'close',debut,fin,envoye}}
+let E_CUR=null, E_SEL={st:null,nb:null}, EV='consult', E_VOIR=null;
+const eOuverte=()=>Object.keys(ES).find(d=>ES[d].etat==='ouverte')||null;
+const eDate=()=>eOuverte()||E_VOIR||auj();
+const eJour=(d)=>{d=d||eDate(); return (EC[d]=EC[d]||{})};
 const eAgn=(d,st)=>st?frJA(plusJ(d,150-st)):'';
+const eStats=j=>{const L=Object.keys(j), pl=L.filter(k=>j[k].st); return {n:L.length,pl:pl.length,vi:L.length-pl.length,ag:pl.reduce((a,k)=>a+j[k].nb,0)}};
 $('#e-st').innerHTML=E_ST.map(v=>`<button type="button" data-est="${v}">${v}</button>`).join('')+`<button type="button" class="vide" data-est="0">VIDE</button>`;
 $('#e-nb').innerHTML=[1,2,3,4].map(v=>`<button type="button" data-enb="${v}">${v}</button>`).join('');
+function eVue(v){EV=v; const on=v!=='consult'; document.body.classList.toggle('efull',on);
+  ['saisie','liste','clot'].forEach(k=>document.body.classList.toggle('ev-'+k,v===k)); window.scrollTo(0,0); renderEcho()}
+function eFull(on){ if(on&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(!on){document.body.classList.remove('efull','ev-saisie','ev-liste','ev-clot'); if(!eOuverte()) EV='consult'} }
 function eMaj(){document.querySelectorAll('[data-est]').forEach(b=>b.setAttribute('aria-pressed',String(E_SEL.st)===b.dataset.est));
   document.querySelectorAll('[data-enb]').forEach(b=>{b.setAttribute('aria-pressed',String(E_SEL.nb)===b.dataset.enb);b.disabled=E_SEL.st===0});
   $('#e-ok').disabled=!E_CUR||E_SEL.st==null||(E_SEL.st>0&&!E_SEL.nb)}
 function eCarte(){const p=E_CUR; if(!p){$('#e-card').innerHTML='<div class="hint" style="margin-top:8px">Bipe une brebis pour saisir son écho.</div>';return}
   const x=A()[p], deja=eJour()[p];
-  $('#e-card').innerHTML=`<div class="row" style="align-items:center;margin-top:8px"><span class="tag${x?lisere(p):''}" style="font-size:34px;padding:6px 16px"><b>${p}</b></span><div><div class="hint">${x?esc((x.lot||x.cat)+(x.echo?' · écho précédente : '+x.echo:'')):'<span class="c-bad">Pas dans la base</span>'}</div></div></div>`+
-   (deja?`<div class="big warn" style="font-size:24px;margin-top:6px">DÉJÀ FAITE CE JOUR<small>${deja.st?deja.st+' j · '+deja.nb+' agneau'+(deja.nb>1?'x':'')+' · agnelage prévu '+eAgn(eDate(),deja.st):'Vide'} — choisis à nouveau pour corriger</small></div>`:'')}
+  $('#e-card').innerHTML=`<div class="row" style="align-items:center;margin-top:8px"><span class="tag${x?lisere(p):''}" style="font-size:34px;padding:6px 16px"><b>${p}</b></span><div><div class="hint">${x?esc((x.lot||x.cat)+(x.echo&&!deja?' · écho précédente : '+x.echo:'')):'<span class="c-bad">Pas dans la base</span>'}</div></div></div>`+
+   (deja?`<div class="big warn" style="font-size:24px;margin-top:6px">DÉJÀ FAITE DANS CETTE SÉANCE<small>${deja.st?deja.st+' j · '+deja.nb+' agneau'+(deja.nb>1?'x':'')+' · agnelage prévu '+eAgn(eDate(),deja.st):'Vide'} — choisis à nouveau pour corriger</small></div>`:'')}
 // mise à jour de la fiche dans le téléphone (sans attendre Claude)
 function ePrev(p){const x=A()[p]; return x?{echo:x.echo||'',agn:x.agn||'',nb:x.nb||'',lotagn:x.lotagn||''}:null}
 function eFiche(p,d,v){const x=DB&&DB.animaux[p]; if(!x) return; x.echo=v.st?v.st+' j, '+v.nb+' agn. ('+frJA(d).slice(0,5)+')':'Vide ('+frJA(d).slice(0,5)+')';
-  x.agn=v.st?frJA(plusJ(d,150-v.st)):''; x.nb=v.st?String(v.nb):''; if(!v.st) x.lotagn=''; else x.lotagn=''; LS.set('cb_data',DB)}
+  x.agn=v.st?frJA(plusJ(d,150-v.st)):''; x.nb=v.st?String(v.nb):''; x.lotagn=''; LS.set('cb_data',DB)}
 function eRestaure(p,pv){const x=DB&&DB.animaux[p]; if(!x||!pv) return; Object.assign(x,pv); LS.set('cb_data',DB)}
 function eAppliquer(){Object.entries(EC).sort().forEach(([d,j])=>Object.entries(j).forEach(([p,v])=>{if(!v.s) eFiche(p,d,v)}))}
-function echoBip(p){E_CUR=p; const d=eJour()[p]; E_SEL={st:null,nb:null};
+function echoBip(p){ if(!eOuverte()){alerte(); toast('Ouvrez d’abord une séance d’écho'); return}
+  if(EV!=='saisie') eVue('saisie');
+  E_CUR=p; const d=eJour()[p]; E_SEL={st:null,nb:null};
   if(d){alerte();sonDeja()} else if(A()[p]){bip();sonTrouve()} else {alerte();sonHors()}
   $('#e-msg').textContent=''; eCarte(); eMaj(); renderEcho()}
+function eTexte(d){const j=eJour(d), L=tri(Object.keys(j)), s=eStats(j);
+  return `Claude Brebis – séance d’échographie du ${frJA(d)}\n${s.n} brebis (${s.pl} pleines, ${s.vi} vides, ${s.ag} agneaux attendus)\n\nplaque;stade_j;agneaux;agnelage_prevu\n`+L.map(k=>k+';'+(j[k].st||'vide')+';'+(j[k].st?j[k].nb:'')+';'+eAgn(d,j[k].st)).join('\n')}
 $('#v-echo').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
   if((b.dataset.est!=null||b.dataset.enb)&&$('#e-q').value.trim()){const v=$('#e-q').value; $('#e-q').value=''; lu(v)}
   if(b.dataset.est!=null){E_SEL.st=+b.dataset.est; if(E_SEL.st===0) E_SEL.nb=0; else if(E_SEL.nb===0) E_SEL.nb=null; eMaj(); return}
   if(b.dataset.enb){E_SEL.nb=+b.dataset.enb; eMaj(); return}
-  if(b.dataset.eb){echoBip(b.dataset.eb); window.scrollTo({top:0,behavior:'smooth'}); return}
-  if(b.dataset.edel){const k=b.dataset.edel, j=eJour(); if(j[k]&&j[k].delAsk){eRestaure(k,j[k].prev); delete j[k]} else if(j[k]){j[k].delAsk=1} saveEC(); renderEcho(); return}
-  if(b.id==='e-ok'){const p=E_CUR, n=new Date(), old=eJour()[p]; eJour()[p]={st:E_SEL.st,nb:E_SEL.nb,t:pad2(n.getHours())+':'+pad2(n.getMinutes()),prev:old?old.prev:ePrev(p)}; saveEC(); eFiche(p,eDate(),eJour()[p]);
+  if(b.dataset.eb){echoBip(b.dataset.eb); return}
+  if(b.dataset.edel){const k=b.dataset.edel, j=eJour(); if(j[k]&&j[k].delAsk){eRestaure(k,j[k].prev); delete j[k]; if(ES[eDate()]){ES[eDate()].envoye=null; saveES()}} else if(j[k]){j[k].delAsk=1} saveEC(); renderEcho(); return}
+  if(b.id==='e-ok'){const p=E_CUR, n=new Date(), old=eJour()[p]; eJour()[p]={st:E_SEL.st,nb:E_SEL.nb,t:pad2(n.getHours())+':'+pad2(n.getMinutes()),prev:old?old.prev:ePrev(p)}; saveEC(); if(ES[eDate()]) {ES[eDate()].envoye=null; saveES()} eFiche(p,eDate(),eJour()[p]);
     $('#e-msg').textContent=p+' enregistrée : '+(E_SEL.st?E_SEL.st+' j, '+E_SEL.nb+' agn. · agnelage prévu '+eAgn(eDate(),E_SEL.st):'vide'); $('#e-msg').className='state ok';
     bip(); E_CUR=null; E_SEL={st:null,nb:null}; eCarte(); eMaj(); renderEcho(); return}
-  if(b.id==='e-send'){const d=eDate(), j=eJour(), L=tri(Object.keys(j));
-    envoyer(`Claude Brebis – échographie du ${frJA(d)}\n${L.length} brebis (${L.filter(k=>j[k].st).length} pleines, ${L.filter(k=>!j[k].st).length} vides)\n\nplaque;stade_j;agneaux;agnelage_prevu\n`+L.map(k=>k+';'+(j[k].st||'vide')+';'+(j[k].st?j[k].nb:'')+';'+eAgn(d,j[k].st)).join('\n'),b); return}
-  if(b.id==='e-sent'){Object.values(eJour()).forEach(v=>v.s=1); saveEC(); renderEcho(); return}
+  if(b.id==='e-toliste'){eVue('liste'); return}
+  if(b.id==='e-tosaisie'||b.id==='e-clotno'){eVue('saisie'); return}
+  if(b.id==='e-toclot'||b.id==='e-toclot2'){eVue('clot'); return}
+  if(b.id==='e-clotok'){const d=eOuverte(); ES[d].etat='close'; ES[d].fin=new Date().toISOString(); saveES(); E_CUR=null; E_VOIR=d; eVue('consult'); setTimeout(()=>$('#e-detail').scrollIntoView({behavior:'smooth'}),50); return}
+  if(b.id==='e-new'){const d=$('#e-ndate').value||auj(); if(ES[d]&&ES[d].etat==='close'){ES[d].etat='ouverte'} else ES[d]={etat:'ouverte',debut:new Date().toISOString()}; saveES(); E_CUR=null; E_SEL={st:null,nb:null}; eCarte(); eMaj(); eVue('saisie'); return}
+  if(b.id==='e-reprendre'){eVue('saisie'); return}
+  if(b.dataset.ese){E_VOIR=b.dataset.ese; renderEcho(); $('#e-detail').scrollIntoView({behavior:'smooth'}); return}
+  if(b.dataset.ecorr){const [d,k]=b.dataset.ecorr.split('|'); const o=eOuverte(); if(o&&o!==d){toast('Une autre séance est déjà ouverte');return} ES[d]=ES[d]||{}; ES[d].etat='ouverte'; saveES(); echoBip(k); return}
+  if(b.dataset.erouvre){const d=b.dataset.erouvre; if(eOuverte()){toast('Une autre séance est déjà ouverte');return} ES[d]=ES[d]||{}; ES[d].etat='ouverte'; saveES(); E_CUR=null; eCarte(); eMaj(); eVue('liste'); return}
+  if(b.dataset.esend){envoyer(eTexte(b.dataset.esend),b); return}
+  if(b.dataset.esent){const d=b.dataset.esent; Object.values(eJour(d)).forEach(v=>v.s=1); ES[d]=ES[d]||{etat:'close'}; ES[d].envoye=new Date().toISOString(); saveEC(); saveES(); renderEcho(); return}
 });
-function renderEcho(){ if(!$('#v-echo')) return; const d=eDate(), j=eJour(), L=tri(Object.keys(j));
-  const pl=L.filter(k=>j[k].st), ag=pl.reduce((a,k)=>a+j[k].nb,0);
-  $('#e-n').textContent=L.length; $('#e-count').textContent=L.length+' faite'+(L.length>1?'s':'');
-  $('#e-sum').textContent=L.length?`${pl.length} pleines · ${L.length-pl.length} vides · ${ag} agneaux attendus${pl.length?' ('+fml(Math.round(ag/pl.length*100)/100)+' par pleine)':''}`:'';
-  $('#e-list').innerHTML=L.map(k=>{const v=j[k];return `<span style="display:inline-flex;gap:2px"><button type="button" class="lien${v.st?'':' c-bad'}" data-eb="${k}">${k} · ${v.st?v.st+' j ×'+v.nb:'vide'}${v.s?'':' •'}</button><button type="button" class="btn2" style="padding:4px 8px" data-edel="${k}" aria-label="Effacer ${k}">${v.delAsk?'Effacer ?':'🗑'}</button></span>`}).join('');
+function renderEcho(){ if(!$('#v-echo')) return;
+  // anciennes saisies sans séance = séances clôturées
+  Object.keys(EC).forEach(d=>{if(Object.keys(EC[d]).length&&!ES[d]) ES[d]={etat:'close'}});
+  const o=eOuverte();
+  if(o){const j=eJour(o), s=eStats(j);
+    $('#e-count').textContent=`Séance du ${frJA(o).slice(0,5)} · ${s.n} faite${s.n>1?'s':''}`;
+    $('#e-ltitre').textContent=`Séance du ${frJA(o)} · ${s.n} brebis`;
+    $('#e-sum').textContent=`${s.pl} pleines · ${s.vi} vides · ${s.ag} agneaux attendus${s.pl?' ('+fml(Math.round(s.ag/s.pl*100)/100)+' par pleine)':''}`;
+    $('#e-list').innerHTML=tri(Object.keys(j)).map(k=>{const v=j[k];return `<span style="display:inline-flex;gap:2px"><button type="button" class="lien${v.st?'':' c-bad'}" data-eb="${k}">${k} · ${v.st?v.st+' j ×'+v.nb:'vide'}</button><button type="button" class="btn2" style="padding:4px 8px" data-edel="${k}" aria-label="Effacer ${k}">${v.delAsk?'Effacer ?':'🗑'}</button></span>`}).join('')||'<span class="hint">Aucune brebis saisie.</span>';
+    $('#e-clotsum').innerHTML=`Séance du ${frJA(o)}<small>${s.n} brebis · ${s.pl} pleines · ${s.vi} vides · ${s.ag} agneaux attendus</small>`;
+    $('#e-ouvrir').innerHTML=`<div class="big warn" style="font-size:20px">Séance du ${frJA(o)} en cours<small>${s.n} brebis saisies</small></div><button id="e-reprendre" class="btn" type="button" style="width:100%;padding:14px;font-size:18px;margin-top:8px">▶ Reprendre la saisie</button>`;
+  } else $('#e-ouvrir').innerHTML=`<div class="row" style="align-items:center"><label>Date de l'écho <input type="date" id="e-ndate" value="${auj()}"></label></div><button id="e-new" class="btn" type="button" style="width:100%;padding:14px;font-size:18px;margin-top:8px">▶ Nouvelle séance d'écho</button>`;
+  const D=Object.keys(ES).filter(d=>Object.keys(EC[d]||{}).length||ES[d].etat==='ouverte').sort().reverse();
+  $('#e-seances').innerHTML=D.map(d=>{const s=eStats(EC[d]||{}), st=ES[d], et=st.etat==='ouverte'?'<b class="c-warn">en cours</b>':st.envoye?'<span class="c-ok">clôturée · envoyée à Claude</span>':'<b class="c-bad">clôturée · pas encore envoyée</b>';
+    return `<button type="button" class="e-seance" data-ese="${d}" aria-pressed="${E_VOIR===d}"><b>${frJA(d)}</b> · ${s.n} brebis · ${s.pl} pleines · ${s.vi} vides<br>${et}</button>`}).join('')||'<span class="hint">Aucune séance pour l’instant.</span>';
+  const v=E_VOIR&&ES[E_VOIR]&&ES[E_VOIR].etat!=='ouverte'?E_VOIR:null;
+  if(v){const j=eJour(v), s=eStats(j);
+    $('#e-detail').innerHTML=`<h3>Séance du ${frJA(v)}</h3><div class="hint">${s.n} brebis · ${s.pl} pleines · ${s.vi} vides · ${s.ag} agneaux attendus</div>
+      <div class="tbl"><table><thead><tr><th>N°</th><th>Stade</th><th>Agneaux</th><th>Agnelage prévu</th><th></th></tr></thead><tbody>${tri(Object.keys(j)).map(k=>`<tr><td><b data-fiche="${k}" class="lien">${k}</b></td><td>${j[k].st?j[k].st+' j':'<span class="c-bad">vide</span>'}</td><td>${j[k].st?j[k].nb:''}</td><td>${eAgn(v,j[k].st)}</td><td><button type="button" class="btn2 b-retour" style="padding:4px 8px" data-ecorr="${v}|${k}">✏ Corriger</button></td></tr>`).join('')}</tbody></table></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" data-esend="${v}">Envoyer à Claude</button>${ES[v].envoye?'':`<button type="button" class="btn2" data-esent="${v}">Marquer comme envoyée</button>`}</div>
+      <div class="row"><button type="button" class="btn2 b-retour" data-erouvre="${v}">Rouvrir pour corriger</button></div>`} else $('#e-detail').innerHTML='';
 }
-function eFull(on){document.body.classList.toggle('efull',on); window.scrollTo(0,0)}
-$('#e-full').onclick=()=>eFull(true); $('#e-quit').onclick=()=>eFull(false);
 $('#e-f').addEventListener('submit',e=>{e.preventDefault(); lu($('#e-q').value); $('#e-q').value=''});
-$('#e-date').value=auj(); $('#e-date').addEventListener('change',()=>{eCarte();renderEcho()});
-eMaj();
-
+eMaj(); eCarte();
 // ---- tests de connexion (DAC ou autre appareil)
 let DP=null, DRD=null, DBLE=null, DCHR=[], DLOG=[];
 const dhex=u=>[...u].map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
@@ -847,7 +900,7 @@ $('#d-ble').onclick=async()=>{ if(!navigator.bluetooth){dlog('!','Web Bluetooth 
         if(c.properties.notify||c.properties.indicate){try{await c.startNotifications(); c.addEventListener('characteristicvaluechanged',ev=>{const u=new Uint8Array(ev.target.value.buffer); dlog('← '+c.uuid.slice(4,8),dasc(u),u)}); dlog('i','  → écoute activée')}catch(e){}}}}
   }catch(e){dlog('✗','BLE : '+e.name+' – '+e.message)}};
 const dwait=ms=>new Promise(r=>setTimeout(r,ms));
-async function dlibere(P){ if(P===port){dlog('!','Cet appareil est le LECTEUR DE BOUCLES (déjà connecté pour les médailles), pas le DAC. Choisir l’autre appareil dans la liste.');return false}
+async function dlibere(P){ if(P===port){dlog('!','Cet appareil est déjà ouvert par le bouton « Connecter le lecteur » en haut de l’appli. Fermer puis rouvrir l’onglet de l’appli, et lancer le test SANS appuyer sur « Connecter le lecteur ».');return false}
   if(P.readable||P.writable){dlog('i','Port resté ouvert : fermeture…'); try{if(DRD) await DRD.cancel()}catch(e){} try{await P.close()}catch(e){dlog('!','Fermeture impossible ('+e.message+') : recharger la page puis relancer.');return false}} return true}
 let DAUTO=false;
 $('#d-auto').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){dlog('!','Web Serial absent : ouvrir l’appli depuis GitHub dans Chrome.');return}
@@ -914,6 +967,19 @@ function bkCheck(){const d=LS.get('cb_bk',null); const saisies=(LS.get('cb_soins
   const j=d?Math.round((new Date(auj())-new Date(d))/86400000):null; const al=$('#bk-alert');
   if(saisies&&(j==null||j>=7)){al.hidden=false; al.innerHTML=(j==null?'⚠ Aucune sauvegarde faite.':'⚠ Dernière sauvegarde il y a '+j+' jours.')+' <button type="button" class="btn2" id="bk-go">Sauvegarder maintenant</button>'; $('#bk-go').onclick=()=>$('#bk-save').click()} else al.hidden=true}
 bkCheck();
+// ---- bouton Retour du téléphone : reste dans l'appli
+let QUIT=0;
+function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;font-size:16px;max-width:90vw;text-align:center';document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,2500)}
+function retourTel(){
+  if(!$('#sheet').hidden){ const S=ST['#sheet-body']; if(S.pile.length) fiche(S.pile.pop(),'nav','#sheet-body'); else $('#sheet').hidden=true; return true}
+  if(document.body.classList.contains('efull')){ eVue(EV==='saisie'?'liste':EV==='liste'?'clot':'saisie'); return true}
+  if(tab==='fiche'&&ST['#fiche'].pile.length){ fiche(ST['#fiche'].pile.pop(),'nav','#fiche'); return true}
+  if(tab!=='fiche'){ setTab('fiche'); return true}
+  return false}
+try{ history.replaceState({cb:0},''); history.pushState({cb:1},'') }catch(e){}
+window.addEventListener('popstate',()=>{ if(retourTel()){QUIT=0; history.pushState({cb:1},''); return}
+  if(QUIT&&Date.now()-QUIT<2500){ history.back(); return}
+  QUIT=Date.now(); toast('Appuyez encore sur Retour pour quitter l’appli'); history.pushState({cb:1},'')});
 showBase(); setTab(LS.get('cb_tab','fiche'));
 </script>
 </body>
