@@ -53,7 +53,7 @@ body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot
 #e-msg{min-height:1.2em;font-size:14px}
 .e-seance{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
 .e-seance[aria-pressed="true"]{border:2px solid var(--accent)}
-.r-grp{display:grid;grid-template-columns:1fr 1fr;gap:6px}.r-grp button{padding:10px 6px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-weight:700}.r-grp button[aria-pressed="true"]{border-color:var(--accent);background:var(--okbg)}.r-grp small{display:block;font-weight:400;color:var(--mute)}
+.r-row{border:2px solid var(--line);border-radius:12px;padding:8px;margin-top:6px}.r-row.on{border-color:var(--accent);background:var(--okbg)}.r-row label.r-chk{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.r-row input[type=checkbox]{width:26px;height:26px}.r-row small{font-weight:400;color:var(--mute)}.r-row select,.r-row input[type=text]{width:100%;box-sizing:border-box;margin-top:6px;font:inherit;padding:8px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
 .tabs button{font-size:14px}
@@ -153,9 +153,14 @@ tr.sel td{background:var(--okbg)}
     <div id="t-alert"></div>
     <h2>Lots</h2>
     <div id="t-lots" class="lots"></div>
+    <h2>Groupes</h2>
+    <div id="t-grps" class="lots"></div>
+    <details id="t-gman"><summary class="hint">Gérer les groupes (vider, supprimer)</summary><div id="t-glist"></div>
+      <div class="hint">Vider : le groupe reste, sans brebis (pour le refaire). Supprimer : le groupe disparaît. Les lots ne bougent pas.</div></details>
     <h2>Trier et filtrer</h2>
     <div class="filt">
       <select id="f-lot" aria-label="Lot"><option value="">Tous les lots</option></select>
+      <select id="f-grp" aria-label="Groupe"><option value="">Tous les groupes</option></select>
       <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option>Brebis</option><option>Antenaise</option><option>Antenais</option><option>Bélier</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
@@ -171,6 +176,10 @@ tr.sel td{background:var(--okbg)}
       <select id="t-dest" aria-label="Lot de destination"><option value="">— Lot existant —</option></select>
       <input id="t-new" class="row" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px" placeholder="ou nom d'un nouveau lot (ex. Bergerie – à vendre)">
       <button id="t-move" class="btn" type="button">Déplacer</button>
+      <b style="margin-top:8px">ou mettre dans un groupe (sans changer de lot)</b>
+      <select id="t-gsel" aria-label="Groupe existant"><option value="">— Groupe existant —</option></select>
+      <input id="t-gnew" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px" placeholder="ou nouveau groupe (ex. Maigres)">
+      <div class="row"><button id="t-gadd" class="btn" type="button">Ajouter au groupe</button><button id="t-gdel" class="btn2 b-retour" type="button">Retirer du groupe</button></div>
       <button id="t-mp" class="btn2" type="button">⚠ Mauvais pis – ne pas garder la suite</button>
       <span id="t-mst" class="state"></span>
     </div>
@@ -306,6 +315,14 @@ tr.sel td{background:var(--okbg)}
     <div class="count"><div><b id="l-n">0</b>animaux</div><div><b id="l-dbl">0</b>bipés 2 fois</div><div><b id="l-inc">0</b>inconnus</div></div>
     <div id="l-last"></div>
     <div id="l-nums" class="nums"></div>
+    <div style="border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0">
+      <h2 style="margin-top:0">Mettre cette liste dans…</h2>
+      <select id="l-dest" aria-label="Destination"></select>
+      <input id="l-nom" type="text" hidden style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;margin-top:6px">
+      <button id="l-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Enregistrer</button>
+      <span id="l-mst" class="state"></span>
+      <div class="hint">Un lot = l'endroit (la brebis change de place). Un groupe = une étiquette (ex. À inséminer) : elle reste dans son lot.</div>
+    </div>
     <div class="row">
       <button id="l-send" class="btn" type="button">Envoyer à Claude</button>
       <button id="l-clear" class="btn2" type="button">Nouvelle liste</button>
@@ -331,12 +348,9 @@ tr.sel td{background:var(--okbg)}
       <h2>Bipées en trop</h2><div id="r-xn" class="nums"></div>
       <div style="border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0">
         <h2 style="margin-top:0">Ranger dans un lot</h2>
-        <div class="hint">1. Quelles brebis ?</div>
-        <div id="r-grp" class="r-grp"></div>
-        <div class="hint" style="margin-top:8px">2. Vers quel lot ?</div>
-        <select id="r-dest" aria-label="Lot existant"><option value="">— Lot existant —</option></select>
-        <input id="r-new" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;margin-top:6px;box-sizing:border-box" placeholder="ou nom d'un nouveau lot (ex. Bergerie – manquantes du 17/11)">
-        <button id="r-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Déplacer</button>
+        <div class="hint">Cocher les groupes à enregistrer et choisir leur lot de destination.</div>
+        <div id="r-grp"></div>
+        <button id="r-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Enregistrer les déplacements cochés</button>
         <span id="r-mst" class="state"></span>
         <div class="hint">Les déplacements partent avec « Envoyer à Claude » de l'onglet Troupeau. Pour déplacer ensuite tout un lot : Troupeau → choisir le lot → Tout cocher → Déplacer.</div>
       </div>
@@ -393,6 +407,18 @@ function restMam(m){const t=new Date();t.setHours(12,0,0,0);return Math.round((f
 const reforme=k=>{const x=A()[k];return /réformer/i.test(x&&x.niveau||'')};
 function setMP(k,on){const d=fdate();MP[k]={on,d};LS.set('cb_mpis',MP)} let sel=new Set();
 const lotOf=p=>LOTS[p]!==undefined?LOTS[p]:((A()[p]||{}).lot||'');
+// ---- groupes : étiquettes, plusieurs par animal (le lot = l'endroit, un seul)
+let GRP=LS.get('cb_grp',{}), GM=LS.get('cb_gmv',[]);
+const saveG=()=>{LS.set('cb_grp',GRP);LS.set('cb_gmv',GM)};
+const GDER={'Brebis d’or':k=>!!(A()[k]||{}).or,'Mauvais pis':k=>typeof mpis==='function'&&mpis(k),'Garder ses agnelles':k=>typeof garde==='function'&&garde(k)};
+function grpsUser(){return Object.keys(GRP).sort()}
+function grpsAuto(){const a=Object.keys(GDER); [...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((x,y)=>x-y).forEach(n=>a.push('Lot d’agnelage '+n)); return a}
+function membreDe(g,k){ if(GRP[g]) return !!GRP[g][k]; if(GDER[g]) return GDER[g](k); const m=g.match(/^Lot d’agnelage (.+)$/); return m?(A()[k]||{}).lotagn===m[1]:false}
+function grpsOf(k){return grpsUser().filter(g=>GRP[g][k])}
+function grpsAutoOf(k){return grpsAuto().filter(g=>membreDe(g,k))}
+function grpAdd(k,g){g=g.trim(); if(!g||!A()[k]) return 0; GRP[g]=GRP[g]||{}; if(GRP[g][k]) return 0; GRP[g][k]=auj(); GM.push({d:fdate(),p:k,g,a:'+'}); return 1}
+function grpDel(k,g){ if(!GRP[g]||!GRP[g][k]) return 0; delete GRP[g][k]; GM.push({d:fdate(),p:k,g,a:'-'}); return 1}
+const gmChg=()=>GM.filter(m=>!m.s);
 let liste=LS.get('cb_liste',{debut:null,items:[],dbl:0});
 let rech=LS.get('cb_rech',null);         // {titre, cible:[...], trouvees:[], trop:[]}
 
@@ -419,7 +445,8 @@ function alerte(){ if(navigator.vibrate) try{navigator.vibrate([200,100,200])}ca
 function showBase(){
   $('#base').textContent=DB?`Base au ${DB.date} · ${Object.keys(DB.animaux).length} animaux`:'Aucune donnée chargée';
   const s=$('#r-lot'); s.length=1;
-  if(DB){ lotsList().forEach(([l,n])=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ('+n+')';s.append(o)}) }
+  if(DB){ lotsList().forEach(([l,n])=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ('+n+')';s.append(o)});
+    const og=document.createElement('optgroup'); og.label='Groupes'; [...grpsUser(),...grpsAuto()].forEach(g=>{const n=Object.keys(A()).filter(k=>pres(A()[k])&&membreDe(g,k)).length; if(!n) return; const o=document.createElement('option'); o.value='g:'+g; o.textContent=g+' ('+n+')'; og.append(o)}); if(og.children.length) s.append(og) }
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -429,7 +456,7 @@ $('#file').addEventListener('change',e=>{
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
-function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+function setTab(t){tab=t; if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
   if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
 
 // ---- fiche
@@ -496,6 +523,8 @@ function fiche(p,nav,el='#fiche'){
    <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="btn2" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button><button type="button" class="btn2" data-mamo="${p}">${MT[p]&&!MT[p].off?'↩ Retirer la mammite':'💉 Soins (mammite, agnelage…)'}</button></div>
   <div class="row mamf" data-mamf="${p}" hidden><label>Traitée le <input type="date" class="mam-d" value="${new Date().toISOString().slice(0,10)}"></label><label>Délai viande <input type="number" class="mam-j" min="0" inputmode="numeric" style="width:5em" placeholder="jours"> j</label><button type="button" class="btn" data-mamok="${p}">Valider</button><span class="state"></span></div>
    <div class="lot">${esc(lotOf(p)||'Sans lot')}</div>
+   <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok">${esc(g)} <button type="button" class="btn2" style="padding:0 6px;min-height:0" data-gdel="${esc(p)}|${esc(g)}" aria-label="Retirer de ${esc(g)}">✕</button></span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute">${esc(g)}</span>`).join('')}<button type="button" class="btn2" data-gadd="${esc(p)}">+ Groupe</button></div>
+   <div class="row" data-gform="${esc(p)}" hidden><select class="g-sel" aria-label="Groupe existant"><option value="">— Groupe existant —</option>${grpsUser().filter(g=>!GRP[g][p]).map(g=>`<option>${esc(g)}</option>`).join('')}</select><input class="g-new" placeholder="ou nouveau groupe (ex. Maigres)" style="font:inherit;padding:8px;flex:1;min-width:8em"><button type="button" class="btn" data-gok="${esc(p)}">Ajouter</button></div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
    <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
    ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
@@ -512,6 +541,10 @@ function fiche(p,nav,el='#fiche'){
 }
 
 ['#fiche','#sheet-body'].forEach(el=>$(el).addEventListener('click',e=>{const S=ST[el],g=e.target.closest('[data-go]');
+  const gb=e.target.closest('[data-gadd],[data-gok],[data-gdel]');
+  if(gb){ if(gb.dataset.gadd){const f=$(el).querySelector('[data-gform]'); f.hidden=!f.hidden; return}
+    if(gb.dataset.gok){const k=gb.dataset.gok, f=$(el).querySelector('[data-gform]'), nm=(f.querySelector('.g-new').value.trim()||f.querySelector('.g-sel').value); if(!nm) return; grpAdd(k,nm); saveG(); fiche(k,'nav',el); render(); return}
+    if(gb.dataset.gdel){const [k,gn]=gb.dataset.gdel.split('|'); grpDel(k,gn); saveG(); fiche(k,'nav',el); render(); return}}
   const top=()=>el==='#fiche'?window.scrollTo({top:0}):$('.sheet-in').scrollTo({top:0});
   const mo=e.target.closest('[data-mamo]'); if(mo){const k=mo.dataset.mamo; if(!(MT[k]&&!MT[k].off)){$('#sheet').hidden=true; setTab('soins'); soinsBip(k); return} if(mam(k)){MT[k]={off:1,d0:fdate()};LS.set('cb_mam',MT);fiche(k,'nav',el);render()} else {const f=$(el).querySelector('[data-mamf]');f.hidden=!f.hidden} return}
   const mok=e.target.closest('[data-mamok]'); if(mok){const k=mok.dataset.mamok,f=$(el).querySelector('[data-mamf]'),d=f.querySelector('.mam-d').value,j=f.querySelector('.mam-j').value; if(!d||j===''){f.querySelector('.state').textContent='Indique la date et le délai viande.';f.querySelector('.state').className='state err';return} MT[k]={d,delai:+j};LS.set('cb_mam',MT);fiche(k,'nav',el);render();return}
@@ -543,11 +576,11 @@ function addRech(p){
   LS.set('cb_rech',rech); render();
 }
 $('#r-lot').addEventListener('change',e=>{const l=e.target.value; if(!l) return;
-  $('#r-txt').value=tri(Object.entries(A()).filter(([k,v])=>lotOf(k)===l).map(([k])=>k)).join(' ')});
+  $('#r-txt').value=tri(Object.entries(A()).filter(([k,v])=>l.startsWith('g:')?(pres(v)&&membreDe(l.slice(2),k)):lotOf(k)===l).map(([k])=>k)).join(' ')});
 $('#r-go').addEventListener('click',()=>{
   const nums=[...new Set(($('#r-txt').value.match(/\d{3,15}/g)||[]).map(plaqueDe).filter(Boolean))];
   if(!nums.length){$('#r-txt').focus();return}
-  rech={titre:$('#r-lot').value||'Liste collée',debut:new Date().toISOString(),cible:nums,trouvees:[],trop:[]};
+  rech={titre:($('#r-lot').value||'Liste collée').replace(/^g:/,'Groupe '),debut:new Date().toISOString(),cible:nums,trouvees:[],trop:[]};
   LS.set('cb_rech',rech); render();
 });
 function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
@@ -555,21 +588,39 @@ $('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve
 $('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
 $('#r-oui').onclick=()=>{$('#r-confirm').hidden=true; $('#r-grp').scrollIntoView({behavior:'smooth',block:'center'})};
-let R_GRP='m';
+let R_CH=LS.get('cb_rch',{});   // {groupe:{on,dest,nouveau}}
 function rGroupes(){const m=rech.cible.filter(p=>!rech.trouvees.includes(p)); return {f:['Trouvées',rech.trouvees.slice()],m:['Manquantes',m],x:['En trop',rech.trop.slice()],t:['Toutes les bipées',[...rech.trouvees,...rech.trop]]}}
-function rRanger(){ if(!rech) return; const G=rGroupes();
-  $('#r-grp').innerHTML=Object.entries(G).map(([k,[n,l]])=>`<button type="button" data-rg="${k}" aria-pressed="${R_GRP===k}">${n}<small>${l.length} animal${l.length>1?'aux':''}</small></button>`).join('');
+function rRanger(){ if(!rech) return; const G=rGroupes(); if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#r-grp')) return;
   const lots=[...new Set(Object.keys(A()).filter(p=>pres(A()[p])).map(lotOf).concat(Object.values(LOTS)).filter(Boolean))].sort();
-  const cur=$('#r-dest').value; $('#r-dest').innerHTML='<option value="">— Lot existant —</option>'+lots.map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join('')}
-$('#r-grp').addEventListener('click',e=>{const b=e.target.closest('[data-rg]'); if(!b) return; R_GRP=b.dataset.rg; rRanger()});
-$('#r-move').onclick=()=>{ const dest=$('#r-new').value.trim()||$('#r-dest').value, st=$('#r-mst');
-  const [nom,l]=rGroupes()[R_GRP]; const L=l.filter(p=>A()[p]);
-  if(!L.length){st.textContent='Aucun animal connu dans « '+nom+' ».';st.className='state err';return}
-  if(!dest){st.textContent='Choisis un lot ou tape un nouveau nom.';st.className='state err';return}
-  const d=fdate(); let n=0; L.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;MV.push({d,p,de,vers:dest});n++}});
-  LS.set('cb_lots',LOTS);LS.set('cb_moves',MV); $('#r-new').value='';
-  st.textContent=nom+' : '+n+' animal(aux) déplacé(s) vers « '+dest+' »'+(L.length-n?' ('+(L.length-n)+' y étaient déjà)':'')+'.'; st.className='state ok'; showBase(); render()};
+  $('#r-grp').innerHTML=Object.entries(G).map(([k,[n,l]])=>{const c=R_CH[k]||{}; const nb=l.length+' '+(l.length>1?'animaux':'animal');
+    return `<div class="r-row${c.on?' on':''}" data-rr="${k}"><label class="r-chk"><input type="checkbox" data-rc="${k}"${c.on?' checked':''}> ${n} <small>· ${nb}</small></label>
+      ${c.on?`<select data-rd="${k}" aria-label="Destination ${n}"><option value="">— Choisir le lot —</option>${lots.map(x=>`<option${x===c.dest?' selected':''}>${esc(x)}</option>`).join('')}<option value="__new"${c.dest==='__new'?' selected':''}>＋ Nouveau lot…</option><optgroup label="Ajouter à un groupe (reste dans son lot)">${grpsUser().map(x=>`<option value="g:${esc(x)}"${'g:'+x===c.dest?' selected':''}>Groupe ${esc(x)}</option>`).join('')}<option value="__newg"${c.dest==='__newg'?' selected':''}>＋ Nouveau groupe…</option></optgroup></select>
+      ${c.dest==='__new'||c.dest==='__newg'?`<input type="text" data-rn="${k}" value="${esc(c.nouveau||'')}" placeholder="${c.dest==='__newg'?'Nom du nouveau groupe (ex. Maigres)':'Nom du nouveau lot (ex. Bergerie – '+n.toLowerCase()+' du '+new Date().toLocaleDateString('fr-FR').slice(0,5)+')'}">`:''}`:''}</div>`}).join('')}
+const rSave=()=>LS.set('cb_rch',R_CH);
+$('#r-grp').addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.rc){const k=t.dataset.rc; R_CH[k]=R_CH[k]||{}; R_CH[k].on=t.checked; rSave(); t.blur(); rRanger(); return}
+  if(t.dataset.rd){const k=t.dataset.rd; R_CH[k].dest=t.value; rSave(); t.blur(); rRanger(); if(t.value==='__new'||t.value==='__newg'){const i=$('#r-grp').querySelector(`[data-rn="${k}"]`); if(i) i.focus()} return}});
+$('#r-grp').addEventListener('input',e=>{const t=e.target; if(t.dataset.rn){R_CH[t.dataset.rn].nouveau=t.value; rSave()}});
+$('#r-move').onclick=()=>{ const st=$('#r-mst'), G=rGroupes(), ks=Object.keys(G).filter(k=>R_CH[k]&&R_CH[k].on);
+  if(!ks.length){st.textContent='Coche au moins un groupe.';st.className='state err';return}
+  for(const k of ks){const c=R_CH[k]; const dest=c.dest==='__new'?(c.nouveau||'').trim():c.dest==='__newg'?((c.nouveau||'').trim()?'g:'+c.nouveau.trim():''):c.dest; if(!dest){st.textContent='Choisis le lot de destination pour « '+G[k][0]+' ».';st.className='state err';return} c._d=dest}
+  const d=fdate(), msg=[];
+  ks.forEach(k=>{const [nom,l]=G[k], dest=R_CH[k]._d; let n=0; if(dest.startsWith('g:')){const g=dest.slice(2); l.forEach(p=>n+=grpAdd(p,g)); msg.push(nom+' → groupe « '+g+' » : '+n); return} l.filter(p=>A()[p]).forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;MV.push({d,p,de,vers:dest});n++}}); msg.push(nom+' → « '+dest+' » : '+n)}); saveG();
+  LS.set('cb_lots',LOTS);LS.set('cb_moves',MV); R_CH={}; rSave();
+  st.innerHTML='Enregistré :<br>'+msg.map(esc).join('<br>'); st.className='state ok'; showBase(); render()};
 $('#r-yes').onclick=()=>{rech=null;LS.set('cb_rech',null);$('#r-confirm').hidden=true;$('#r-last').innerHTML='';render()};
+function lDest(){const cur=$('#l-dest').value; const lots=[...new Set(Object.keys(A()).filter(p=>pres(A()[p])).map(lotOf).concat(Object.values(LOTS)).filter(Boolean))].sort();
+  $('#l-dest').innerHTML='<option value="">— Choisir —</option><optgroup label="Ajouter à un groupe (reste dans son lot)">'+grpsUser().map(g=>`<option value="g:${esc(g)}">Groupe ${esc(g)}</option>`).join('')+'<option value="__newg">＋ Nouveau groupe…</option></optgroup><optgroup label="Changer de lot (change de place)">'+lots.map(l=>`<option>${esc(l)}</option>`).join('')+'<option value="__new">＋ Nouveau lot…</option></optgroup>';
+  $('#l-dest').value=cur; lNom()}
+function lNom(){const v=$('#l-dest').value, i=$('#l-nom'); i.hidden=!(v==='__new'||v==='__newg'); i.placeholder=v==='__newg'?'Nom du groupe (ex. À inséminer)':'Nom du lot (ex. Bergerie – traite)'}
+$('#l-dest').addEventListener('change',()=>{lNom(); if(!$('#l-nom').hidden) $('#l-nom').focus()});
+$('#l-move').onclick=()=>{const st=$('#l-mst'), v=$('#l-dest').value, nm=$('#l-nom').value.trim(), L=liste.items.filter(p=>A()[p]);
+  if(!L.length){st.textContent='La liste est vide.';st.className='state err';return}
+  if(!v||((v==='__new'||v==='__newg')&&!nm)){st.textContent='Choisis la destination'+(v?' et tape son nom':'')+'.';st.className='state err';return}
+  let n=0, msg;
+  if(v==='__newg'||v.startsWith('g:')){const g=v==='__newg'?nm:v.slice(2); L.forEach(p=>n+=grpAdd(p,g)); saveG(); msg=n+' animal(aux) ajouté(s) au groupe « '+g+' »'+(L.length-n?' ('+(L.length-n)+' y étaient déjà)':'')}
+  else {const dest=v==='__new'?nm:v, d=fdate(); L.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;MV.push({d,p,de,vers:dest});n++}}); LS.set('cb_lots',LOTS);LS.set('cb_moves',MV); msg=n+' animal(aux) déplacé(s) vers le lot « '+dest+' »'}
+  $('#l-nom').value=''; $('#l-dest').value=''; st.textContent=msg; st.className='state ok'; showBase(); render()};
 $('#l-clear').onclick=()=>$('#l-confirm').hidden=false;
 $('#l-no').onclick=()=>$('#l-confirm').hidden=true;
 $('#l-yes').onclick=()=>{liste={debut:null,items:[],dbl:0};LS.set('cb_liste',liste);$('#l-confirm').hidden=true;$('#l-last').innerHTML='';render()};
@@ -595,7 +646,7 @@ function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEac
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||x.cat===f('cat'))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
-   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||x.lotagn===f('agn')));
+   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||x.lotagn===f('agn'))&&(!f('grp')||membreDe(f('grp'),k)));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
   const t=f('tri'); r.sort((a,b)=>t==='agn'?dj(a[1].agn).localeCompare(dj(b[1].agn)):t==='idx'?(b[1].idx??-1e9)-(a[1].idx??-1e9):t==='lot'?lotOf(a[0]).localeCompare(lotOf(b[0])):a[0].localeCompare(b[0],'fr',{numeric:true}));
   return r}
@@ -618,6 +669,9 @@ function renderTroupeau(){
   const nmp=Object.keys(A()).filter(k=>pres(A()[k])&&mpis(k)).length;
   $('#t-lots').innerHTML=`<button type="button" data-l="" aria-pressed="${!cur}"><span>Troupeau total (présents)</span><b>${tot}</b></button>`+L.map(([l,n])=>`<button type="button" data-l="${esc(l)}" aria-pressed="${cur===l}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+(nmp?`<button type="button" data-mpl="1" aria-pressed="${$('#f-suivi').value==='mpis'}"><span class="c-bad">${MPLOT}</span><b>${nmp}</b></button>`:'');
   fillSel('#f-lot',L.map(x=>x[0])); fillSel('#t-dest',L.map(x=>x[0]));
+  const GU=grpsUser(), GA=grpsAuto(), cg=$('#f-grp').value, nbG=g=>Object.keys(A()).filter(k=>pres(A()[k])&&membreDe(g,k)).length;
+  fillSel('#f-grp',[...GU,...GA]); fillSel('#t-gsel',GU); renderGman();
+  $('#t-grps').innerHTML=GU.map(g=>`<button type="button" data-gf="${esc(g)}" aria-pressed="${cg===g}"><span>${esc(g)}</span><b>${nbG(g)}</b></button>`).join('')+GA.map(g=>`<button type="button" data-gf="${esc(g)}" aria-pressed="${cg===g}" class="c-mute"><span>${esc(g)}</span><b>${nbG(g)}</b></button>`).join('')||'<span class="hint">Aucun groupe.</span>';
   fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
   renderPeres(); const r=filtre(); $('#t-n').textContent=r.length;
   $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
@@ -625,9 +679,26 @@ function renderTroupeau(){
   const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
   const mcc=mamChg(); const mamTx=mcc.length?`<div><b class="c-warn">Mammites (${mcc.length})</b><div class="nums">${mcc.map(([k,v])=>`<span>${k}${v.off?' retirée':' · '+v.delai+' j'}</span>`).join('')}</div></div>`:'';
   const chm=mpChg(); const mpTxt0=chm.length?`<div><b class="c-bad">Mauvais pis (${chm.filter(([k,v])=>v.on).length} ajoutée(s), ${chm.filter(([k,v])=>!v.on).length} retirée(s))</b><div class="nums">${tri(chm.map(([k])=>k)).map(p=>`<span>${p}</span>`).join('')}</div></div>`:'';
-  const mpTxt=mamTx+mpTxt0;
+  const gcc=gmChg(); const gTx=gcc.length?`<div><b>Groupes (${gcc.length} changement(s))</b><div class="nums">${gcc.map(m=>`<span>${m.a==='x'?'Groupe supprimé : '+esc(m.g):m.p+' '+(m.a==='+'?'+':'−')+' '+esc(m.g)}</span>`).join('')}</div></div>`:'';
+  const mpTxt=gTx+mamTx+mpTxt0;
   $('#t-mv').innerHTML=mpTxt+(MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):(mpTxt?'':'Aucun.'));
 }
+let G_ASK={};
+function renderGman(){ if(!$('#t-gman').open) return; const GU=grpsUser();
+  $('#t-glist').innerHTML=GU.map(g=>{const n=Object.keys(GRP[g]).length, a=G_ASK[g]||'';
+    return `<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><b style="flex:1">${esc(g)} <span class="hint">· ${n}</span></b>
+      <button type="button" class="btn2 b-retour" data-gvid="${esc(g)}"${n?'':' disabled'}>${a==='vid'?'Confirmer : vider':'Vider'}</button>
+      <button type="button" class="btn b-valid" data-gsup="${esc(g)}">${a==='sup'?'Confirmer : supprimer':'Supprimer'}</button></div>`}).join('')||'<span class="hint">Aucun groupe créé.</span>'}
+$('#t-gman').addEventListener('toggle',renderGman);
+$('#t-glist').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const g=b.dataset.gvid||b.dataset.gsup, act=b.dataset.gvid?'vid':'sup';
+  if(G_ASK[g]!==act){G_ASK={[g]:act}; setTimeout(()=>{if(G_ASK[g]===act){delete G_ASK[g];renderGman()}},5000); renderGman(); return}
+  Object.keys(GRP[g]).forEach(k=>grpDel(k,g)); if(act==='sup'){delete GRP[g]; GM.push({d:fdate(),p:'—',g,a:'x'}); if($('#f-grp').value===g) $('#f-grp').value=''}
+  G_ASK={}; saveG(); $('#t-mst').textContent='Groupe « '+g+' » '+(act==='sup'?'supprimé':'vidé')+'.'; $('#t-mst').className='state ok'; render()});
+$('#t-grps').addEventListener('click',e=>{const b=e.target.closest('[data-gf]'); if(!b) return; $('#f-grp').value=$('#f-grp').value===b.dataset.gf?'':b.dataset.gf; $('#f-lot').value=''; render()});
+$('#t-gadd').onclick=()=>{const g=$('#t-gnew').value.trim()||$('#t-gsel').value, st=$('#t-mst'); if(!sel.size){st.textContent='Coche d’abord des animaux.';st.className='state err';return} if(!g){st.textContent='Choisis un groupe ou tape un nouveau nom.';st.className='state err';return}
+  let n=0; sel.forEach(k=>n+=grpAdd(k,g)); saveG(); sel.clear(); $('#t-gnew').value=''; st.textContent=n+' animal(aux) ajouté(s) au groupe « '+g+' »';st.className='state ok';render()};
+$('#t-gdel').onclick=()=>{const g=$('#t-gsel').value||$('#f-grp').value, st=$('#t-mst'); if(!sel.size||!GRP[g]){st.textContent='Coche des animaux et choisis le groupe.';st.className='state err';return}
+  let n=0; sel.forEach(k=>n+=grpDel(k,g)); saveG(); sel.clear(); st.textContent=n+' animal(aux) retiré(s) du groupe « '+g+' »';st.className='state ok';render()};
 $('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.mpl){$('#f-lot').value='';$('#f-suivi').value='mpis';render();return}$('#f-lot').value=b.dataset.l;if($('#f-suivi').value==='mpis')$('#f-suivi').value='';render()});
 document.querySelectorAll('.filt select').forEach(s=>s.addEventListener('change',render));
 $('#t-body').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;e.target.checked?sel.add(k):sel.delete(k);render()});
@@ -643,16 +714,17 @@ $('#t-mp').onclick=()=>{if(!sel.size){$('#t-mst').textContent='Coche d’abord d
   const n=sel.size; sel.forEach(k=>setMP(k,true)); sel.clear(); $('#t-mst').textContent=n+' marquée(s) mauvais pis';$('#t-mst').className='state ok';render()};
 const mamChg=()=>Object.entries(MT).filter(([k,v])=>!v.sent);
 const mpChg=()=>Object.entries(MP).filter(([k,v])=>!v.sent&&!!v.on!==!!(A()[k]&&A()[k].mpis));
-$('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(); if(!MV.length&&!ch.length&&!mc.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
+$('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(), gc=gmChg(); if(!MV.length&&!ch.length&&!mc.length&&!gc.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.de||'Sans lot')+' → '+m.vers;(g[k]=g[k]||[]).push(m.p)});
   const on=ch.filter(([k,v])=>v.on).map(([k])=>k), off=ch.filter(([k,v])=>!v.on).map(([k])=>k);
-  envoyer('Claude Brebis – mouvements de lots\n\n'+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
+  envoyer('Claude Brebis – mouvements de lots\n\n'+(gc.length?'Groupes :\n'+gc.map(m=>m.a==='x'?m.d.slice(0,10)+' · groupe « '+m.g+' » supprimé':m.d.slice(0,10)+' · '+m.p+(m.a==='+'?' ajoutée au groupe « ':' retirée du groupe « ')+m.g+' »').join('\n')+'\n\n':'')+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
 $('#t-clr').onclick=()=>$('#t-confirm').hidden=false;
 $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
-$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
+$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);GM.forEach(m=>m.s=1);saveG();Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
 function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
   if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='echo') renderEcho();
+  if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
   $('#l-nums').innerHTML=tri(liste.items).map(p=>`<span data-fiche="${p}" class="${A()[p]?'':'warn'}">${p}</span>`).join('');
