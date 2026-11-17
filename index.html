@@ -817,7 +817,7 @@ $('#d-cnx').onclick=async()=>{ if(!('serial' in navigator)){dlog('!','Web Serial
   const SPP='00001101-0000-1000-8000-00805f9b34fb', m=$('#d-mode').value, f=$('#d-fmt').value;
   const opt=m==='b'?{filters:[{bluetoothServiceClassId:SPP}],allowedBluetoothServiceClassIds:[SPP]}:m==='c'?{}:{allowedBluetoothServiceClassIds:[SPP]};
   try{ if(DP) await ddcx(); DP=await navigator.serial.requestPort(opt); const info=DP.getInfo?DP.getInfo():{};
-    dlog('i','Appareil choisi : '+JSON.stringify(info));
+    dlog('i','Appareil choisi : '+JSON.stringify(info)); if(!(await dlibere(DP))){DP=null;return}
     await DP.open({baudRate:+$('#d-baud').value,dataBits:+f[0],parity:{N:'none',E:'even',O:'odd'}[f[1]],stopBits:+f[2]});
     dlog('✓','Connecté en '+$('#d-baud').value+' '+f+'. J’écoute… (attendre 20 s, puis essayer les envois)'); dlire();
     try{const sg=await DP.getSignals(); dlog('i','Signaux : '+JSON.stringify(sg))}catch(e){}
@@ -845,10 +845,13 @@ $('#d-ble').onclick=async()=>{ if(!navigator.bluetooth){dlog('!','Web Bluetooth 
         if(c.properties.notify||c.properties.indicate){try{await c.startNotifications(); c.addEventListener('characteristicvaluechanged',ev=>{const u=new Uint8Array(ev.target.value.buffer); dlog('← '+c.uuid.slice(4,8),dasc(u),u)}); dlog('i','  → écoute activée')}catch(e){}}}}
   }catch(e){dlog('✗','BLE : '+e.name+' – '+e.message)}};
 const dwait=ms=>new Promise(r=>setTimeout(r,ms));
+async function dlibere(P){ if(P===port){dlog('!','Cet appareil est le LECTEUR DE BOUCLES (déjà connecté pour les médailles), pas le DAC. Choisir l’autre appareil dans la liste.');return false}
+  if(P.readable||P.writable){dlog('i','Port resté ouvert : fermeture…'); try{if(DRD) await DRD.cancel()}catch(e){} try{await P.close()}catch(e){dlog('!','Fermeture impossible ('+e.message+') : recharger la page puis relancer.');return false}} return true}
 let DAUTO=false;
 $('#d-auto').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){dlog('!','Web Serial absent : ouvrir l’appli depuis GitHub dans Chrome.');return}
   const SPP='00001101-0000-1000-8000-00805f9b34fb'; let P;
   try{ if(DP) await ddcx(); P=await navigator.serial.requestPort({allowedBluetoothServiceClassIds:[SPP]}) }catch(e){dlog('✗','Aucun appareil choisi : '+e.message);return}
+  if(!(await dlibere(P))) return;
   DAUTO=true; $('#d-auto').disabled=true; const pr=$('#d-prog'); pr.hidden=false; DLOG=[]; dshow();
   dlog('i','TEST AUTOMATIQUE – appareil : '+JSON.stringify(P.getInfo?P.getInfo():{}));
   const combos=[[9600,'8N1'],[57600,'8N1'],[19200,'8N1'],[38400,'8N1'],[115200,'8N1'],[9600,'7E1']];
