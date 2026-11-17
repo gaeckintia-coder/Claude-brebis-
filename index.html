@@ -249,6 +249,13 @@ tr.sel td{background:var(--okbg)}
   <section id="v-tests" class="card" hidden>
     <h2>Tests de connexion (DAC…)</h2>
     <p class="hint">Avant : appairer l'appareil dans Réglages → Bluetooth du téléphone (code souvent 0000 ou 1234). Ensuite, essayer les tests dans l'ordre et me les envoyer.</p>
+    <div style="border:2px solid var(--accent);border-radius:14px;padding:10px;margin:8px 0">
+      <b>Test automatique du DAC</b>
+      <div class="hint">1. Sur le DAC : page Réception → Reset compteur. 2. Appuyer sur le bouton ci-dessous et choisir le DAC dans la liste. 3. Regarder l'écran du DAC pendant 2 à 3 minutes. 4. À la fin : photo de l'écran du DAC + « Envoyer le journal à Claude ».</div>
+      <button id="d-auto" class="btn" type="button" style="width:100%;font-size:20px;padding:14px;margin-top:8px">▶ Lancer le test automatique</button>
+      <div id="d-prog" class="big warn" style="font-size:20px;margin-top:8px" hidden></div>
+    </div>
+    <details><summary class="hint">Tests à la main (pour plus tard)</summary>
     <h3>1. Bluetooth classique (port série)</h3>
     <div class="row"><select id="d-baud" aria-label="Vitesse"><option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option><option>4800</option><option>2400</option><option>1200</option></select>
       <select id="d-fmt" aria-label="Format"><option value="8N1">8N1</option><option value="7E1">7E1</option><option value="8E1">8E1</option><option value="7O1">7O1</option></select>
@@ -261,7 +268,8 @@ tr.sel td{background:var(--okbg)}
     <div class="row"><label><input type="checkbox" id="d-cr" checked> + CR</label><label><input type="checkbox" id="d-lf"> + LF</label><button id="d-send" class="btn" type="button">Envoyer</button></div>
     <div class="row" style="flex-wrap:wrap"><span class="hint">Essais rapides :</span><button type="button" class="btn2" data-dq="?">?</button><button type="button" class="btn2" data-dq="AT">AT</button><button type="button" class="btn2" data-dq="ATI">ATI</button><button type="button" class="btn2" data-dqh="05">ENQ</button><button type="button" class="btn2" data-dqh="06">ACK</button><button type="button" class="btn2" data-dqh="0D">CR seul</button><button type="button" class="btn2" data-dq="HELP">HELP</button></div>
     <div class="row" style="flex-wrap:wrap"><span class="hint">DAC Albouy (Unitronics) :</span><button type="button" class="btn2" data-dqh="27">0x27 seul</button><button type="button" class="btn2" data-dqh="2F 30 30 49 44 45 44 0D">Unitronics ID (/00IDED)</button><button type="button" class="btn2" data-dqh="2F 30 31 49 44 45 45 0D">ID n°01 (/01IDEE)</button><button type="button" class="btn2" data-dqh="2F 30 30 52 43 46 35 0D">Lire horloge (/00RCF5)</button></div>
-    <h3>4. Ce que l'appareil répond</h3>
+    </details>
+    <h3>Ce que l'appareil répond</h3>
     <div class="row"><label><input type="checkbox" id="d-hex" checked> Voir en hexadécimal</label><button id="d-clr" class="btn2" type="button">Effacer</button></div>
     <pre id="d-log" style="white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;max-height:45vh;overflow:auto;font-size:12px;margin:0"></pre>
     <div class="row" style="margin-top:8px"><button id="d-claude" class="btn" type="button">Envoyer le journal à Claude</button></div>
@@ -836,6 +844,31 @@ $('#d-ble').onclick=async()=>{ if(!navigator.bluetooth){dlog('!','Web Bluetooth 
         if(c.properties.read){try{const v=await c.readValue(); const u=new Uint8Array(v.buffer); dlog('←',dasc(u),u)}catch(e){}}
         if(c.properties.notify||c.properties.indicate){try{await c.startNotifications(); c.addEventListener('characteristicvaluechanged',ev=>{const u=new Uint8Array(ev.target.value.buffer); dlog('← '+c.uuid.slice(4,8),dasc(u),u)}); dlog('i','  → écoute activée')}catch(e){}}}}
   }catch(e){dlog('✗','BLE : '+e.name+' – '+e.message)}};
+const dwait=ms=>new Promise(r=>setTimeout(r,ms));
+let DAUTO=false;
+$('#d-auto').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){dlog('!','Web Serial absent : ouvrir l’appli depuis GitHub dans Chrome.');return}
+  const SPP='00001101-0000-1000-8000-00805f9b34fb'; let P;
+  try{ if(DP) await ddcx(); P=await navigator.serial.requestPort({allowedBluetoothServiceClassIds:[SPP]}) }catch(e){dlog('✗','Aucun appareil choisi : '+e.message);return}
+  DAUTO=true; $('#d-auto').disabled=true; const pr=$('#d-prog'); pr.hidden=false; DLOG=[]; dshow();
+  dlog('i','TEST AUTOMATIQUE – appareil : '+JSON.stringify(P.getInfo?P.getInfo():{}));
+  const combos=[[9600,'8N1'],[57600,'8N1'],[19200,'8N1'],[38400,'8N1'],[115200,'8N1'],[9600,'7E1']];
+  const enc=t=>[...new TextEncoder().encode(t)];
+  const probes=[['0x27 seul',[0x27]],['Unitronics ID',enc('/00IDED\r')],['ID n°01',enc('/01IDEE\r')],['Lire horloge',enc('/00RCF5\r')],['?',enc('?\r')],['AT',enc('AT\r')],['ENQ',[5]],['CR seul',[13]]];
+  const bilan=[]; let n=0, tot=combos.length*probes.length;
+  for(const [baud,f] of combos){ let rx=0;
+    try{await P.open({baudRate:baud,dataBits:+f[0],parity:{N:'none',E:'even',O:'odd'}[f[1]],stopBits:+f[2]})}catch(e){dlog('✗',baud+' '+f+' : ouverture impossible – '+e.message); bilan.push(baud+' '+f+' : pas de connexion'); await dwait(1500); continue}
+    dlog('✓','— Vitesse '+baud+' '+f+' —');
+    const rd=P.readable.getReader(); let on=true;
+    (async()=>{try{while(on){const {value,done}=await rd.read(); if(done)break; if(value&&value.length){rx+=value.length; dlog('←',dasc(value),value)}}}catch(e){}})();
+    pr.innerHTML=`Vitesse ${baud} ${f}<small>Écoute… ${new Date().toLocaleTimeString('fr-FR')}</small>`; await dwait(3000);
+    for(const [nom,b] of probes){ n++; pr.innerHTML=`${new Date().toLocaleTimeString('fr-FR')} · ${baud}<small>Essai ${n}/${tot} : ${nom} — regardez l’écran du DAC</small>`;
+      try{const w=P.writable.getWriter(); const u=new Uint8Array(b); await w.write(u); w.releaseLock(); dlog('→ '+nom,dasc(u),u)}catch(e){dlog('✗','Envoi '+nom+' : '+e.message)}
+      await dwait(2500)}
+    on=false; try{await rd.cancel()}catch(e){} try{rd.releaseLock()}catch(e){} try{await P.close()}catch(e){}
+    bilan.push(baud+' '+f+' : '+(rx?rx+' octet(s) reçu(s)':'aucune réponse')); await dwait(800)}
+  dlog('i','BILAN : '+bilan.join(' · '));
+  pr.className='big '+(bilan.some(b=>/reçu/.test(b))?'ok':'warn'); pr.innerHTML=`Test terminé<small>${bilan.some(b=>/reçu/.test(b))?'Le DAC a répondu !':'Pas de réponse au téléphone'} — prenez une photo de l’écran du DAC, puis « Envoyer le journal à Claude »</small>`;
+  DAUTO=false; $('#d-auto').disabled=false};
 $('#d-claude').onclick=e=>envoyer('Claude Brebis – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
 
 // ---- sauvegarde / restauration
