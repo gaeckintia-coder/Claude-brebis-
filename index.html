@@ -54,6 +54,13 @@ body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot
 .e-seance{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
 .e-seance[aria-pressed="true"]{border:2px solid var(--accent)}
 .r-row{border:2px solid var(--line);border-radius:12px;padding:8px;margin-top:6px}.r-row.on{border-color:var(--accent);background:var(--okbg)}.r-row label.r-chk{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.r-row input[type=checkbox]{width:26px;height:26px}.r-row small{font-weight:400;color:var(--mute)}.r-row select,.r-row input[type=text]{width:100%;box-sizing:border-box;margin-top:6px;font:inherit;padding:8px}
+.lg-card{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin:6px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:17px}
+.lg-card b{font-size:20px} .lg-card.auto{color:var(--mute)}
+.lg-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)} .lg-row input{width:24px;height:24px}
+.lg-act{border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
+body.sfull .wrap>*:not(#v-sai){display:none!important}
+body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
+#sai-srcl .nums{max-height:30vh;overflow:auto}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
 .tabs button{font-size:14px}
@@ -141,7 +148,8 @@ tr.sel td{background:var(--okbg)}
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
     <button type="button" role="tab" data-t="liste" aria-selected="false">Liste</button>
-    <button type="button" role="tab" data-t="recherche" aria-selected="false">Recherche</button>
+    <button type="button" role="tab" data-t="lots" aria-selected="false">Lots</button>
+    <button type="button" role="tab" data-t="groupes" aria-selected="false">Groupes</button>
     <button type="button" role="tab" data-t="troupeau" aria-selected="false">Troupeau</button>
     <button type="button" role="tab" data-t="soins" aria-selected="false">Soins</button>
     <button type="button" role="tab" data-t="echo" aria-selected="false">Écho</button>
@@ -153,11 +161,11 @@ tr.sel td{background:var(--okbg)}
     <div id="t-alert"></div>
     <h2>Lots</h2>
     <div id="t-lots" class="lots"></div>
-    <details id="t-lman"><summary class="hint">Gérer les lots (regrouper, renommer)</summary><div id="t-llist"></div>
+    <details id="t-lman" hidden><summary class="hint">Gérer les lots (regrouper, renommer)</summary><div id="t-llist"></div>
       <div class="hint">Regrouper : toutes les bêtes du lot passent dans l'autre lot, et ce lot disparaît. Renommer : les bêtes ne bougent pas, seul le nom change. Le total du troupeau ne change pas.</div></details>
     <h2>Groupes</h2>
     <div id="t-grps" class="lots"></div>
-    <details id="t-gman"><summary class="hint">Gérer les groupes (vider, supprimer)</summary><div id="t-glist"></div>
+    <details id="t-gman" hidden><summary class="hint">Gérer les groupes (vider, supprimer)</summary><div id="t-glist"></div>
       <div class="hint">Vider : le groupe reste, sans brebis (pour le refaire). Supprimer : le groupe disparaît. Les lots ne bougent pas.</div></details>
     <h2>Trier et filtrer</h2>
     <div class="filt">
@@ -173,7 +181,7 @@ tr.sel td{background:var(--okbg)}
     </div>
     <div class="row"><b id="t-n">0</b><span class="hint">animaux</span><button id="t-all" class="btn2" type="button">Tout cocher</button><button id="t-none" class="btn2" type="button">Rien</button></div>
     <div class="tbl"><table><thead><tr><th></th><th>N°</th><th>Lot</th><th>Écho / agnelage</th><th>Index</th></tr></thead><tbody id="t-body"></tbody></table></div>
-    <div class="move">
+    <div class="move" hidden>
       <b><span id="t-sel">0</span> coché(s) : déplacer vers</b>
       <select id="t-dest" aria-label="Lot de destination"><option value="">— Lot existant —</option></select>
       <input id="t-new" class="row" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px" placeholder="ou nom d'un nouveau lot (ex. Bergerie – à vendre)">
@@ -311,6 +319,26 @@ tr.sel td{background:var(--okbg)}
     <div class="row" style="margin-top:8px"><button id="d-claude" class="btn" type="button">Envoyer le journal à Claude</button></div>
   </section>
 
+  <!-- LOTS -->
+  <section id="v-lots" class="card" hidden><div id="lg-lots"></div></section>
+  <!-- GROUPES -->
+  <section id="v-groupes" class="card" hidden><div id="lg-groupes"></div></section>
+  <!-- SAISIE D'UN LOT OU D'UN GROUPE (plein écran) -->
+  <section id="v-sai" class="card" hidden>
+    <div class="e-top"><button id="sai-x" class="btn2 b-retour" type="button">← Annuler</button><b id="sai-t" style="flex:1;text-align:center"></b></div>
+    <input id="sai-nom" type="text" placeholder="Nom" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;margin-top:8px">
+    <div class="hint" style="margin-top:8px">Bipez les brebis, ou tapez un numéro :</div>
+    <form id="sai-f" class="row"><input id="sai-q" inputmode="numeric" autocomplete="off" placeholder="Numéro" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
+    <div id="sai-last"></div>
+    <div class="hint" style="margin-top:8px">ou les prendre dans un lot ou un groupe :</div>
+    <select id="sai-src" aria-label="Prendre dans"></select>
+    <div id="sai-srcl"></div>
+    <h3>Brebis choisies · <span id="sai-n">0</span></h3>
+    <div id="sai-items" class="nums" style="flex:1;overflow:auto;align-content:flex-start"></div>
+    <button id="sai-ok" class="btn b-valid" type="button" style="width:100%;padding:14px;font-size:18px">Enregistrer</button>
+    <span id="sai-st" class="state"></span>
+  </section>
+
   <!-- LISTE -->
   <section id="v-liste" class="card" hidden>
     <h2>Liste bipée</h2>
@@ -322,6 +350,7 @@ tr.sel td{background:var(--okbg)}
       <select id="l-dest" aria-label="Destination"></select>
       <input id="l-nom" type="text" hidden style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;margin-top:6px">
       <button id="l-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Enregistrer</button>
+      <button id="l-annul" class="btn2 b-retour" type="button" style="width:100%;margin-top:6px;padding:10px">Annuler : effacer la liste sans rien enregistrer</button>
       <span id="l-mst" class="state"></span>
       <div class="hint">Un lot = l'endroit (la brebis change de place). Un groupe = une étiquette (ex. À inséminer) : elle reste dans son lot.</div>
     </div>
@@ -334,6 +363,7 @@ tr.sel td{background:var(--okbg)}
 
   <!-- RECHERCHE -->
   <section id="v-recherche" class="card" hidden>
+    <button id="r-back" class="btn2 b-retour" type="button">← Retour</button>
     <div id="r-setup">
       <h2>Brebis à trouver</h2>
       <p class="hint">Colle la liste envoyée par Claude, ou choisis un lot.</p>
@@ -353,7 +383,7 @@ tr.sel td{background:var(--okbg)}
         <div class="hint">Seulement si on veut enregistrer quelque chose. Sinon, ne rien cocher.</div>
         <div id="r-grp"></div>
         <button id="r-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Enregistrer les déplacements cochés</button>
-        <button id="r-annul" class="btn2 b-retour" type="button" style="width:100%;margin-top:6px;padding:10px">Annuler : ne rien changer</button>
+        <button id="r-annul" class="btn2 b-retour" type="button" style="width:100%;margin-top:6px;padding:10px">Annuler : arrêter la recherche sans rien enregistrer</button>
         <span id="r-mst" class="state"></span>
         <div class="hint">Les déplacements partent avec « Envoyer à Claude » de l'onglet Troupeau. Pour déplacer ensuite tout un lot : Troupeau → choisir le lot → Tout cocher → Déplacer.</div>
       </div>
@@ -475,8 +505,8 @@ $('#file').addEventListener('change',e=>{
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
-function setTab(t){tab=t; if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
-  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
+function setTab(t){tab=t; if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','lots','groupes','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -605,6 +635,7 @@ $('#r-go').addEventListener('click',()=>{
 });
 function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
 $('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve()};majSon();
+$('#r-back').onclick=()=>setTab(R_ORIG||'lots');
 $('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
 $('#r-oui').onclick=()=>{$('#r-confirm').hidden=true; $('#r-grp').scrollIntoView({behavior:'smooth',block:'center'})};
@@ -621,7 +652,8 @@ $('#r-grp').addEventListener('change',e=>{const t=e.target;
   if(t.dataset.rc){const k=t.dataset.rc; R_CH[k]=R_CH[k]||{}; R_CH[k].on=t.checked; rSave(); t.blur(); rRanger(); return}
   if(t.dataset.rd){const k=t.dataset.rd; R_CH[k].dest=t.value; rSave(); t.blur(); rRanger(); if(t.value==='__new'||t.value==='__newg'){const i=$('#r-grp').querySelector(`[data-rn="${k}"]`); if(i) i.focus()} return}});
 $('#r-grp').addEventListener('input',e=>{const t=e.target; if(t.dataset.rn){R_CH[t.dataset.rn].nouveau=t.value; rSave()}});
-$('#r-annul').onclick=()=>{R_CH={}; rSave(); rRanger(); $('#r-mst').textContent='Rien n’a été changé.'; $('#r-mst').className='state'};
+$('#r-annul').onclick=()=>{const b=$('#r-annul'); if(!b.dataset.ask){b.dataset.ask=1; b.textContent='Confirmer : tout effacer et revenir au départ'; setTimeout(()=>{delete b.dataset.ask; b.textContent='Annuler : arrêter la recherche sans rien enregistrer'},5000); return}
+  delete b.dataset.ask; b.textContent='Annuler : arrêter la recherche sans rien enregistrer'; R_CH={}; rSave(); rech=null; LS.set('cb_rech',null); $('#r-confirm').hidden=true; $('#r-last').innerHTML=''; $('#r-mst').textContent=''; setTab(R_ORIG||'lots'); window.scrollTo({top:0,behavior:'smooth'})};
 $('#r-move').onclick=()=>{ const st=$('#r-mst'), G=rGroupes(), ks=Object.keys(G).filter(k=>R_CH[k]&&R_CH[k].on);
   if(!ks.length){st.textContent='Coche au moins un groupe.';st.className='state err';return}
   for(const k of ks){const c=R_CH[k]; const dest=c.dest==='__new'?(c.nouveau||'').trim():c.dest==='__newg'?((c.nouveau||'').trim()?'g:'+c.nouveau.trim():''):c.dest; if(!dest){st.textContent='Choisis le lot de destination pour « '+G[k][0]+' ».';st.className='state err';return} c._d=dest}
@@ -629,12 +661,14 @@ $('#r-move').onclick=()=>{ const st=$('#r-mst'), G=rGroupes(), ks=Object.keys(G)
   ks.forEach(k=>{const [nom,l]=G[k], dest=R_CH[k]._d; let n=0; if(dest.startsWith('g:')){const g=dest.slice(2); l.forEach(p=>n+=grpAdd(p,g)); msg.push(nom+' → groupe « '+g+' » : '+n); return} l.filter(p=>A()[p]).forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;mvPush({d,p,de,vers:dest});n++}}); msg.push(nom+' → « '+dest+' » : '+n)}); saveG();
   LS.set('cb_lots',LOTS);LS.set('cb_moves',MV); R_CH={}; rSave();
   st.innerHTML='Enregistré :<br>'+msg.map(esc).join('<br>'); st.className='state ok'; showBase(); render()};
-$('#r-yes').onclick=()=>{rech=null;LS.set('cb_rech',null);$('#r-confirm').hidden=true;$('#r-last').innerHTML='';render()};
+$('#r-yes').onclick=()=>{rech=null;LS.set('cb_rech',null);$('#r-confirm').hidden=true;$('#r-last').innerHTML='';setTab(R_ORIG||'lots')};
 function lDest(){const cur=$('#l-dest').value; const lots=[...new Set(Object.keys(A()).filter(p=>pres(A()[p])).map(lotOf).concat(Object.values(LOTS)).filter(Boolean))].sort();
   $('#l-dest').innerHTML='<option value="">— Choisir —</option><optgroup label="Ajouter à un groupe (reste dans son lot)">'+grpsUser().map(g=>`<option value="g:${esc(g)}">Groupe ${esc(g)}</option>`).join('')+'<option value="__newg">＋ Nouveau groupe…</option></optgroup><optgroup label="Changer de lot (change de place)">'+lots.map(l=>`<option>${esc(l)}</option>`).join('')+'<option value="__new">＋ Nouveau lot…</option></optgroup>';
   $('#l-dest').value=cur; lNom()}
 function lNom(){const v=$('#l-dest').value, i=$('#l-nom'); i.hidden=!(v==='__new'||v==='__newg'); i.placeholder=v==='__newg'?'Nom du groupe (ex. À inséminer)':'Nom du lot (ex. Bergerie – traite)'}
 $('#l-dest').addEventListener('change',()=>{lNom(); if(!$('#l-nom').hidden) $('#l-nom').focus()});
+$('#l-annul').onclick=()=>{const b=$('#l-annul'); if(!b.dataset.ask){b.dataset.ask=1; b.textContent='Confirmer : effacer la liste'; setTimeout(()=>{delete b.dataset.ask; b.textContent='Annuler : effacer la liste sans rien enregistrer'},5000); return}
+  delete b.dataset.ask; b.textContent='Annuler : effacer la liste sans rien enregistrer'; liste={debut:null,items:[],dbl:0}; LS.set('cb_liste',liste); $('#l-last').innerHTML=''; $('#l-dest').value=''; $('#l-nom').value=''; $('#l-mst').textContent=''; render(); window.scrollTo({top:0,behavior:'smooth'})};
 $('#l-move').onclick=()=>{const st=$('#l-mst'), v=$('#l-dest').value, nm=$('#l-nom').value.trim(), L=liste.items.filter(p=>A()[p]);
   if(!L.length){st.textContent='La liste est vide.';st.className='state err';return}
   if(!v||((v==='__new'||v==='__newg')&&!nm)){st.textContent='Choisis la destination'+(v?' et tape son nom':'')+'.';st.className='state err';return}
@@ -764,7 +798,7 @@ $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);GM.forEach(m=>m.s=1);saveG(
 
 // ---- affichage
 function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
-  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='echo') renderEcho();
+  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho();
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
@@ -784,6 +818,7 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
 // ---- entrée d'un numéro (lecteur ou clavier)
 function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
+  if(typeof SAI!=='undefined'&&SAI){saiAdd(p);return}
   if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
 $('#f').addEventListener('submit',e=>{e.preventDefault();lu($('#q').value);$('#q').value=''});
 
@@ -1099,6 +1134,104 @@ $('#d-auto2').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){
   DAUTO=false; $('#d-auto2').disabled=false};
 $('#d-claude').onclick=e=>envoyer('Claude Brebis – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
 
+// ---- onglets Lots et Groupes (même fonctionnement) + saisie plein écran
+const LG={lots:{sel:null,ck:new Set(),ask:null},groupes:{sel:null,ck:new Set(),ask:null}};
+let R_ORIG=null, SAI=null;
+const membresLot=l=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&(lotOf(p)||'Sans lot')===l));
+const membresGrp=g=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&membreDe(g,p)));
+const lotsNoms=()=>lotsList().map(x=>x[0]);
+function lgInfo(p){const x=A()[p]||{}; return [x.cat,x.agn?'agn. '+x.agn.slice(0,5):(/Vide/.test(x.echo||'')?'vide':'')].filter(Boolean).join(' · ')}
+function lgListe(kind,M){const S=LG[kind]; return `<div class="row"><button type="button" class="btn2" data-lgall="${kind}">Tout cocher</button><button type="button" class="btn2" data-lgnone="${kind}">Rien</button><span class="hint">${S.ck.size} cochée(s)</span></div>`+
+  M.map(p=>`<label class="lg-row"><input type="checkbox" data-lgck="${kind}|${p}"${S.ck.has(p)?' checked':''}><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b><span class="hint">${esc(lgInfo(p))}</span></label>`).join('')}
+function destSel(id,kind,excl){const L=kind==='lots'?lotsNoms().filter(x=>x!==excl&&x!=='Sans lot'):grpsUser().filter(x=>x!==excl);
+  return `<select id="${id}"><option value="">— Choisir —</option>${L.map(x=>`<option>${esc(x)}</option>`).join('')}<option value="__new">＋ Nouveau ${kind==='lots'?'lot':'groupe'}…</option></select><input id="${id}-n" type="text" hidden placeholder="Nom" style="font:inherit;padding:8px;width:100%;box-sizing:border-box;margin-top:4px">`}
+function renderLots(){const el=$('#lg-lots'), S=LG.lots;
+  if(!S.sel||!lotsNoms().includes(S.sel)){S.sel=null; const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0);
+    el.innerHTML=`<h2>Lots <span class="hint">· l'endroit où sont les bêtes</span></h2><div class="hint">Troupeau total (présents) : <b>${tot}</b></div>`+
+      L.map(([l,n])=>`<button type="button" class="lg-card" data-lgo="lots|${esc(l)}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+
+      `<button type="button" class="btn" data-sai="lot|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau lot</button>
+       <button type="button" class="btn2" data-rcolle="lots" style="width:100%;margin-top:6px">🔍 Rechercher une liste reçue de Claude</button>`; return}
+  const l=S.sel, M=membresLot(l);
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${esc(l)} · ${M.length}</h2>
+    <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
+    ${lgListe('lots',M)}
+    <div class="lg-act"><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
+    <details class="lg-act"><summary><b>Regrouper ou renommer ce lot</b></summary>
+      <div class="hint">Regrouper : toutes ses bêtes passent dans l'autre lot, ce lot disparaît.</div>${destSel('lg-lr','lots',l)}<button type="button" class="btn b-valid" data-lgreg="1" style="width:100%;margin-top:6px">${S.ask==='reg'?'Confirmer : regrouper':'Regrouper'}</button>
+      <div class="hint" style="margin-top:8px">Renommer : les bêtes ne bougent pas.</div><input id="lg-rn" type="text" placeholder="Nouveau nom" style="font:inherit;padding:8px;width:100%;box-sizing:border-box"><button type="button" class="btn2 b-retour" data-lgren="1" style="width:100%;margin-top:6px">Renommer</button></details>
+    <span id="lg-st-lots" class="state"></span>`}
+function renderGroupes(){const el=$('#lg-groupes'), S=LG.groupes, GU=grpsUser(), GA=grpsAuto();
+  if(!S.sel||![...GU,...GA].includes(S.sel)){S.sel=null;
+    el.innerHTML=`<h2>Groupes <span class="hint">· étiquettes, la brebis reste dans son lot</span></h2>`+
+      (GU.length?GU.map(g=>`<button type="button" class="lg-card" data-lgo="groupes|${esc(g)}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''):'<div class="hint">Aucun groupe créé pour l’instant.</div>')+
+      `<button type="button" class="btn" data-sai="groupe|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau groupe</button>
+       <h3>Groupes automatiques</h3>`+GA.map(g=>`<button type="button" class="lg-card auto" data-lgo="groupes|${esc(g)}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''); return}
+  const g=S.sel, M=membresGrp(g), auto=!GRP[g];
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="groupes">← Tous les groupes</button><h2 style="margin-top:8px">${esc(g)} · ${M.length}</h2>${auto?'<div class="hint">Groupe automatique : il se remplit tout seul.</div>':''}
+    <div class="row"><button type="button" class="btn" data-lgrech="groupes">🔍 Rechercher ce groupe en bipant</button>${auto?'':`<button type="button" class="btn" data-sai="groupe|${esc(g)}">＋ Ajouter des brebis</button>`}</div>
+    ${lgListe('groupes',M)}
+    <div class="lg-act"><b>Les ${S.ck.size} cochée(s) :</b>${auto?'':`<button type="button" class="btn2 b-retour" data-lgret="1" style="width:100%;margin-top:6px">Retirer de ce groupe</button>`}
+      <div class="hint" style="margin-top:6px">Ajouter aussi à un autre groupe :</div>${destSel('lg-gd','groupes',g)}<button type="button" class="btn" data-lgadd="1" style="width:100%;margin-top:6px">Ajouter au groupe</button></div>
+    ${auto?'':`<div class="lg-act"><div class="row"><button type="button" class="btn2 b-retour" data-lgvid="1">${S.ask==='vid'?'Confirmer : vider':'Vider le groupe'}</button><button type="button" class="btn b-valid" data-lgsup="1">${S.ask==='sup'?'Confirmer : supprimer':'Supprimer le groupe'}</button></div><div class="hint">Vider : le groupe reste, sans brebis. Supprimer : il disparaît. Les lots ne bougent pas.</div></div>`}
+    <span id="lg-st-groupes" class="state"></span>`}
+function lgMsg(kind,t,ok){const s=$('#lg-st-'+kind); if(s){s.textContent=t; s.className='state '+(ok?'ok':'err')}}
+function lgDest(id){const v=$('#'+id).value; return v==='__new'?$('#'+id+'-n').value.trim():v}
+function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} S.ask=a; setTimeout(()=>{if(S.ask===a){S.ask=null; render()}},5000); render(); return false}
+['lots','groupes'].forEach(kind=>{const el=$('#lg-'+kind);
+ el.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.lgck){const [k,p]=t.dataset.lgck.split('|'); t.checked?LG[k].ck.add(p):LG[k].ck.delete(p); render(); return}
+  if(t.tagName==='SELECT'){const n=$('#'+t.id+'-n'); if(n){n.hidden=t.value!=='__new'; if(!n.hidden) n.focus()}}});
+ el.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const S=LG[kind], d=fdate();
+  if(b.dataset.lgo){const [k,n]=b.dataset.lgo.split('|'); LG[k].sel=n; LG[k].ck.clear(); LG[k].ask=null; render(); window.scrollTo(0,0); return}
+  if(b.dataset.lgback){S.sel=null; S.ck.clear(); render(); return}
+  if(b.dataset.lgall){const M=kind==='lots'?membresLot(S.sel):membresGrp(S.sel); M.forEach(p=>S.ck.add(p)); render(); return}
+  if(b.dataset.lgnone){S.ck.clear(); render(); return}
+  if(b.dataset.sai){const [k,n]=b.dataset.sai.split('|'); saiOuvrir(k,n); return}
+  if(b.dataset.rcolle){R_ORIG=kind; rech=null; LS.set('cb_rech',null); setTab('recherche'); return}
+  if(b.dataset.lgrech){const M=kind==='lots'?membresLot(S.sel):membresGrp(S.sel); if(!M.length) return;
+    rech={titre:(kind==='lots'?'':'Groupe ')+S.sel,debut:new Date().toISOString(),cible:M,trouvees:[],trop:[]}; LS.set('cb_rech',rech); R_ORIG=kind; setTab('recherche'); return}
+  if(b.dataset.lgmove){const dest=lgDest('lg-ld'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!dest) return lgMsg(kind,'Choisis le lot de destination.');
+    let n=0; S.ck.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest; mvPush({d,p,de,vers:dest}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.ck.clear(); render(); lgMsg(kind,n+' bête(s) déplacée(s) vers « '+dest+' ».',1); showBase(); return}
+  if(b.dataset.lgreg){const dest=lgDest('lg-lr'); if(!dest) return lgMsg(kind,'Choisis le lot dans lequel regrouper.'); if(!lgAsk(kind,'reg')){$('#lg-lr').value=dest; return}
+    const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
+  if(b.dataset.lgren){const nv=$('#lg-rn').value.trim(), l=S.sel; if(!nv) return lgMsg(kind,'Tape le nouveau nom.'); if(lotsNoms().includes(nv)) return lgMsg(kind,'« '+nv+' » existe déjà : utilise Regrouper.');
+    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
+  if(b.dataset.lgret){if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); let n=0; S.ck.forEach(p=>n+=grpDel(p,S.sel)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis retirée(s) du groupe.',1); return}
+  if(b.dataset.lgadd){const g=lgDest('lg-gd'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!g) return lgMsg(kind,'Choisis le groupe.'); let n=0; S.ck.forEach(p=>n+=grpAdd(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis ajoutée(s) au groupe « '+g+' ».',1); return}
+  if(b.dataset.lgvid){if(!lgAsk(kind,'vid')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,'Groupe « '+g+' » vidé.',1); return}
+  if(b.dataset.lgsup){if(!lgAsk(kind,'sup')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); delete GRP[g]; GM.push({d,p:'—',g,a:'x'}); saveG(); S.sel=null; S.ck.clear(); render(); return}
+ })});
+// saisie plein écran d'un nouveau lot / groupe, ou ajout à un lot / groupe existant
+function saiOuvrir(kind,nom){SAI={kind,nom:nom||'',neuf:!nom,items:[]}; document.body.classList.add('sfull'); $('#v-sai').hidden=false;
+  $('#sai-t').textContent=(SAI.neuf?(kind==='lot'?'Nouveau lot':'Nouveau groupe'):'Ajouter à « '+nom+' »'); $('#sai-nom').hidden=!SAI.neuf; $('#sai-nom').value='';
+  $('#sai-nom').placeholder=kind==='lot'?'Nom du lot (ex. Mères 1)':'Nom du groupe (ex. Insémination 2027 n°1)'; $('#sai-st').textContent=''; $('#sai-last').innerHTML='';
+  const L=lotsNoms(), G=[...grpsUser(),...grpsAuto()];
+  $('#sai-src').innerHTML='<option value="">— Choisir —</option><optgroup label="Lots">'+L.map(l=>`<option value="l:${esc(l)}">${esc(l)}</option>`).join('')+'</optgroup><optgroup label="Groupes">'+G.map(g=>`<option value="g:${esc(g)}">${esc(g)}</option>`).join('')+'</optgroup>';
+  $('#sai-srcl').innerHTML=''; saiMaj(); window.scrollTo(0,0)}
+function saiFermer(){SAI=null; document.body.classList.remove('sfull'); $('#v-sai').hidden=true; render()}
+function saiMaj(){ if(!SAI) return; $('#sai-n').textContent=SAI.items.length;
+  $('#sai-items').innerHTML=SAI.items.map(p=>`<span>${p} <button type="button" class="btn2" style="padding:0 6px;min-height:0" data-saidel="${p}" aria-label="Enlever ${p}">✕</button></span>`).join('')||'<span class="hint">Aucune pour l’instant.</span>'}
+function saiAdd(p){ if(!SAI) return; const x=A()[p];
+  if(!x){alerte();sonHors(); $('#sai-last').innerHTML=`<div class="big bad" style="font-size:24px">${p}<small>Inconnue dans la base</small></div>`; return}
+  if(SAI.items.includes(p)){bip();sonDeja(); $('#sai-last').innerHTML=`<div class="big warn" style="font-size:24px">${p}<small>Déjà choisie</small></div>`; return}
+  SAI.items.push(p); bip(); sonTrouve(); $('#sai-last').innerHTML=`<div class="big ok" style="font-size:24px">${p}<small>${esc(lotOf(p)||'')}</small></div>`; saiMaj()}
+$('#sai-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#sai-q').value); $('#sai-q').value=''; if(p) saiAdd(p)});
+$('#sai-x').onclick=saiFermer;
+$('#sai-src').addEventListener('change',()=>{const v=$('#sai-src').value; if(!v){$('#sai-srcl').innerHTML='';return}
+  const M=v.startsWith('l:')?membresLot(v.slice(2)):membresGrp(v.slice(2));
+  $('#sai-srcl').innerHTML=`<div class="row"><button type="button" class="btn2" data-saitout="1">Tout prendre (${M.length})</button><button type="button" class="btn" data-saicoch="1">Prendre les cochées</button></div><div class="nums">${M.map(p=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0"><input type="checkbox" data-saick="${p}">${p}</label>`).join('')}</div>`});
+$('#v-sai').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b||!SAI) return;
+  if(b.dataset.saidel){SAI.items=SAI.items.filter(p=>p!==b.dataset.saidel); saiMaj(); return}
+  if(b.dataset.saitout||b.dataset.saicoch){const L=[...$('#sai-srcl').querySelectorAll('[data-saick]')].filter(i=>b.dataset.saitout||i.checked).map(i=>i.dataset.saick); L.forEach(p=>{if(!SAI.items.includes(p)) SAI.items.push(p)}); saiMaj(); $('#sai-srcl').querySelectorAll('[data-saick]').forEach(i=>i.checked=false); return}
+  if(b.id==='sai-ok'){const nom=SAI.neuf?$('#sai-nom').value.trim():SAI.nom, st=$('#sai-st');
+    if(!nom){st.textContent='Tape le nom.';st.className='state err';return}
+    if(!SAI.items.length){st.textContent='Choisis au moins une brebis.';st.className='state err';return}
+    const d=fdate(); let n=0;
+    if(SAI.kind==='lot'){SAI.items.forEach(p=>{const de=lotOf(p); if(de!==nom){LOTS[p]=nom; mvPush({d,p,de,vers:nom}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); LG.lots.sel=nom}
+    else {SAI.items.forEach(p=>n+=grpAdd(p,nom)); saveG(); LG.groupes.sel=nom}
+    showBase(); saiFermer(); return}
+});
+
 // ---- sauvegarde / restauration
 function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
@@ -1118,6 +1251,9 @@ bkCheck();
 let QUIT=0;
 function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;font-size:16px;max-width:90vw;text-align:center';document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,2500)}
 function retourTel(){
+  if(typeof SAI!=='undefined'&&SAI){ saiFermer(); return true}
+  if((tab==='lots'||tab==='groupes')&&LG[tab].sel){ LG[tab].sel=null; LG[tab].ck.clear(); render(); return true}
+  if(tab==='recherche'){ setTab(R_ORIG||'lots'); return true}
   if(!$('#sheet').hidden){ const S=ST['#sheet-body']; if(S.pile.length) fiche(S.pile.pop(),'nav','#sheet-body'); else $('#sheet').hidden=true; return true}
   if(document.body.classList.contains('efull')){ eVue(EV==='saisie'?'liste':EV==='liste'?'clot':'saisie'); return true}
   if(tab==='fiche'&&ST['#fiche'].pile.length){ fiche(ST['#fiche'].pile.pop(),'nav','#fiche'); return true}
