@@ -53,6 +53,7 @@ body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot
 #e-msg{min-height:1.2em;font-size:14px}
 .e-seance{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
 .e-seance[aria-pressed="true"]{border:2px solid var(--accent)}
+.r-grp{display:grid;grid-template-columns:1fr 1fr;gap:6px}.r-grp button{padding:10px 6px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-weight:700}.r-grp button[aria-pressed="true"]{border-color:var(--accent);background:var(--okbg)}.r-grp small{display:block;font-weight:400;color:var(--mute)}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
 .tabs button{font-size:14px}
@@ -328,11 +329,28 @@ tr.sel td{background:var(--okbg)}
       <h2>Manquantes</h2><div id="r-mn" class="nums"></div>
       <h2>Trouvées</h2><div id="r-fn" class="nums"></div>
       <h2>Bipées en trop</h2><div id="r-xn" class="nums"></div>
+      <div style="border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0">
+        <h2 style="margin-top:0">Ranger dans un lot</h2>
+        <div class="hint">1. Quelles brebis ?</div>
+        <div id="r-grp" class="r-grp"></div>
+        <div class="hint" style="margin-top:8px">2. Vers quel lot ?</div>
+        <select id="r-dest" aria-label="Lot existant"><option value="">— Lot existant —</option></select>
+        <input id="r-new" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;margin-top:6px;box-sizing:border-box" placeholder="ou nom d'un nouveau lot (ex. Bergerie – manquantes du 17/11)">
+        <button id="r-move" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:12px">Déplacer</button>
+        <span id="r-mst" class="state"></span>
+        <div class="hint">Les déplacements partent avec « Envoyer à Claude » de l'onglet Troupeau. Pour déplacer ensuite tout un lot : Troupeau → choisir le lot → Tout cocher → Déplacer.</div>
+      </div>
       <div class="row">
         <button id="r-send" class="btn" type="button">Envoyer à Claude</button>
         <button id="r-stop" class="btn2" type="button">Nouvelle recherche</button>
       </div>
-      <div id="r-confirm" class="row" hidden><span>Arrêter cette recherche ?</span><button id="r-yes" class="btn" type="button">Oui</button><button id="r-no" class="btn2" type="button">Non</button></div>
+      <div id="r-confirm" hidden style="border:2px solid var(--bad);border-radius:14px;padding:10px;margin-top:8px">
+        <b>Avant d'arrêter : voulez-vous enregistrer ces brebis dans un lot ?</b>
+        <div class="hint">Trouvées, manquantes, en trop ou toutes les boucles lues.</div>
+        <button id="r-oui" class="btn" type="button" style="width:100%;margin-top:8px">Oui, choisir quoi enregistrer</button>
+        <button id="r-yes" class="btn b-valid" type="button" style="width:100%;margin-top:6px">Non, arrêter sans enregistrer</button>
+        <button id="r-no" class="btn2 b-retour" type="button" style="width:100%;margin-top:6px">← Continuer la recherche</button>
+      </div>
     </div>
   </section>
 
@@ -534,8 +552,23 @@ $('#r-go').addEventListener('click',()=>{
 });
 function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
 $('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve()};majSon();
-$('#r-stop').onclick=()=>$('#r-confirm').hidden=false;
+$('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
+$('#r-oui').onclick=()=>{$('#r-confirm').hidden=true; $('#r-grp').scrollIntoView({behavior:'smooth',block:'center'})};
+let R_GRP='m';
+function rGroupes(){const m=rech.cible.filter(p=>!rech.trouvees.includes(p)); return {f:['Trouvées',rech.trouvees.slice()],m:['Manquantes',m],x:['En trop',rech.trop.slice()],t:['Toutes les bipées',[...rech.trouvees,...rech.trop]]}}
+function rRanger(){ if(!rech) return; const G=rGroupes();
+  $('#r-grp').innerHTML=Object.entries(G).map(([k,[n,l]])=>`<button type="button" data-rg="${k}" aria-pressed="${R_GRP===k}">${n}<small>${l.length} animal${l.length>1?'aux':''}</small></button>`).join('');
+  const lots=[...new Set(Object.keys(A()).filter(p=>pres(A()[p])).map(lotOf).concat(Object.values(LOTS)).filter(Boolean))].sort();
+  const cur=$('#r-dest').value; $('#r-dest').innerHTML='<option value="">— Lot existant —</option>'+lots.map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join('')}
+$('#r-grp').addEventListener('click',e=>{const b=e.target.closest('[data-rg]'); if(!b) return; R_GRP=b.dataset.rg; rRanger()});
+$('#r-move').onclick=()=>{ const dest=$('#r-new').value.trim()||$('#r-dest').value, st=$('#r-mst');
+  const [nom,l]=rGroupes()[R_GRP]; const L=l.filter(p=>A()[p]);
+  if(!L.length){st.textContent='Aucun animal connu dans « '+nom+' ».';st.className='state err';return}
+  if(!dest){st.textContent='Choisis un lot ou tape un nouveau nom.';st.className='state err';return}
+  const d=fdate(); let n=0; L.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest;MV.push({d,p,de,vers:dest});n++}});
+  LS.set('cb_lots',LOTS);LS.set('cb_moves',MV); $('#r-new').value='';
+  st.textContent=nom+' : '+n+' animal(aux) déplacé(s) vers « '+dest+' »'+(L.length-n?' ('+(L.length-n)+' y étaient déjà)':'')+'.'; st.className='state ok'; showBase(); render()};
 $('#r-yes').onclick=()=>{rech=null;LS.set('cb_rech',null);$('#r-confirm').hidden=true;$('#r-last').innerHTML='';render()};
 $('#l-clear').onclick=()=>$('#l-confirm').hidden=false;
 $('#l-no').onclick=()=>$('#l-confirm').hidden=true;
@@ -630,6 +663,7 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
     $('#r-f').textContent=rech.trouvees.length; $('#r-m').textContent=m.length; $('#r-x').textContent=rech.trop.length;
     $('#r-mn').innerHTML=m.map(p=>`<span data-fiche="${p}">${p}</span>`).join('')||'<span class="ok">Toutes trouvées</span>';
     $('#r-fn').innerHTML=tri(rech.trouvees).map(p=>`<span data-fiche="${p}" class="ok">${p}</span>`).join('');
+    rRanger(m);
     $('#r-xn').innerHTML=tri(rech.trop).map(p=>`<span data-fiche="${p}" class="warn">${p}</span>`).join('');
   }
 }
