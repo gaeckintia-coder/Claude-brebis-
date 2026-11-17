@@ -56,11 +56,26 @@ body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot
 .r-row{border:2px solid var(--line);border-radius:12px;padding:8px;margin-top:6px}.r-row.on{border-color:var(--accent);background:var(--okbg)}.r-row label.r-chk{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}.r-row input[type=checkbox]{width:26px;height:26px}.r-row small{font-weight:400;color:var(--mute)}.r-row select,.r-row input[type=text]{width:100%;box-sizing:border-box;margin-top:6px;font:inherit;padding:8px}
 .lg-card{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin:6px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:17px}
 .lg-card b{font-size:20px} .lg-card.auto{color:var(--mute)}
+.coul-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.coul{width:38px;height:38px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}.coul.on{box-shadow:0 0 0 3px var(--ink)}.coul.aucune{background:var(--card);color:var(--mute);font-size:18px}
+.past-b{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:15px;font-weight:700;color:var(--ink)}.pb{display:inline-block;width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #0003}.pbt{margin-right:8px}
+.pt{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:8px;vertical-align:middle}
 .lg-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)} .lg-row input{width:24px;height:24px}
 .lg-act{border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
 body.sfull .wrap>*:not(#v-sai){display:none!important}
+body.tfull .wrap>*:not(#v-tri){display:none!important}
+body.tfull #v-tri{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
+#tri-card .tri-big{border-radius:16px;padding:14px;text-align:center;color:#fff;margin-top:6px}
+#tri-card .tri-big b{display:block;font-family:var(--display);font-size:56px;line-height:1} #tri-card .tri-big span{display:block;font-size:26px;font-weight:800;margin-top:6px}
+.tri-g{border-left:10px solid;padding:4px 8px;margin:6px 0}
 body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
 #sai-srcl .nums{max-height:30vh;overflow:auto}
+.home-only{} #pbar{display:none} #p-camp{display:none}
+.camp-l{font-size:15px;font-weight:700} .camp-l select{font:inherit;padding:4px 6px;margin-left:4px}
+body.page #p-camp{display:block;margin:-6px 0 8px} #camp-ban{margin:0 0 8px;padding:8px;border-radius:10px;background:var(--warnbg);color:var(--warn);font-weight:700}
+body.page header, body.page .wrap>.card:first-of-type, body.page .tabs, body.page #v-donnees, body.page #bk-alert{display:none!important}
+body.page #pbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px}
+#pbar b{flex:1;font-size:20px} #p-lect{font-size:12px}
+body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important} body:not(.page) .tabs button{padding:22px 6px!important;font-size:19px!important;border-radius:16px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
 .tabs button{font-size:14px}
@@ -82,6 +97,7 @@ body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:
 .chip.c-or{color:#8a6508;background:#fff3c4}
 .tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
+.tag .tag-nom{display:block;font-style:normal;font-weight:700;font-size:20px;text-align:center;margin-top:2px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;border:1.5px solid currentColor}
 .c-ok{color:var(--ok)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)} .c-mute{color:var(--mute)}
@@ -128,7 +144,9 @@ tr.sel td{background:var(--okbg)}
   <header>
     <h1>Claude Brebis</h1>
     <span class="base" id="base">Aucune donnée chargée</span>
+    <label class="camp-l">Campagne <select id="camp-sel" aria-label="Campagne"></select></label>
   </header>
+  <div id="camp-ban" class="state warn" hidden></div>
 
   <div class="card">
     <div class="row">
@@ -138,12 +156,9 @@ tr.sel td{background:var(--okbg)}
     <details><summary class="hint">Dépannage du lecteur</summary>
       <select id="mode" aria-label="Mode de recherche du lecteur"><option value="a">Recherche A (normale)</option><option value="b">Recherche B (port série Bluetooth)</option><option value="c">Recherche C (tous les ports)</option></select>
     </details>
-    <form id="f" class="row">
-      <input id="q" inputmode="numeric" autocomplete="off" placeholder="Plaque ou numéro à 15 chiffres" aria-label="Numéro">
-      <button class="btn" type="submit">OK</button>
-    </form>
   </div>
 
+  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><span id="p-lect" class="hint"></span></div><div id="p-camp" class="hint"></div>
   <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
@@ -171,7 +186,7 @@ tr.sel td{background:var(--okbg)}
     <div class="filt">
       <select id="f-lot" aria-label="Lot"><option value="">Tous les lots</option></select>
       <select id="f-grp" aria-label="Groupe"><option value="">Tous les groupes</option></select>
-      <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option>Brebis</option><option>Antenaise</option><option>Antenais</option><option>Bélier</option></select>
+      <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option value="adultes">Adultes</option><option>Brebis</option><option>Bélier</option><option value="jeunes">Jeunes (de l’année)</option><option>Agnelle</option><option>Agneau</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
       <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">À suivre (hors réformes)</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option><option value="mam">Mammites traitées</option><option value="or">Brebis d'or</option></select>
@@ -211,6 +226,10 @@ tr.sel td{background:var(--okbg)}
 
   <!-- FICHE -->
   <section id="v-fiche" class="card">
+    <form id="f" class="row">
+      <input id="q" inputmode="numeric" autocomplete="off" placeholder="Plaque ou numéro à 15 chiffres" aria-label="Numéro">
+      <button class="btn" type="submit">OK</button>
+    </form>
     <div id="fiche" class="hint">Bipe une boucle ou tape une plaque : la fiche de l'animal s'affiche ici.</div>
   </section>
 
@@ -323,10 +342,19 @@ tr.sel td{background:var(--okbg)}
   <section id="v-lots" class="card" hidden><div id="lg-lots"></div></section>
   <!-- GROUPES -->
   <section id="v-groupes" class="card" hidden><div id="lg-groupes"></div></section>
+  <!-- TRI : À QUEL LOT ? (plein écran) -->
+  <section id="v-tri" class="card" hidden>
+    <div class="e-top"><button id="tri-x" class="btn2 b-retour" type="button">← Terminer</button><b style="flex:1;text-align:center">À quel lot ?</b><span class="hint" id="tri-n"></span></div>
+    <form id="tri-f" class="row"><input id="tri-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
+    <div id="tri-card"><div class="hint" style="margin-top:12px">Bipez les brebis : leur lot s'affiche en grand.</div></div>
+    <div id="tri-list" style="flex:1;overflow:auto"></div>
+    <div class="row"><button id="tri-clr" class="btn2 b-retour" type="button">Effacer la liste</button></div>
+  </section>
   <!-- SAISIE D'UN LOT OU D'UN GROUPE (plein écran) -->
   <section id="v-sai" class="card" hidden>
     <div class="e-top"><button id="sai-x" class="btn2 b-retour" type="button">← Annuler</button><b id="sai-t" style="flex:1;text-align:center"></b></div>
     <input id="sai-nom" type="text" placeholder="Nom" style="font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;margin-top:8px">
+    <div id="sai-coulb"><div class="hint">Couleur (facultatif, ex. la couleur de la bombe) :</div><div id="sai-coul"></div></div>
     <div class="hint" style="margin-top:8px">Bipez les brebis, ou tapez un numéro :</div>
     <form id="sai-f" class="row"><input id="sai-q" inputmode="numeric" autocomplete="off" placeholder="Numéro" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
     <div id="sai-last"></div>
@@ -401,7 +429,7 @@ tr.sel td{background:var(--okbg)}
     </div>
   </section>
 
-  <section class="card">
+  <section id="v-donnees" class="card">
     <h2>Données du troupeau</h2>
     <p class="hint">Le fichier « donnees_troupeau.json » envoyé par Claude. Les données restent dans ce téléphone.</p>
     <input id="file" type="file" accept=".json,application/json">
@@ -425,7 +453,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
-let tab='fiche';
+let tab='accueil';
 let LOTS=LS.get('cb_lots',{}); let MV=LS.get('cb_moves',[]);
 // historique permanent des lots (jamais vidé, même après envoi à Claude)
 let HL=LS.get('cb_hlot',null); if(!HL){HL=MV.slice(); LS.set('cb_hlot',HL)}
@@ -449,8 +477,31 @@ function restMam(m){const t=new Date();t.setHours(12,0,0,0);return Math.round((f
 const reforme=k=>{const x=A()[k];return /réformer/i.test(x&&x.niveau||'')};
 function setMP(k,on){const d=fdate();MP[k]={on,d};LS.set('cb_mpis',MP)} let sel=new Set();
 const lotOf=p=>LOTS[p]!==undefined?LOTS[p]:((A()[p]||{}).lot||'');
+const COULS=[['Bleu','#1f5fa8'],['Rouge','#c62828'],['Vert','#2e7d32'],['Jaune','#e0a800'],['Orange','#ef6c00'],['Violet','#7b3fa0'],['Rose','#d81b60'],['Marron','#6d4c41'],['Gris','#607d8b'],['Noir','#212121']];
+let COUL=LS.get('cb_coul',{});   // {'l:Nom du lot' ou 'g:Nom du groupe' : '#couleur'}
+const coulLot=l=>COUL['l:'+l]||'', coulGrp=g=>COUL['g:'+g]||'';
+function pastilles(cur,attr){return `<div class="coul-row">${COULS.map(([n,c])=>`<button type="button" class="coul${cur===c?' on':''}" style="background:${c}" ${attr}="${c}" aria-label="${n}" title="${n}"></button>`).join('')}<button type="button" class="coul aucune${!cur?' on':''}" ${attr}="" aria-label="Sans couleur">∅</button></div>`}
+function pastBrebis(p){const l=lotOf(p), c=[]; if(coulLot(l)) c.push([coulLot(l),'Lot '+l]); (typeof grpsOf==='function'?grpsOf(p):[]).forEach(g=>{if(coulGrp(g)) c.push([coulGrp(g),'Groupe '+g])});
+  return c.length?`<div class="past-b">${c.map(([k,t])=>`<span class="pb" style="background:${k}"></span><span class="pbt">${esc(t)}</span>`).join('')}</div>`:''}
+function coulUsages(c,sauf){return Object.entries(COUL).filter(([k,v])=>v===c&&k!==sauf).map(([k])=>k)}
+let NOMS=LS.get('cb_noms',{});   // {plaque:{nom,s}}
+const nomOf=p=>NOMS[p]!==undefined?NOMS[p].nom:((A()[p]||{}).nom||'');
 // ---- groupes : étiquettes, plusieurs par animal (le lot = l'endroit, un seul)
+// ---- campagne (du 1er septembre au 31 août, réglable)
+let CAMPR={mois:10};   // campagne du 1er octobre au 30 septembre
+// jeunes / adultes : tous les jeunes deviennent adultes le même jour, au 1er octobre (pas selon la date de naissance)
+const isoNe=s=>{const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?m[3]+'-'+m[2]+'-'+m[1]:''};
+const bascule=()=>{const d=new Date(), y=d.getMonth()+1>=10?d.getFullYear():d.getFullYear()-1; return y+'-10-01'};
+const femelle=x=>/Brebis|Antenaise|Agnelle/i.test(x.cat||'');
+const jeuneCat=x=>{const n=isoNe(x.ne); return n?n>=bascule():/Antenai|Agne/i.test(x.cat||'')};
+const catAff=x=>jeuneCat(x)?(femelle(x)?'Agnelle':'Agneau'):(femelle(x)?'Brebis':'Bélier');
+const campOf=iso=>{if(!iso) return ''; const y=+iso.slice(0,4), m=+iso.slice(5,7); const a=m>=CAMPR.mois?y:y-1; return a+'-'+(a+1)};
+const campAuj=()=>campOf(new Date().toISOString().slice(0,10));
+let CV=LS.get('cb_cv',null)||campAuj();
+const enCours=()=>CV===campAuj();
 let GRP=LS.get('cb_grp',{}), GM=LS.get('cb_gmv',[]);
+let GMETA=LS.get('cb_gmeta',{});   // {groupe:{camp}}
+const grpCamp=g=>(GMETA[g]&&GMETA[g].camp)||campOf((Object.values(GRP[g]||{}).sort()[0])||new Date().toISOString().slice(0,10));
 const saveG=()=>{LS.set('cb_grp',GRP);LS.set('cb_gmv',GM)};
 const GDER={'À réformer':k=>/réformer/i.test((A()[k]||{}).niveau||''),
   'Surveillance renforcée':k=>/surveillance/i.test((A()[k]||{}).niveau||''),
@@ -460,12 +511,13 @@ const GDER={'À réformer':k=>/réformer/i.test((A()[k]||{}).niveau||''),
   'Détérioratrices':k=>typeof deter==='function'&&!!deter(k),
   'Brebis d’or':k=>!!(A()[k]||{}).or,
   'Garder ses agnelles':k=>typeof garde==='function'&&garde(k)};
-function grpsUser(){return Object.keys(GRP).sort()}
+function grpsUser(){return Object.keys(GRP).filter(g=>grpCamp(g)===CV).sort()}
+function grpsTous(){return Object.keys(GRP).sort()}
 function grpsAuto(){const a=Object.keys(GDER); [...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((x,y)=>x-y).forEach(n=>a.push('Lot d’agnelage '+n)); return a}
 function membreDe(g,k){ if(GRP[g]) return !!GRP[g][k]; if(GDER[g]) return GDER[g](k); const m=g.match(/^Lot d’agnelage (.+)$/); return m?(A()[k]||{}).lotagn===m[1]:false}
-function grpsOf(k){return grpsUser().filter(g=>GRP[g][k])}
+function grpsOf(k){return grpsTous().filter(g=>GRP[g][k]&&grpCamp(g)===CV)}
 function grpsAutoOf(k){return grpsAuto().filter(g=>membreDe(g,k))}
-function grpAdd(k,g){g=g.trim(); if(!g||!A()[k]) return 0; GRP[g]=GRP[g]||{}; if(GRP[g][k]) return 0; GRP[g][k]=auj(); GM.push({d:fdate(),p:k,g,a:'+'}); return 1}
+function grpAdd(k,g){g=g.trim(); if(!g||!A()[k]) return 0; if(!GRP[g]){GRP[g]={}; GMETA[g]={camp:CV}; LS.set('cb_gmeta',GMETA)} if(GRP[g][k]) return 0; GRP[g][k]=auj(); GM.push({d:fdate(),p:k,g,a:'+'}); return 1}
 function grpDel(k,g){ if(!GRP[g]||!GRP[g][k]) return 0; delete GRP[g][k]; GM.push({d:fdate(),p:k,g,a:'-'}); return 1}
 const gmChg=()=>GM.filter(m=>!m.s);
 let liste=LS.get('cb_liste',{debut:null,items:[],dbl:0});
@@ -505,8 +557,8 @@ $('#file').addEventListener('change',e=>{
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
-function setTab(t){tab=t; if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
-  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','lots','groupes','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); LS.set('cb_tab',t); render();}
+function setTab(t){tab=t; document.body.classList.toggle('page',t!=='accueil'); const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); $('#p-lect').textContent=port?'● lecteur connecté':'lecteur non connecté'; window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','lots','groupes','troupeau','soins','echo','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -568,12 +620,12 @@ function fiche(p,nav,el='#fiche'){
   const mamTxt=mm&&!reforme(p)?`<span class="chip ${mr<=7?'c-bad':'c-warn'}">Mammite traitée le ${frDe(mm.d)} · délai viande ${mm.delai} j → ${finMam(mm).toLocaleDateString('fr-FR')} ${mr>7?'(J-'+mr+')':mr>0?'· fini dans '+mr+' j : réformer ?':'· délai fini : réformer ?'}</span>`:'';
   const orTxt=x.or&&!reforme(p)&&!mpis(p)?`<span class="chip c-or">★ Brebis d'or – garder ses agnelles${/^ARR\/ARR$/i.test(x.prp||'')?' et son mâle':' · mâle : génotype à vérifier'}</span>`:'';
   const niv=orTxt+mamTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
-  $(el).innerHTML=retour+`<div class="tag${lisere(p)}"><small>FR 450000</small><b>${esc(p)}</b></div>
-   <div class="chips"><span class="chip c-mute">${esc(x.cat)}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="btn2" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button><button type="button" class="btn2" data-mamo="${p}">${MT[p]&&!MT[p].off?'↩ Retirer la mammite':'💉 Soins (mammite, agnelage…)'}</button></div>
+  $(el).innerHTML=retour+`<div class="tag${lisere(p)}"><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</div><div class="row"><button type="button" class="btn2" data-nomed="${p}">✎ ${nomOf(p)?'Changer le nom':'Donner un nom'}</button></div><div class="row" data-nomf="${p}" hidden><input class="nom-in" value="${esc(nomOf(p))}" placeholder="Nom (ex. Pouponne)" style="font:inherit;padding:8px;flex:1"><button type="button" class="btn" data-nomok="${p}">OK</button></div>
+   <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}<div class="row"><button type="button" class="btn2" data-mp="${p}">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Mauvais pis – ne pas garder la suite'}</button><button type="button" class="btn2" data-mamo="${p}">${MT[p]&&!MT[p].off?'↩ Retirer la mammite':'💉 Soins (mammite, agnelage…)'}</button></div>
   <div class="row mamf" data-mamf="${p}" hidden><label>Traitée le <input type="date" class="mam-d" value="${new Date().toISOString().slice(0,10)}"></label><label>Délai viande <input type="number" class="mam-j" min="0" inputmode="numeric" style="width:5em" placeholder="jours"> j</label><button type="button" class="btn" data-mamok="${p}">Valider</button><span class="state"></span></div>
-   <div class="lot">${esc(lotOf(p)||'Sans lot')}</div>
+   <div class="lot">${coulLot(lotOf(p))?`<span class="pt" style="background:${coulLot(lotOf(p))}"></span>`:''}${esc(lotOf(p)||'Sans lot')}</div>
    ${(()=>{const H=histLots(p); return H.length>1?`<details class="hint"><summary>Historique des lots (${H.length})</summary>${H.slice().reverse().map(h=>`<div>${h.du?'du '+h.du+' '+(h.au?'au '+h.au:'à aujourd’hui'):'jusqu’au '+h.au} : <b>${esc(h.lot)}</b>${h.ren?' (renommé ensuite)':''}</div>`).join('')}</details>`:''})()}
-   <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok">${esc(g)} <button type="button" class="btn2" style="padding:0 6px;min-height:0" data-gdel="${esc(p)}|${esc(g)}" aria-label="Retirer de ${esc(g)}">✕</button></span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute">${esc(g)}</span>`).join('')}<button type="button" class="btn2" data-gadd="${esc(p)}">+ Groupe</button></div>
+   <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)} <button type="button" class="btn2" style="padding:0 6px;min-height:0" data-gdel="${esc(p)}|${esc(g)}" aria-label="Retirer de ${esc(g)}">✕</button></span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute">${esc(g)}</span>`).join('')}<button type="button" class="btn2" data-gadd="${esc(p)}">+ Groupe</button></div>
    <div class="row" data-gform="${esc(p)}" hidden><select class="g-sel" aria-label="Groupe existant"><option value="">— Groupe existant —</option>${grpsUser().filter(g=>!GRP[g][p]).map(g=>`<option>${esc(g)}</option>`).join('')}</select><input class="g-new" placeholder="ou nouveau groupe (ex. Maigres)" style="font:inherit;padding:8px;flex:1;min-width:8em"><button type="button" class="btn" data-gok="${esc(p)}">Ajouter</button></div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
    <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
@@ -591,6 +643,9 @@ function fiche(p,nav,el='#fiche'){
 }
 
 ['#fiche','#sheet-body'].forEach(el=>$(el).addEventListener('click',e=>{const S=ST[el],g=e.target.closest('[data-go]');
+  const nb=e.target.closest('[data-nomed],[data-nomok]');
+  if(nb){ if(nb.dataset.nomed){const f=$(el).querySelector('[data-nomf]'); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('input').focus(); return}
+    const k=nb.dataset.nomok, v=$(el).querySelector('.nom-in').value.trim(); NOMS[k]={nom:v}; LS.set('cb_noms',NOMS); fiche(k,'nav',el); render(); return}
   const gb=e.target.closest('[data-gadd],[data-gok],[data-gdel]');
   if(gb){ if(gb.dataset.gadd){const f=$(el).querySelector('[data-gform]'); f.hidden=!f.hidden; return}
     if(gb.dataset.gok){const k=gb.dataset.gok, f=$(el).querySelector('[data-gform]'), nm=(f.querySelector('.g-new').value.trim()||f.querySelector('.g-sel').value); if(!nm) return; grpAdd(k,nm); saveG(); fiche(k,'nav',el); render(); return}
@@ -611,17 +666,17 @@ function addListe(p){
   if(!liste.debut) liste.debut=new Date().toISOString();
   if(liste.items.includes(p)){liste.dbl++; alerte(); $('#l-last').innerHTML=`<div class="big warn">${p}<small>Déjà dans la liste</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
   else{liste.items.push(p); bip(); const x=A()[p];
-    $('#l-last').innerHTML=x?`<div class="big ok">${p}<small>${esc(lotOf(p)||x.statut)}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`:`<div class="big bad">${p}<small>Inconnu dans la base</small></div>`}
+    $('#l-last').innerHTML=x?`<div class="big ok">${p}<small>${esc(lotOf(p)||x.statut)}</small>${pastBrebis(p)}<button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`:`<div class="big bad">${p}<small>Inconnu dans la base</small></div>`}
   LS.set('cb_liste',liste); render();
 }
 // ---- recherche
 function addRech(p){
   if(rech.cible.includes(p)){
-    if(rech.trouvees.includes(p)){alerte(); sonDeja(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>Déjà trouvée</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
-    else{rech.trouvees.push(p); bip(); sonTrouve(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>TROUVÉE · ${rech.trouvees.length}/${rech.cible.length}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
+    if(rech.trouvees.includes(p)){alerte(); sonDeja(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>Déjà trouvée</small>${pastBrebis(p)}<button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
+    else{rech.trouvees.push(p); bip(); sonTrouve(); $('#r-last').innerHTML=`<div class="big ok">${p}<small>TROUVÉE · ${rech.trouvees.length}/${rech.cible.length}</small>${pastBrebis(p)}<button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`}
   } else {
     if(!rech.trop.includes(p)) rech.trop.push(p); alerte(); sonHors();
-    const x=A()[p]; $('#r-last').innerHTML=`<div class="big bad">${p}<small>Pas recherchée${lotOf(p)?' · '+esc(lotOf(p)):''}</small><button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`;
+    const x=A()[p]; $('#r-last').innerHTML=`<div class="big bad">${p}<small>Pas recherchée${lotOf(p)?' · '+esc(lotOf(p)):''}</small>${pastBrebis(p)}<button type="button" class="lien voir" data-fiche="${p}">Voir la fiche ›</button></div>`;
   }
   LS.set('cb_rech',rech); render();
 }
@@ -635,6 +690,7 @@ $('#r-go').addEventListener('click',()=>{
 });
 function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
 $('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve()};majSon();
+$('#p-back').onclick=()=>{ if(!retourTel()) setTab('accueil') };
 $('#r-back').onclick=()=>setTab(R_ORIG||'lots');
 $('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
@@ -699,7 +755,7 @@ const etatOf=x=>x.agn?'pleine':(/Vide/.test(x.echo||'')?'vide':'sans');
 function lotsList(){const c={};Object.entries(A()).forEach(([k,x])=>{if(!pres(x))return;const l=lotOf(k)||'Sans lot';c[l]=(c[l]||0)+1});return Object.entries(c).sort((a,b)=>b[1]-a[1])}
 function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=first?first(v):v;s.append(o)});s.value=cur}
 function filtre(){const f=k=>$('#f-'+k).value;
-  let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||x.cat===f('cat'))
+  let r=Object.entries(A()).filter(([k,x])=>(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||(f('cat')==='adultes'?!jeuneCat(x):f('cat')==='jeunes'?jeuneCat(x):catAff(x)===f('cat')))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
    &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||x.lotagn===f('agn'))&&(!f('grp')||membreDe(f('grp'),k)));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
@@ -734,7 +790,8 @@ function renderTroupeau(){
   const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.ren?'lot « '+(m.de||'Sans lot')+' » renommé « '+m.vers+' »':(m.de||'Sans lot')+' → '+m.vers);(g[k]=g[k]||[]).push(m.p)});
   const mcc=mamChg(); const mamTx=mcc.length?`<div><b class="c-warn">Mammites (${mcc.length})</b><div class="nums">${mcc.map(([k,v])=>`<span>${k}${v.off?' retirée':' · '+v.delai+' j'}</span>`).join('')}</div></div>`:'';
   const chm=mpChg(); const mpTxt0=chm.length?`<div><b class="c-bad">Mauvais pis (${chm.filter(([k,v])=>v.on).length} ajoutée(s), ${chm.filter(([k,v])=>!v.on).length} retirée(s))</b><div class="nums">${tri(chm.map(([k])=>k)).map(p=>`<span>${p}</span>`).join('')}</div></div>`:'';
-  const gcc=gmChg(); const gTx=gcc.length?`<div><b>Groupes (${gcc.length} changement(s))</b><div class="nums">${gcc.map(m=>`<span>${m.a==='x'?'Groupe supprimé : '+esc(m.g):m.p+' '+(m.a==='+'?'+':'−')+' '+esc(m.g)}</span>`).join('')}</div></div>`:'';
+  const ncc=Object.entries(NOMS).filter(([k,v])=>!v.s); const nTx=ncc.length?`<div><b>Noms (${ncc.length})</b><div class="nums">${ncc.map(([k,v])=>`<span>${k} : ${esc(v.nom||'—')}</span>`).join('')}</div></div>`:'';
+  const gcc=gmChg(); const gTx=nTx+gcc.length?`<div><b>Groupes (${gcc.length} changement(s))</b><div class="nums">${gcc.map(m=>`<span>${m.a==='x'?'Groupe supprimé : '+esc(m.g):m.p+' '+(m.a==='+'?'+':'−')+' '+esc(m.g)}</span>`).join('')}</div></div>`:'';
   const mpTxt=gTx+mamTx+mpTxt0;
   $('#t-mv').innerHTML=mpTxt+(MV.length?Object.entries(g).map(([k,v])=>`<div><b>${esc(k)} (${v.length})</b><div class="nums">${tri(v).map(p=>`<span>${p}</span>`).join('')}</div></div>`).join(''):(mpTxt?'':'Aucun.'));
 }
@@ -789,15 +846,15 @@ $('#t-mp').onclick=()=>{if(!sel.size){$('#t-mst').textContent='Coche d’abord d
   const n=sel.size; sel.forEach(k=>setMP(k,true)); sel.clear(); $('#t-mst').textContent=n+' marquée(s) mauvais pis';$('#t-mst').className='state ok';render()};
 const mamChg=()=>Object.entries(MT).filter(([k,v])=>!v.sent);
 const mpChg=()=>Object.entries(MP).filter(([k,v])=>!v.sent&&!!v.on!==!!(A()[k]&&A()[k].mpis));
-$('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(), gc=gmChg(); if(!MV.length&&!ch.length&&!mc.length&&!gc.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.ren?'lot « '+(m.de||'Sans lot')+' » renommé « '+m.vers+' »':(m.de||'Sans lot')+' → '+m.vers);(g[k]=g[k]||[]).push(m.p)});
+$('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(), gc=gmChg(), nc=Object.entries(NOMS).filter(([k,v])=>!v.s); if(!MV.length&&!ch.length&&!mc.length&&!gc.length&&!nc.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.ren?'lot « '+(m.de||'Sans lot')+' » renommé « '+m.vers+' »':(m.de||'Sans lot')+' → '+m.vers);(g[k]=g[k]||[]).push(m.p)});
   const on=ch.filter(([k,v])=>v.on).map(([k])=>k), off=ch.filter(([k,v])=>!v.on).map(([k])=>k);
-  envoyer('Claude Brebis – mouvements de lots\n\n'+(gc.length?'Groupes :\n'+gc.map(m=>m.a==='x'?m.d.slice(0,10)+' · groupe « '+m.g+' » supprimé':m.d.slice(0,10)+' · '+m.p+(m.a==='+'?' ajoutée au groupe « ':' retirée du groupe « ')+m.g+' »').join('\n')+'\n\n':'')+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
+  envoyer('Claude Brebis – mouvements de lots\n\n'+(nc.length?'Noms des brebis :\n'+nc.map(([k,v])=>k+' : '+(v.nom||'(nom effacé)')).join('\n')+'\n\n':'')+(gc.length?'Groupes :\n'+gc.map(m=>m.a==='x'?m.d.slice(0,10)+' · groupe « '+m.g+' » supprimé':m.d.slice(0,10)+' · '+m.p+(m.a==='+'?' ajoutée au groupe « ':' retirée du groupe « ')+m.g+' »').join('\n')+'\n\n':'')+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
 $('#t-clr').onclick=()=>$('#t-confirm').hidden=false;
 $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
-$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);GM.forEach(m=>m.s=1);saveG();Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
+$('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(NOMS).forEach(v=>v.s=1);LS.set('cb_noms',NOMS);GM.forEach(m=>m.s=1);saveG();Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
-function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
+function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
   if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho();
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
@@ -819,12 +876,13 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){}
 function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
   if(typeof SAI!=='undefined'&&SAI){saiAdd(p);return}
+  if(document.body.classList.contains('tfull')){triAdd(p);return}
   if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
 $('#f').addEventListener('submit',e=>{e.preventDefault();lu($('#q').value);$('#q').value=''});
 
 // ---- lecteur Allflex LPR (Bluetooth série, Chrome Android 137+)
 let port=null;
-function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||'')}
+function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); const pl=$('#p-lect'); if(pl) pl.textContent=port?'● lecteur connecté':'lecteur non connecté'}
 async function lire(){
   const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{});
   const r=dec.readable.getReader(); let buf='';
@@ -923,7 +981,7 @@ function renderSoins(){ if(!$('#v-soins')) return; const a=auj();
   $('#s-ordo').innerHTML=`<p class="hint">Ordonnance ${esc(P.ordo.num)} du ${esc(P.ordo.date)} – ${esc(P.ordo.veto)}. Stock de départ au ${frJ(P.stock.date)} : 1 flacon de chaque.</p>`+
     Object.values(P.prod).map(v=>`<div><b>${esc(v.nom)}</b> – ${esc(v.subst)}<br><span class="hint">${esc(v.poso)} · attente lait ${v.lait==null?'interdit':fml(v.lait)+' j'}, viande ${fml(v.viande)} j</span></div>`).join('')+
     `<h3>Protocoles (brebis de 75 kg)</h3>`+Object.values(P.proto).map(p=>`<div><b>${esc(p.nom)}</b> : ${p.jours.map((j,i)=>'J'+(i+1)+' '+j.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + ')).join(' · ')}</div>`).join('');
-  const R=[]; SO.T.forEach(t=>t.doses.forEach((d,i)=>R.push([d.d,t,i,d]))); R.sort((x,y)=>y[0].localeCompare(x[0]));
+  const R=[]; SO.T.forEach(t=>t.doses.forEach((d,i)=>{if(campOf(d.d.slice(0,10))===CV) R.push([d.d,t,i,d])})); R.sort((x,y)=>y[0].localeCompare(x[0]));
   $('#s-reg').innerHTML=R.slice(0,80).map(([dd,t,i,d])=>`<div>${frJ(dd.slice(0,10))} ${dd.slice(11,16)} · <b>${t.a}</b> · ${esc(nomT(t))} J${i+1} : ${d.prod.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + ')}${d.s?'':' <span class="c-warn">•</span>'}</div>`).join('')||'<span class="hint">Aucun soin enregistré.</span>';
   const np=R.filter(r=>!r[3].s).length; $('#s-pend').textContent=np?np+' administration(s) pas encore envoyée(s) à Claude (•).':'Tout est envoyé.';
 }
@@ -1028,7 +1086,7 @@ function renderEcho(){ if(!$('#v-echo')) return;
     $('#e-clotsum').innerHTML=`Séance du ${frJA(o)}<small>${s.n} brebis · ${s.pl} pleines · ${s.vi} vides · ${s.ag} agneaux attendus</small>`;
     $('#e-ouvrir').innerHTML=`<div class="big warn" style="font-size:20px">Séance du ${frJA(o)} en cours<small>${s.n} brebis saisies</small></div><button id="e-reprendre" class="btn" type="button" style="width:100%;padding:14px;font-size:18px;margin-top:8px">▶ Reprendre la saisie</button>`;
   } else $('#e-ouvrir').innerHTML=`<div class="row" style="align-items:center"><label>Date de l'écho <input type="date" id="e-ndate" value="${auj()}"></label></div><button id="e-new" class="btn" type="button" style="width:100%;padding:14px;font-size:18px;margin-top:8px">▶ Nouvelle séance d'écho</button>`;
-  const D=Object.keys(ES).filter(d=>Object.keys(EC[d]||{}).length||ES[d].etat==='ouverte').sort().reverse();
+  const D=Object.keys(ES).filter(d=>(Object.keys(EC[d]||{}).length||ES[d].etat==='ouverte')&&(campOf(d)===CV||ES[d].etat==='ouverte')).sort().reverse();
   $('#e-seances').innerHTML=D.map(d=>{const s=eStats(EC[d]||{}), st=ES[d], et=st.etat==='ouverte'?'<b class="c-warn">en cours</b>':st.envoye?'<span class="c-ok">clôturée · envoyée à Claude</span>':'<b class="c-bad">clôturée · pas encore envoyée</b>';
     return `<button type="button" class="e-seance" data-ese="${d}" aria-pressed="${E_VOIR===d}"><b>${frJA(d)}</b> · ${s.n} brebis · ${s.pl} pleines · ${s.vi} vides<br>${et}</button>`}).join('')||'<span class="hint">Aucune séance pour l’instant.</span>';
   const v=E_VOIR&&ES[E_VOIR]&&ES[E_VOIR].etat!=='ouverte'?E_VOIR:null;
@@ -1140,7 +1198,7 @@ let R_ORIG=null, SAI=null;
 const membresLot=l=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&(lotOf(p)||'Sans lot')===l));
 const membresGrp=g=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&membreDe(g,p)));
 const lotsNoms=()=>lotsList().map(x=>x[0]);
-function lgInfo(p){const x=A()[p]||{}; return [x.cat,x.agn?'agn. '+x.agn.slice(0,5):(/Vide/.test(x.echo||'')?'vide':'')].filter(Boolean).join(' · ')}
+function lgInfo(p){const x=A()[p]||{}; return [nomOf(p),x.cat?catAff(x):'',x.agn?'agn. '+x.agn.slice(0,5):(/Vide/.test(x.echo||'')?'vide':'')].filter(Boolean).join(' · ')}
 function lgListe(kind,M){const S=LG[kind]; return `<div class="row"><button type="button" class="btn2" data-lgall="${kind}">Tout cocher</button><button type="button" class="btn2" data-lgnone="${kind}">Rien</button><span class="hint">${S.ck.size} cochée(s)</span></div>`+
   M.map(p=>`<label class="lg-row"><input type="checkbox" data-lgck="${kind}|${p}"${S.ck.has(p)?' checked':''}><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b><span class="hint">${esc(lgInfo(p))}</span></label>`).join('')}
 function destSel(id,kind,excl){const L=kind==='lots'?lotsNoms().filter(x=>x!==excl&&x!=='Sans lot'):grpsUser().filter(x=>x!==excl);
@@ -1148,11 +1206,12 @@ function destSel(id,kind,excl){const L=kind==='lots'?lotsNoms().filter(x=>x!==ex
 function renderLots(){const el=$('#lg-lots'), S=LG.lots;
   if(!S.sel||!lotsNoms().includes(S.sel)){S.sel=null; const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0);
     el.innerHTML=`<h2>Lots <span class="hint">· l'endroit où sont les bêtes</span></h2><div class="hint">Troupeau total (présents) : <b>${tot}</b></div>`+
-      L.map(([l,n])=>`<button type="button" class="lg-card" data-lgo="lots|${esc(l)}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+
+      L.map(([l,n])=>`<button type="button" class="lg-card" data-lgo="lots|${esc(l)}" style="${coulLot(l)?'border-left:10px solid '+coulLot(l):''}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+
       `<button type="button" class="btn" data-sai="lot|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau lot</button>
+       <button type="button" class="btn" data-tri="1" style="width:100%;margin-top:6px;padding:12px">🔀 Brebis mélangées : à quel lot ?</button>
        <button type="button" class="btn2" data-rcolle="lots" style="width:100%;margin-top:6px">🔍 Rechercher une liste reçue de Claude</button>`; return}
   const l=S.sel, M=membresLot(l);
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${esc(l)} · ${M.length}</h2>
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><details${LG.lots.co?' open':''}><summary class="hint">Couleur du lot</summary>${pastilles(coulLot(l),'data-lgcoul')}</details>
     <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
     ${lgListe('lots',M)}
     <div class="lg-act"><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
@@ -1163,11 +1222,11 @@ function renderLots(){const el=$('#lg-lots'), S=LG.lots;
 function renderGroupes(){const el=$('#lg-groupes'), S=LG.groupes, GU=grpsUser(), GA=grpsAuto();
   if(!S.sel||![...GU,...GA].includes(S.sel)){S.sel=null;
     el.innerHTML=`<h2>Groupes <span class="hint">· étiquettes, la brebis reste dans son lot</span></h2>`+
-      (GU.length?GU.map(g=>`<button type="button" class="lg-card" data-lgo="groupes|${esc(g)}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''):'<div class="hint">Aucun groupe créé pour l’instant.</div>')+
+      (GU.length?GU.map(g=>`<button type="button" class="lg-card" data-lgo="groupes|${esc(g)}" style="${coulGrp(g)?'border-left:10px solid '+coulGrp(g):''}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''):'<div class="hint">Aucun groupe créé pour l’instant.</div>')+
       `<button type="button" class="btn" data-sai="groupe|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau groupe</button>
        <h3>Groupes automatiques</h3>`+GA.map(g=>`<button type="button" class="lg-card auto" data-lgo="groupes|${esc(g)}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''); return}
   const g=S.sel, M=membresGrp(g), auto=!GRP[g];
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="groupes">← Tous les groupes</button><h2 style="margin-top:8px">${esc(g)} · ${M.length}</h2>${auto?'<div class="hint">Groupe automatique : il se remplit tout seul.</div>':''}
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="groupes">← Tous les groupes</button><h2 style="margin-top:8px">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)} · ${M.length}</h2>${GRP[g]?`<details${LG.groupes.co?' open':''}><summary class="hint">Couleur du groupe</summary>${pastilles(coulGrp(g),'data-lgcoul')}</details>`:''}${auto?'<div class="hint">Groupe automatique : il se remplit tout seul.</div>':''}
     <div class="row"><button type="button" class="btn" data-lgrech="groupes">🔍 Rechercher ce groupe en bipant</button>${auto?'':`<button type="button" class="btn" data-sai="groupe|${esc(g)}">＋ Ajouter des brebis</button>`}</div>
     ${lgListe('groupes',M)}
     <div class="lg-act"><b>Les ${S.ck.size} cochée(s) :</b>${auto?'':`<button type="button" class="btn2 b-retour" data-lgret="1" style="width:100%;margin-top:6px">Retirer de ce groupe</button>`}
@@ -1182,11 +1241,16 @@ function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} 
   if(t.dataset.lgck){const [k,p]=t.dataset.lgck.split('|'); t.checked?LG[k].ck.add(p):LG[k].ck.delete(p); render(); return}
   if(t.tagName==='SELECT'){const n=$('#'+t.id+'-n'); if(n){n.hidden=t.value!=='__new'; if(!n.hidden) n.focus()}}});
  el.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const S=LG[kind], d=fdate();
-  if(b.dataset.lgo){const [k,n]=b.dataset.lgo.split('|'); LG[k].sel=n; LG[k].ck.clear(); LG[k].ask=null; render(); window.scrollTo(0,0); return}
+  if(b.dataset.lgo){const [k,n]=b.dataset.lgo.split('|'); LG[k].co=false; LG[k].sel=n; LG[k].ck.clear(); LG[k].ask=null; render(); window.scrollTo(0,0); return}
+  if(b.dataset.lgcoul!=null){S.co=true; const key=(kind==='lots'?'l:':'g:')+S.sel, c=b.dataset.lgcoul; if(c) COUL[key]=c; else delete COUL[key]; LS.set('cb_coul',COUL); render();
+    const u=c?coulUsages(c,key):[]; if(u.length){const nm=u.map(k=>(k[0]==='l'?'le lot':'le groupe')+' « '+k.slice(2)+' »').join(', '); const st=$('#lg-st-'+kind);
+      st.innerHTML='Cette couleur est aussi utilisée par '+esc(nm)+'. Ce n’est pas gênant. <button type="button" class="btn2 b-retour" data-coulret="'+esc(JSON.stringify(u))+'">La retirer de '+(u.length>1?'ces autres':(u[0][0]==='l'?'l’autre lot':'l’autre groupe'))+'</button>'; st.className='state'} return}
+  if(b.dataset.coulret){JSON.parse(b.dataset.coulret).forEach(k=>delete COUL[k]); LS.set('cb_coul',COUL); render(); lgMsg(kind,'Couleur retirée de l’autre lot ou groupe.',1); return}
   if(b.dataset.lgback){S.sel=null; S.ck.clear(); render(); return}
   if(b.dataset.lgall){const M=kind==='lots'?membresLot(S.sel):membresGrp(S.sel); M.forEach(p=>S.ck.add(p)); render(); return}
   if(b.dataset.lgnone){S.ck.clear(); render(); return}
   if(b.dataset.sai){const [k,n]=b.dataset.sai.split('|'); saiOuvrir(k,n); return}
+  if(b.dataset.tri){triOuvrir(); return}
   if(b.dataset.rcolle){R_ORIG=kind; rech=null; LS.set('cb_rech',null); setTab('recherche'); return}
   if(b.dataset.lgrech){const M=kind==='lots'?membresLot(S.sel):membresGrp(S.sel); if(!M.length) return;
     rech={titre:(kind==='lots'?'':'Groupe ')+S.sel,debut:new Date().toISOString(),cible:M,trouvees:[],trop:[]}; LS.set('cb_rech',rech); R_ORIG=kind; setTab('recherche'); return}
@@ -1195,18 +1259,35 @@ function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} 
   if(b.dataset.lgreg){const dest=lgDest('lg-lr'); if(!dest) return lgMsg(kind,'Choisis le lot dans lequel regrouper.'); if(!lgAsk(kind,'reg')){$('#lg-lr').value=dest; return}
     const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
   if(b.dataset.lgren){const nv=$('#lg-rn').value.trim(), l=S.sel; if(!nv) return lgMsg(kind,'Tape le nouveau nom.'); if(lotsNoms().includes(nv)) return lgMsg(kind,'« '+nv+' » existe déjà : utilise Regrouper.');
-    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
+    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); if(COUL['l:'+l]){COUL['l:'+nv]=COUL['l:'+l]; delete COUL['l:'+l]; LS.set('cb_coul',COUL)} S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
   if(b.dataset.lgret){if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); let n=0; S.ck.forEach(p=>n+=grpDel(p,S.sel)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis retirée(s) du groupe.',1); return}
   if(b.dataset.lgadd){const g=lgDest('lg-gd'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!g) return lgMsg(kind,'Choisis le groupe.'); let n=0; S.ck.forEach(p=>n+=grpAdd(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis ajoutée(s) au groupe « '+g+' ».',1); return}
   if(b.dataset.lgvid){if(!lgAsk(kind,'vid')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,'Groupe « '+g+' » vidé.',1); return}
   if(b.dataset.lgsup){if(!lgAsk(kind,'sup')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); delete GRP[g]; GM.push({d,p:'—',g,a:'x'}); saveG(); S.sel=null; S.ck.clear(); render(); return}
  })});
+// tri : à quel lot appartient chaque brebis bipée (brebis mélangées)
+const TRI_COUL=['#2f6b4f','#b4471f','#1f5fa8','#8a3fa0','#a07a00','#00838f','#6d4c41','#c2185b','#455a64','#558b2f'];
+let TRI=null;
+function triCoul(l){ if(coulLot(l)) return coulLot(l); const L=lotsNoms(); const i=L.indexOf(l); return i<0?'#777':TRI_COUL[i%TRI_COUL.length]}
+function triOuvrir(){TRI=TRI||{items:[]}; document.body.classList.add('tfull'); $('#v-tri').hidden=false; triMaj(); window.scrollTo(0,0)}
+function triFermer(){document.body.classList.remove('tfull'); $('#v-tri').hidden=true; TRI.ouvert=false; render()}
+function triAdd(p){const x=A()[p]; const l=x?(lotOf(p)||'Sans lot'):'';
+  if(!x){alerte();sonHors(); $('#tri-card').innerHTML=`<div class="tri-big" style="background:#777"><b>${p}</b><span>Inconnue dans la base</span></div>`; return}
+  const deja=TRI.items.includes(p); if(!deja) TRI.items.unshift(p); deja?sonDeja():sonTrouve(); bip();
+  $('#tri-card').innerHTML=`<div class="tri-big" style="background:${triCoul(l)}"><b>${p}</b>${nomOf(p)?`<span style="font-size:18px">${esc(nomOf(p))}</span>`:''}<span>${esc(l)}</span>${(()=>{const gs=grpsOf(p).filter(g=>coulGrp(g)); return gs.length?`<div class="past-b" style="color:#fff">${gs.map(g=>`<span class="pb" style="background:${coulGrp(g)}"></span><span class="pbt">${esc(g)}</span>`).join('')}</div>`:''})()}</div>`; triMaj()}
+function triMaj(){ if(!TRI) return; const G={}; TRI.items.forEach(p=>{const l=lotOf(p)||'Sans lot'; (G[l]=G[l]||[]).push(p)});
+  $('#tri-n').textContent=TRI.items.length+' bipée'+(TRI.items.length>1?'s':'');
+  $('#tri-list').innerHTML=Object.entries(G).sort((a,b)=>b[1].length-a[1].length).map(([l,M])=>`<div class="tri-g" style="border-color:${triCoul(l)}"><b>${esc(l)}</b> · ${M.length}<div class="nums">${tri(M).map(p=>`<span data-fiche="${p}">${p}</span>`).join('')}</div></div>`).join('')}
+$('#tri-x').onclick=triFermer;
+$('#tri-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#tri-q').value); $('#tri-q').value=''; if(p) triAdd(p)});
+$('#tri-clr').onclick=()=>{const b=$('#tri-clr'); if(!b.dataset.ask){b.dataset.ask=1;b.textContent='Confirmer : effacer';setTimeout(()=>{delete b.dataset.ask;b.textContent='Effacer la liste'},5000);return} delete b.dataset.ask; b.textContent='Effacer la liste'; TRI={items:[]}; $('#tri-card').innerHTML='<div class="hint" style="margin-top:12px">Bipez les brebis : leur lot s’affiche en grand.</div>'; triMaj()};
 // saisie plein écran d'un nouveau lot / groupe, ou ajout à un lot / groupe existant
 function saiOuvrir(kind,nom){SAI={kind,nom:nom||'',neuf:!nom,items:[]}; document.body.classList.add('sfull'); $('#v-sai').hidden=false;
   $('#sai-t').textContent=(SAI.neuf?(kind==='lot'?'Nouveau lot':'Nouveau groupe'):'Ajouter à « '+nom+' »'); $('#sai-nom').hidden=!SAI.neuf; $('#sai-nom').value='';
   $('#sai-nom').placeholder=kind==='lot'?'Nom du lot (ex. Mères 1)':'Nom du groupe (ex. Insémination 2027 n°1)'; $('#sai-st').textContent=''; $('#sai-last').innerHTML='';
   const L=lotsNoms(), G=[...grpsUser(),...grpsAuto()];
   $('#sai-src').innerHTML='<option value="">— Choisir —</option><optgroup label="Lots">'+L.map(l=>`<option value="l:${esc(l)}">${esc(l)}</option>`).join('')+'</optgroup><optgroup label="Groupes">'+G.map(g=>`<option value="g:${esc(g)}">${esc(g)}</option>`).join('')+'</optgroup>';
+  $('#sai-coulb').hidden=!SAI.neuf; SAI.coul=''; $('#sai-coul').innerHTML=pastilles('','data-saicoul');
   $('#sai-srcl').innerHTML=''; saiMaj(); window.scrollTo(0,0)}
 function saiFermer(){SAI=null; document.body.classList.remove('sfull'); $('#v-sai').hidden=true; render()}
 function saiMaj(){ if(!SAI) return; $('#sai-n').textContent=SAI.items.length;
@@ -1214,24 +1295,36 @@ function saiMaj(){ if(!SAI) return; $('#sai-n').textContent=SAI.items.length;
 function saiAdd(p){ if(!SAI) return; const x=A()[p];
   if(!x){alerte();sonHors(); $('#sai-last').innerHTML=`<div class="big bad" style="font-size:24px">${p}<small>Inconnue dans la base</small></div>`; return}
   if(SAI.items.includes(p)){bip();sonDeja(); $('#sai-last').innerHTML=`<div class="big warn" style="font-size:24px">${p}<small>Déjà choisie</small></div>`; return}
-  SAI.items.push(p); bip(); sonTrouve(); $('#sai-last').innerHTML=`<div class="big ok" style="font-size:24px">${p}<small>${esc(lotOf(p)||'')}</small></div>`; saiMaj()}
+  SAI.items.push(p); bip(); sonTrouve(); $('#sai-last').innerHTML=`<div class="big ok" style="font-size:24px">${p}<small>${esc(lotOf(p)||'')}</small>${pastBrebis(p)}</div>`; saiMaj()}
 $('#sai-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#sai-q').value); $('#sai-q').value=''; if(p) saiAdd(p)});
 $('#sai-x').onclick=saiFermer;
 $('#sai-src').addEventListener('change',()=>{const v=$('#sai-src').value; if(!v){$('#sai-srcl').innerHTML='';return}
   const M=v.startsWith('l:')?membresLot(v.slice(2)):membresGrp(v.slice(2));
   $('#sai-srcl').innerHTML=`<div class="row"><button type="button" class="btn2" data-saitout="1">Tout prendre (${M.length})</button><button type="button" class="btn" data-saicoch="1">Prendre les cochées</button></div><div class="nums">${M.map(p=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0"><input type="checkbox" data-saick="${p}">${p}</label>`).join('')}</div>`});
 $('#v-sai').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b||!SAI) return;
+  if(b.dataset.saicoul!=null){SAI.coul=b.dataset.saicoul; $('#sai-coul').innerHTML=pastilles(SAI.coul,'data-saicoul');
+    const u=SAI.coul?coulUsages(SAI.coul,''):[]; $('#sai-st').innerHTML=u.length?'Couleur aussi utilisée par '+esc(u.map(k=>'« '+k.slice(2)+' »').join(', '))+'. Ce n’est pas gênant. <button type="button" class="btn2 b-retour" data-saicret="'+esc(JSON.stringify(u))+'">La retirer de '+(u.length>1?'ces autres':'l’autre')+'</button>':''; $('#sai-st').className='state'; return}
+  if(b.dataset.saicret){JSON.parse(b.dataset.saicret).forEach(k=>delete COUL[k]); LS.set('cb_coul',COUL); $('#sai-st').textContent='Couleur retirée de l’autre lot ou groupe.'; $('#sai-st').className='state ok'; return}
   if(b.dataset.saidel){SAI.items=SAI.items.filter(p=>p!==b.dataset.saidel); saiMaj(); return}
   if(b.dataset.saitout||b.dataset.saicoch){const L=[...$('#sai-srcl').querySelectorAll('[data-saick]')].filter(i=>b.dataset.saitout||i.checked).map(i=>i.dataset.saick); L.forEach(p=>{if(!SAI.items.includes(p)) SAI.items.push(p)}); saiMaj(); $('#sai-srcl').querySelectorAll('[data-saick]').forEach(i=>i.checked=false); return}
   if(b.id==='sai-ok'){const nom=SAI.neuf?$('#sai-nom').value.trim():SAI.nom, st=$('#sai-st');
     if(!nom){st.textContent='Tape le nom.';st.className='state err';return}
     if(!SAI.items.length){st.textContent='Choisis au moins une brebis.';st.className='state err';return}
     const d=fdate(); let n=0;
+    if(SAI.neuf&&SAI.coul){COUL[(SAI.kind==='lot'?'l:':'g:')+nom]=SAI.coul; LS.set('cb_coul',COUL)}
     if(SAI.kind==='lot'){SAI.items.forEach(p=>{const de=lotOf(p); if(de!==nom){LOTS[p]=nom; mvPush({d,p,de,vers:nom}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); LG.lots.sel=nom}
     else {SAI.items.forEach(p=>n+=grpAdd(p,nom)); saveG(); LG.groupes.sel=nom}
     showBase(); saiFermer(); return}
 });
 
+// ---- choix de la campagne
+function campListe(){const S=new Set([campAuj(),CV]);
+  Object.keys(GRP).forEach(g=>S.add(grpCamp(g))); Object.keys(ES||{}).forEach(d=>S.add(campOf(d))); (SO.T||[]).forEach(t=>S.add(campOf(t.debut)));
+  return [...S].filter(Boolean).sort().reverse()}
+function campMaj(){const sel=$('#camp-sel'); sel.innerHTML=campListe().map(c=>`<option${c===CV?' selected':''}>${c}</option>`).join('');
+  $('#p-camp').textContent='Campagne '+CV+(enCours()?'':' (ancienne campagne : consultation)');
+  const b=$('#camp-ban'); b.hidden=enCours(); b.textContent='Vous regardez la campagne '+CV+'. Les lots montrent toujours les bêtes d’aujourd’hui.'}
+$('#camp-sel').addEventListener('change',e=>{CV=e.target.value; LS.set('cb_cv',CV); ['lots','groupes'].forEach(k=>{LG[k].sel=null;LG[k].ck.clear()}); E_VOIR=null; campMaj(); render()});
 // ---- sauvegarde / restauration
 function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
@@ -1252,18 +1345,19 @@ let QUIT=0;
 function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;font-size:16px;max-width:90vw;text-align:center';document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,2500)}
 function retourTel(){
   if(typeof SAI!=='undefined'&&SAI){ saiFermer(); return true}
+  if(document.body.classList.contains('tfull')){ triFermer(); return true}
   if((tab==='lots'||tab==='groupes')&&LG[tab].sel){ LG[tab].sel=null; LG[tab].ck.clear(); render(); return true}
   if(tab==='recherche'){ setTab(R_ORIG||'lots'); return true}
   if(!$('#sheet').hidden){ const S=ST['#sheet-body']; if(S.pile.length) fiche(S.pile.pop(),'nav','#sheet-body'); else $('#sheet').hidden=true; return true}
   if(document.body.classList.contains('efull')){ eVue(EV==='saisie'?'liste':EV==='liste'?'clot':'saisie'); return true}
   if(tab==='fiche'&&ST['#fiche'].pile.length){ fiche(ST['#fiche'].pile.pop(),'nav','#fiche'); return true}
-  if(tab!=='fiche'){ setTab('fiche'); return true}
+  if(tab!=='accueil'){ setTab('accueil'); return true}
   return false}
 try{ history.replaceState({cb:0},''); history.pushState({cb:1},'') }catch(e){}
 window.addEventListener('popstate',()=>{ if(retourTel()){QUIT=0; history.pushState({cb:1},''); return}
   if(QUIT&&Date.now()-QUIT<2500){ history.back(); return}
   QUIT=Date.now(); toast('Appuyez encore sur Retour pour quitter l’appli'); history.pushState({cb:1},'')});
-showBase(); setTab(LS.get('cb_tab','fiche'));
+showBase(); setTab('accueil');
 </script>
 </body>
 </html>
