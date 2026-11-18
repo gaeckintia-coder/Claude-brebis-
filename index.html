@@ -1111,6 +1111,10 @@ function lu(raw){ const p=plaqueDe(raw); if(!p) return;
 $('#f').addEventListener('submit',e=>{e.preventDefault(); const v=$('#q').value; $('#q').value=''; if(/[a-zà-ÿ]/i.test(v)) chercheNom(v); else lu(v)});
 
 // ---- lecteur Allflex LPR (Bluetooth série, Chrome Android 137+)
+let PIPE=null, PIPEAB=null;
+// fermeture propre du port : sinon le Bluetooth reste ouvert et le lecteur ne peut plus être reconnecté
+async function lectFermer(P){ try{if(PIPEAB) PIPEAB.abort()}catch(e){} try{await PIPE}catch(e){}
+  for(let i=0;i<5;i++){ if(!P.readable&&!P.writable) return true; try{await P.close(); return true}catch(e){ await new Promise(r=>setTimeout(r,300)) } } return false}
 let port=null, LPORT=null, LECT_ETEINT=false, LAST_LECT=null, LREADER=null, USER_OFF=false, OFF_ASK=false;
 // lecture continue : le même numéro est ignoré tant qu'aucune autre boucle n'a été lue (et quand on change d'écran, on repart à zéro)
 function lectMaj(){const cx=$('#cnx'); if(cx&&port){cx.textContent=OFF_ASK?'Confirmer : déconnecter':'Connecté · appuyer pour déconnecter'}
@@ -1118,19 +1122,19 @@ function lectMaj(){const cx=$('#cnx'); if(cx&&port){cx.textContent=OFF_ASK?'Conf
   b.textContent=OFF_ASK&&port?'📡 Confirmer : déconnecter':i==='#p-lect'?(port?'📡 ● Connecté':off?'📡 Éteint…':'📡 Connecter'):(port?'📡 ● Lecteur connecté · appuyer pour déconnecter':off?'📡 Lecteur éteint · reconnexion dès qu’il se rallume':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port); b.classList.toggle('off',off)})}
 // reconnexion automatique au même lecteur quand il se rallume (sans repasser par la liste Bluetooth)
 setInterval(async()=>{ if(port||!LECT_ETEINT||!LPORT||window._lectEssai) return; window._lectEssai=true;
-  try{ try{await LPORT.close()}catch(e){} await LPORT.open({baudRate:9600}); port=LPORT; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur reconnecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur reconnecté'); lire() }catch(e){}
+  try{ await lectFermer(LPORT); await LPORT.open({baudRate:9600}); port=LPORT; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur reconnecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur reconnecté'); lire() }catch(e){}
   window._lectEssai=false},5000);
 function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); lectMaj()}
 function luLect(l){const p=plaqueDe(l); if(p&&p===LAST_LECT) return; LAST_LECT=p; lu(l)}
 async function lire(){
-  const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{});
+  const dec=new TextDecoderStream(); PIPEAB=new AbortController(); PIPE=port.readable.pipeTo(dec.writable,{signal:PIPEAB.signal}).catch(()=>{});
   const r=dec.readable.getReader(); LREADER=r; let buf='';
   let tm=null;
   try{for(;;){const {value,done}=await r.read(); if(done)break; buf+=value; let i;
     while((i=buf.search(/[\r\n]/))>=0){const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(l) luLect(l)}
     clearTimeout(tm); if(buf.trim()) tm=setTimeout(()=>{const l=buf.trim(); buf=''; if(/\d{12,}/.test(l)) luLect(l); else if(l) setSt('Reçu du lecteur : '+l,'err')},400);}}
   catch(e){setSt('Lecteur déconnecté : '+e.message,'err')}
-  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on'); const p0=port; port=null; LREADER=null; if(p0){ try{await p0.close()}catch(e){} if(USER_OFF){USER_OFF=false; LECT_ETEINT=false; setSt('Lecteur déconnecté (par vous)','')} else {LECT_ETEINT=true; alerte(); toast('Lecteur éteint ou hors de portée : il se reconnectera dès qu’il se rallume')}} lectMaj()}
+  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on'); const p0=port; port=null; LREADER=null; if(p0){ await lectFermer(p0); if(USER_OFF){USER_OFF=false; LECT_ETEINT=false; setSt('Lecteur déconnecté (par vous)','')} else {LECT_ETEINT=true; alerte(); toast('Lecteur éteint ou hors de portée : il se reconnectera dès qu’il se rallume')}} lectMaj()}
 }
 $('#cnx').addEventListener('click',async e=>{
   if(port){ if(e.isTrusted) lectBouton(); return}
@@ -1138,6 +1142,7 @@ $('#cnx').addEventListener('click',async e=>{
   const SPP='00001101-0000-1000-8000-00805f9b34fb', mode=$('#mode').value;
   const opt=mode==='b'?{filters:[{bluetoothServiceClassId:SPP}],allowedBluetoothServiceClassIds:[SPP]}:mode==='c'?{}:{allowedBluetoothServiceClassIds:[SPP]};
   try{ port=await navigator.serial.requestPort(opt);
+    if(port.readable||port.writable) await lectFermer(port);
     await port.open({baudRate:9600}); LPORT=port; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); lire();
   }catch(e){port=null; setSt('Connexion impossible : '+e.message,'err')}
 });
@@ -2017,7 +2022,7 @@ flInit();
   const lt=TR_LOT||lotsNoms().find(l=>/traite/i.test(l)); if(lt&&!COUL['l:'+lt]&&!pris('#1f5fa8')){COUL['l:'+lt]='#1f5fa8'; ch=true}
   if(ch) LS.set('cb_coul',COUL)})();
 // un seul bouton : connecter / déconnecter (2 appuis pour déconnecter)
-async function lectDeconnecter(){USER_OFF=true; LECT_ETEINT=false; OFF_ASK=false; try{if(LREADER) await LREADER.cancel()}catch(e){} toast('Lecteur déconnecté : il s’éteindra tout seul après le délai réglé'); lectMaj()}
+async function lectDeconnecter(){USER_OFF=true; LECT_ETEINT=false; OFF_ASK=false; try{if(PIPEAB) PIPEAB.abort()}catch(e){} try{if(LREADER) await LREADER.cancel()}catch(e){} toast('Lecteur déconnecté : il s’éteindra tout seul après le délai réglé'); lectMaj()}
 function lectBouton(){ if(!port){OFF_ASK=false; LECT_ETEINT=false; $('#cnx').click(); return}
   if(!OFF_ASK){OFF_ASK=true; lectMaj(); clearTimeout(window._offT); window._offT=setTimeout(()=>{OFF_ASK=false; lectMaj()},4000); return}
   clearTimeout(window._offT); lectDeconnecter()}
