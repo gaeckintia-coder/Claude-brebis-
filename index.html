@@ -1842,13 +1842,15 @@ SO.C=SO.C||[];
 let CO={dep:'adultes',mil:{},sx:{},lot:{},an:{},k:'',ml:'',motif:'',d:'',ask:false};
 function coBase(){const d=CO.dep; return Object.keys(A()).filter(p=>{const x=A()[p]; if(!pres(x)) return false;
   if(d==='adultes') return !jeuneCat(x); if(d==='jeunes') return jeuneCat(x); if(d.startsWith('l:')) return (lotOf(p)||'Sans lot')===d.slice(2); if(d.startsWith('g:')) return membreDe(d.slice(2),p); return false})}
-const coMil=p=>{const n=isoNe((A()[p]||{}).ne); return n?n.slice(0,4):'?'};
+const coMil=p=>/^\d{5}$/.test(p)?p.slice(0,2):p;
+// ordre des millésimes : du plus vieux au plus jeune (date de naissance la plus ancienne de chaque millésime)
+function milOrdre(L){const m={}; L.forEach(p=>{const v=coMil(p), n=isoNe((A()[p]||{}).ne)||'9999'; if(!m[v]||n<m[v]) m[v]=n}); return v=>m[v]||'9999'}
 const coSx=p=>femelle(A()[p])?'F':'M';
 const coLot=p=>lotOf(p)||'Sans lot';
 function coSel(){return coBase().filter(p=>!CO.mil[coMil(p)]&&!CO.sx[coSx(p)]&&!CO.lot[coLot(p)]&&!CO.an[p])}
 function coOuvrir(){CO={dep:'adultes',mil:{},sx:{},lot:{},an:{},k:'',ml:'',motif:'',d:auj(),ask:false}; document.body.classList.add('cfull'); $('#v-coll').hidden=false; renderColl(); window.scrollTo(0,0)}
 function coFermer(){document.body.classList.remove('cfull'); $('#v-coll').hidden=true; renderSoins(); render()}
-function renderColl(){const B=coBase(), S=coSel(), P=PH(), cnt=(f)=>{const c={}; B.forEach(p=>{const v=f(p); c[v]=(c[v]||0)+1}); return Object.entries(c).sort((a,b)=>a[0].localeCompare(b[0]))};
+function renderColl(){const B=coBase(), S=coSel(), P=PH(), mo=milOrdre(B), cnt=(f)=>{const c={}; B.forEach(p=>{const v=f(p); c[v]=(c[v]||0)+1}); return Object.entries(c).sort((a,b)=>f===coMil?mo(a[0]).localeCompare(mo(b[0]))||a[0].localeCompare(b[0]):a[0].localeCompare(b[0]))};
   const ck=(grp,v,n,lab)=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:3px 10px 3px 0;font-size:17px"><input type="checkbox" data-co="${grp}|${esc(v)}"${CO[grp][v]?'':' checked'} style="width:22px;height:22px">${esc(lab||v)} <span class="hint">· ${n}</span></label>`;
   const L=lotsNoms(), G=[...grpsUser(),...grpsAuto()];
   const pr=P.prod[CO.k], ml=parseFloat(String(CO.ml).replace(',','.'))||0, tot=Math.round(ml*S.length*10)/10, plan=CO.k&&ml&&suivi(CO.k)?flPlan(CO.k,tot):{parts:[],manque:0};
@@ -1856,7 +1858,7 @@ function renderColl(){const B=coBase(), S=coSel(), P=PH(), cnt=(f)=>{const c={};
   $('#v-coll').innerHTML=`<div class="e-top"><button type="button" class="btn2 b-retour" data-cox="1">← Retour</button><b style="flex:1;text-align:center">Traitement collectif</b></div>
    <div class="row" style="margin-top:6px"><button type="button" class="btn${CO.dep==='adultes'?'':'2'}" data-codep="adultes" style="flex:1">Adultes</button><button type="button" class="btn${CO.dep==='jeunes'?'':'2'}" data-codep="jeunes" style="flex:1">Jeunes</button></div>
    <select id="co-dep" style="margin-top:4px"><option value="">ou un lot / un groupe…</option><optgroup label="Lots">${L.map(l=>`<option value="l:${esc(l)}"${CO.dep==='l:'+l?' selected':''}>${esc(l)}</option>`).join('')}</optgroup><optgroup label="Groupes">${G.map(g=>`<option value="g:${esc(g)}"${CO.dep==='g:'+g?' selected':''}>${esc(g)}</option>`).join('')}</optgroup></select>
-   <h3>Millésimes</h3><div>${cnt(coMil).map(([v,n])=>ck('mil',v,n,v==='?'?'inconnu':v)).join('')}</div>
+   <h3>Millésimes</h3><div>${cnt(coMil).map(([v,n])=>ck('mil',v,n,v)).join('')}</div>
    <h3>Sexe</h3><div>${cnt(coSx).map(([v,n])=>ck('sx',v,n,v==='F'?'Femelles':'Mâles')).join('')}</div>
    ${CO.dep.startsWith('l:')?'':`<h3>Lots</h3><div>${cnt(coLot).map(([v,n])=>ck('lot',v,n)).join('')}</div>`}
    <div class="big ok" style="font-size:30px;margin-top:8px">${S.length}<small>animaux sélectionnés</small></div>
