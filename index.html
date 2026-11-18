@@ -590,7 +590,9 @@ function lotOf(p,prof){ if(LOTS[p]!==undefined) return LOTS[p]; const x=A()[p]||
 const COULS=[['Bleu','#1f5fa8'],['Rouge','#c62828'],['Vert','#2e7d32'],['Jaune','#e0a800'],['Orange','#ef6c00'],['Violet','#7b3fa0'],['Rose','#d81b60'],['Marron','#6d4c41'],['Gris','#607d8b'],['Noir','#212121']];
 let COUL=LS.get('cb_coul',{});   // {'l:Nom du lot' ou 'g:Nom du groupe' : '#couleur'}
 const coulLot=l=>COUL['l:'+l]||'', coulGrp=g=>COUL['g:'+g]||'';
-function pastilles(cur,attr){return `<div class="coul-row">${COULS.map(([n,c])=>`<button type="button" class="coul${cur===c?' on':''}" style="background:${c}" ${attr}="${c}" aria-label="${n}" title="${n}"></button>`).join('')}<button type="button" class="coul aucune${!cur?' on':''}" ${attr}="" aria-label="Sans couleur">∅</button></div>`}
+// couleurs libres et partageables, sauf celles du lot de traite et du groupe À réformer : elles leur sont réservées
+const coulReservee=k=>k==='g:À réformer'||(k.startsWith('l:')&&(/traite/i.test(k)||(typeof TR_LOT!=='undefined'&&k==='l:'+TR_LOT)));
+function pastilles(cur,attr,key){const pris=new Set(Object.entries(COUL).filter(([k,v])=>k!==key&&v!==cur&&coulReservee(k)).map(([k,v])=>v)); return `<div class="coul-row">${COULS.filter(([n,c])=>!pris.has(c)).map(([n,c])=>`<button type="button" class="coul${cur===c?' on':''}" style="background:${c}" ${attr}="${c}" aria-label="${n}" title="${n}"></button>`).join('')}<button type="button" class="coul aucune${!cur?' on':''}" ${attr}="" aria-label="Sans couleur">∅</button></div>`}
 function pastBrebis(p,sansLot){const l=lotOf(p), c=[]; if(coulLot(l)&&!sansLot) c.push([coulLot(l),'Lot '+l]); (typeof grpsOf==='function'?[...grpsOf(p),...grpsAutoOf(p)]:[]).forEach(g=>{if(coulGrp(g)) c.push([coulGrp(g),'Groupe '+g])});
   return c.length?`<div class="past-b">${c.map(([k,t])=>`<span class="pb" style="background:${k}"></span><span class="pbt">${esc(t)}</span>`).join('')}</div>`:''}
 function coulUsages(c,sauf){return Object.entries(COUL).filter(([k,v])=>v===c&&k!==sauf).map(([k])=>k)}
@@ -1375,7 +1377,7 @@ function renderLots(){const el=$('#lg-lots'), S=LG.lots;
        <button type="button" class="btn" data-tri="1" style="width:100%;margin-top:6px;padding:12px">🔀 Brebis mélangées : à quel lot ?</button>
        <button type="button" class="btn2" data-rcolle="lots" style="width:100%;margin-top:6px">🔍 Rechercher une liste reçue de Claude</button>`; return}
   const l=S.sel, M=membresLot(l);
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><div class="row" style="margin:6px 0"><span class="hint">Bâtiment :</span>${BATS.map(bt=>`<button type="button" class="btn${batOf(l)===bt?'':'2'}" data-lgbat="${bt}" style="padding:8px 10px">${bt}</button>`).join('')}</div><details class="lg-act"${LG.lots.co?' open':''}><summary><b>🎨 Changer la couleur du lot</b></summary>${pastilles(coulLot(l),'data-lgcoul')}</details>
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><div class="row" style="margin:6px 0"><span class="hint">Bâtiment :</span>${BATS.map(bt=>`<button type="button" class="btn${batOf(l)===bt?'':'2'}" data-lgbat="${bt}" style="padding:8px 10px">${bt}</button>`).join('')}</div><details class="lg-act"${LG.lots.co?' open':''}><summary><b>🎨 Changer la couleur du lot</b></summary>${pastilles(coulLot(l),'data-lgcoul','l:'+l)}</details>
     <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
     ${M.length?lgListe('lots',M):`<div class="hint" style="margin:10px 0">Ce lot est vide pour l’instant.</div><button type="button" class="btn b-valid" data-lgdellot="1" style="width:100%">${S.ask==='dellot'?'Confirmer : supprimer le lot':'Supprimer ce lot vide'}</button>`}
     <div class="lg-act"${M.length?'':' hidden'}><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
@@ -1390,7 +1392,7 @@ function renderGroupes(){const el=$('#lg-groupes'), S=LG.groupes, GU=grpsUser(),
       `<button type="button" class="btn" data-sai="groupe|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau groupe</button>
        <h3>Groupes automatiques</h3>`+GA.map(g=>`<button type="button" class="lg-card auto" data-lgo="groupes|${esc(g)}" style="${coulGrp(g)?'border-left:10px solid '+coulGrp(g):''}"><span>${esc(g)}</span><b>${membresGrp(g).length}</b></button>`).join(''); return}
   const g=S.sel, M=membresGrp(g), auto=!GRP[g];
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="groupes">← Tous les groupes</button><h2 style="margin-top:8px">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)} · ${M.length}</h2><details class="lg-act"${LG.groupes.co?' open':''}><summary><b>✎ ${auto?'Changer la couleur':'Changer le nom ou la couleur'}</b></summary><div class="hint">Couleur :</div>${pastilles(coulGrp(g),'data-lgcoul')}${auto?'':`<div class="hint" style="margin-top:8px">Nouveau nom (les brebis restent dans le groupe) :</div><input id="lg-grn" type="text" value="${esc(g)}" style="font:inherit;padding:8px;width:100%;box-sizing:border-box"><button type="button" class="btn2 b-retour" data-lggren="1" style="width:100%;margin-top:6px">Renommer le groupe</button>`}</details>${auto?'<div class="hint">Groupe automatique : il se remplit tout seul.</div>':''}
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="groupes">← Tous les groupes</button><h2 style="margin-top:8px">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)} · ${M.length}</h2><details class="lg-act"${LG.groupes.co?' open':''}><summary><b>✎ ${auto?'Changer la couleur':'Changer le nom ou la couleur'}</b></summary><div class="hint">Couleur :</div>${pastilles(coulGrp(g),'data-lgcoul','g:'+g)}${auto?'':`<div class="hint" style="margin-top:8px">Nouveau nom (les brebis restent dans le groupe) :</div><input id="lg-grn" type="text" value="${esc(g)}" style="font:inherit;padding:8px;width:100%;box-sizing:border-box"><button type="button" class="btn2 b-retour" data-lggren="1" style="width:100%;margin-top:6px">Renommer le groupe</button>`}</details>${auto?'<div class="hint">Groupe automatique : il se remplit tout seul.</div>':''}
     <div class="row"><button type="button" class="btn" data-lgrech="groupes">🔍 Rechercher ce groupe en bipant</button>${auto?'':`<button type="button" class="btn" data-sai="groupe|${esc(g)}">＋ Ajouter des brebis</button>`}</div>
     ${lgListe('groupes',M)}
     ${(()=>{const X=auto?[]:tri(Object.keys(GRP[g]).filter(p=>!A()[p]||!pres(A()[p]))); return X.length?`<div style="margin-top:8px;opacity:.55">${X.map(p=>`<div class="lg-row"><span style="flex:1"><s>${p}</s> <span class="hint">${esc(A()[p]?A()[p].statut:'inconnue')} · plus comptée</span></span><button type="button" class="btn2" data-lgsort="${p}" aria-label="Sortir ${p} du groupe" style="padding:2px 10px">✕</button></div>`).join('')}</div>`:''})()}
@@ -1458,7 +1460,7 @@ function saiOuvrir(kind,nom){SAI={kind,nom:nom||'',neuf:!nom,items:[]}; document
   $('#sai-nom').placeholder=kind==='lot'?'Nom du lot (ex. Mères 1)':'Nom du groupe (ex. Insémination 2027 n°1)'; $('#sai-st').textContent=''; $('#sai-last').innerHTML='';
   const L=lotsNoms(), G=[...grpsUser(),...grpsAuto()];
   $('#sai-src').innerHTML='<option value="">— Choisir —</option><optgroup label="Lots">'+L.map(l=>`<option value="l:${esc(l)}">${esc(l)}</option>`).join('')+'</optgroup><optgroup label="Groupes">'+G.map(g=>`<option value="g:${esc(g)}">${esc(g)}</option>`).join('')+'</optgroup>';
-  $('#sai-coulb').hidden=!SAI.neuf; SAI.coul=''; $('#sai-coul').innerHTML=pastilles('','data-saicoul');
+  $('#sai-coulb').hidden=!SAI.neuf; SAI.coul=''; $('#sai-coul').innerHTML=pastilles('','data-saicoul','');
   $('#sai-srcl').innerHTML=''; saiMaj(); window.scrollTo(0,0)}
 function saiFermer(){SAI=null; document.body.classList.remove('sfull'); $('#v-sai').hidden=true; render()}
 function saiMaj(){ if(!SAI) return; $('#sai-n').textContent=SAI.items.length;
@@ -1473,7 +1475,7 @@ $('#sai-src').addEventListener('change',()=>{const v=$('#sai-src').value; if(!v)
   const M=v.startsWith('l:')?membresLot(v.slice(2)):membresGrp(v.slice(2));
   $('#sai-srcl').innerHTML=`<div class="row"><button type="button" class="btn2" data-saitout="1">Tout prendre (${M.length})</button><button type="button" class="btn" data-saicoch="1">Prendre les cochées</button></div><div class="nums">${M.map(p=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0"><input type="checkbox" data-saick="${p}">${p}</label>`).join('')}</div>`});
 $('#v-sai').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b||!SAI) return;
-  if(b.dataset.saicoul!=null){SAI.coul=b.dataset.saicoul; $('#sai-coul').innerHTML=pastilles(SAI.coul,'data-saicoul');
+  if(b.dataset.saicoul!=null){SAI.coul=b.dataset.saicoul; $('#sai-coul').innerHTML=pastilles(SAI.coul,'data-saicoul','');
     const u=SAI.coul?coulUsages(SAI.coul,''):[]; $('#sai-st').innerHTML=u.length?'Couleur aussi utilisée par '+esc(u.map(k=>'« '+k.slice(2)+' »').join(', '))+'. Ce n’est pas gênant. <button type="button" class="btn2 b-retour" data-saicret="'+esc(JSON.stringify(u))+'">La retirer de '+(u.length>1?'ces autres':'l’autre')+'</button>':''; $('#sai-st').className='state'; return}
   if(b.dataset.saicret){JSON.parse(b.dataset.saicret).forEach(k=>delete COUL[k]); LS.set('cb_coul',COUL); $('#sai-st').textContent='Couleur retirée de l’autre lot ou groupe.'; $('#sai-st').className='state ok'; return}
   if(b.dataset.saidel){SAI.items=SAI.items.filter(p=>p!==b.dataset.saidel); saiMaj(); return}
@@ -1483,7 +1485,7 @@ $('#v-sai').addEventListener('click',e=>{const b=e.target.closest('button'); if(
     if(!SAI.items.length&&!SAI.neuf){st.textContent='Choisis au moins une brebis.';st.className='state err';return}
     if(SAI.neuf&&SAI.kind==='lot'&&lotsNoms().includes(nom)){st.textContent='Le lot « '+nom+' » existe déjà.';st.className='state err';return}
     const d=fdate(); let n=0;
-    if(SAI.neuf&&SAI.coul){COUL[(SAI.kind==='lot'?'l:':'g:')+nom]=SAI.coul; LS.set('cb_coul',COUL)}
+    if(SAI.neuf&&SAI.coul){COUL[(SAI.kind==='lot'?'l:':'g:')+nom]=SAI.coul; LS.set('cb_coul',COUL)} else if(SAI.neuf&&SAI.kind==='lot'&&/traite/i.test(nom)) trCoulDef(nom);
     if(SAI.kind==='lot'){LREG[nom]=LREG[nom]||{cree:auj()}; LS.set('cb_lreg',LREG); SAI.items.forEach(p=>{const de=lotOf(p); if(de!==nom){LOTS[p]=nom; mvPush({d,p,de,vers:nom}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); LG.lots.sel=nom}
     else {if(!GRP[nom]){GRP[nom]={}; GMETA[nom]={camp:CV}; LS.set('cb_gmeta',GMETA)} SAI.items.forEach(p=>n+=grpAdd(p,nom)); saveG(); LG.groupes.sel=nom}
     showBase(); saiFermer(); return}
@@ -1627,6 +1629,7 @@ $('#v-vente').addEventListener('click',e=>{const b=e.target.closest('button'); i
 let TRA=LS.get('cb_tra',{}); const saveTRA=()=>LS.set('cb_tra',TRA);   // {plaque:{d,lot,s}}
 let TB=LS.get('cb_tb',{}); const saveTB=()=>LS.set('cb_tb',TB);       // bipées en cours {plaque:cochée}
 let TR_LOT=LS.get('cb_trlot',''), TR_ASK=false, TR_LAST=null;
+function trCoulDef(l){ if(l&&!COUL['l:'+l]&&!Object.values(COUL).includes('#1f5fa8')){COUL['l:'+l]='#1f5fa8'; LS.set('cb_coul',COUL)}}
 const traiteFaite=p=>!!(TRA[p]&&TRA[p].d>=bascule());
 let _pis=null,_pisT=0;
 function pisMap(){ if(_pis&&Date.now()-_pisT<300) return _pis; const M={}, AG={};
@@ -1698,13 +1701,13 @@ function renderTraite(){ if(!$('#v-traite')) return;
 $('#tt-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#tt-q').value); $('#tt-q').value=''; if(p) ttBip(p)});
 $('#tr-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#tr-q').value); $('#tr-q').value=''; if(p) trBip(p)});
 $('#v-traite').addEventListener('change',e=>{const t=e.target; if(t.dataset.trck){TB[t.dataset.trck]=t.checked; saveTB(); renderTraite(); return}
-  if(t.id==='tr-lot'){const v=t.value; if(v==='__new'){$('#tr-lot-nb').hidden=false; $('#tr-lot-n').focus()} else {TR_LOT=v; LS.set('cb_trlot',v); t.blur(); renderTraite()}}});
+  if(t.id==='tr-lot'){const v=t.value; if(v==='__new'){$('#tr-lot-nb').hidden=false; $('#tr-lot-n').focus()} else {TR_LOT=v; LS.set('cb_trlot',v); trCoulDef(v); t.blur(); renderTraite()}}});
 $('#v-traite').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
   if(b.id==='tr-plein'){ if(!TR_LOT){$('#tr-st').textContent='Choisis d’abord le lot de traite en haut.'; $('#tr-st').className='state err'; return} trbOuvrir(); return}
   if(b.dataset.trm){TRM=b.dataset.trm; LS.set('cb_trm',TRM); renderTraite(); return}
   if(b.dataset.trtar){const p=b.dataset.trtar; tarMettre(p); $('#tr-card').innerHTML=`<div style="text-align:center;margin-top:6px">${medTar(p)}</div><div class="big warn" style="font-size:20px">TARIE<small>groupe ${esc(grpTar())} · pas mise à la traite</small></div>`; renderTraite(); return}
   if(b.dataset.ttno){const p=b.dataset.ttno; grpDel(p,grpTar()); saveG(); _pis=null; $('#tt-card').innerHTML=`<div class="big ok" style="font-size:20px">${p}<small>retirée du tarissement</small></div>`; renderTraite(); return}
-  if(b.dataset.lotok){const n=$('#tr-lot-n').value.trim(); if(!n) return; TR_LOT=n; LS.set('cb_trlot',n); if(!LREG[n]){LREG[n]={cree:fdate()}; LS.set('cb_lreg',LREG)} $('#tr-lot-n').blur(); renderTraite(); return}
+  if(b.dataset.lotok){const n=$('#tr-lot-n').value.trim(); if(!n) return; TR_LOT=n; LS.set('cb_trlot',n); trCoulDef(n); if(!LREG[n]){LREG[n]={cree:fdate()}; LS.set('cb_lreg',LREG)} $('#tr-lot-n').blur(); renderTraite(); return}
   if(b.id==='tr-ok'){trPasser('#tr-st'); return}
   if(b.id==='tr-clr'){ if(!b.dataset.ask){b.dataset.ask=1; b.textContent='Confirmer : effacer'; setTimeout(()=>{delete b.dataset.ask; b.textContent='Annuler : effacer les bipées sans rien changer'},5000); return}
     delete b.dataset.ask; b.textContent='Annuler : effacer les bipées sans rien changer'; TB={}; saveTB(); $('#tr-card').innerHTML=''; renderTraite(); return}
@@ -1907,6 +1910,10 @@ function renderCons(){const p=CONS, x=A()[p]||{}; let h=`<div class="e-top"><but
   $('#v-cons').innerHTML=h}
 $('#v-cons').addEventListener('click',e=>{if(e.target.closest('[data-consx]')) consFermer()});
 flInit();
+(function(){const pris=c=>Object.values(COUL).includes(c); let ch=false;
+  if(!COUL['g:À réformer']&&!pris('#c62828')){COUL['g:À réformer']='#c62828'; ch=true}
+  const lt=TR_LOT||lotsNoms().find(l=>/traite/i.test(l)); if(lt&&!COUL['l:'+lt]&&!pris('#1f5fa8')){COUL['l:'+lt]='#1f5fa8'; ch=true}
+  if(ch) LS.set('cb_coul',COUL)})();
 showBase(); setTab('accueil');
 </script>
 </body>
