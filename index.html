@@ -98,6 +98,7 @@ body.page #pbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z
 #pbar b{flex:1;font-size:20px;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .lect-b{flex-shrink:0;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--mute);white-space:nowrap}
 .lect-b.on{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.lect-b.off{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
 #lect-pill{position:fixed;top:3px;right:8px;z-index:40;display:none}
 body.efull #lect-pill,body.qfull #lect-pill,body.ttfull #lect-pill,body.zfull #lect-pill,body.xfull #lect-pill,body.sfull #lect-pill,body.tfull #lect-pill,body.kfull #lect-pill,body.cfull #lect-pill{display:block}
 body.efull #v-echo,body.qfull #v-trb,body.ttfull #v-ttb,body.zfull .zon,body.xfull #v-edit,body.sfull #v-sai,body.tfull #v-tri,body.kfull #v-cons,body.cfull #v-coll{padding-top:34px!important}
@@ -623,7 +624,7 @@ const CHTXT={lots:['Déplacer des bêtes, créer, regrouper, renommer, couleurs,
   traite:['Mise à la traite, tarissement','À mettre à la traite, mises à la traite, taries'],mort:['Enregistrer des morts','Morts de la campagne, orphelins']};
 let MD={};
 function renderChoix(t){const c=document.querySelector(`.choix[data-ch="${t}"]`); if(!c) return; const [a,b]=CHTXT[t]; c.innerHTML=`<button type="button" class="ch-t" data-md="saisie">✏️ Saisie<span>${a}</span></button><button type="button" class="ch-t" data-md="consult">🔍 Consultation<span>${b}</span></button>`}
-function setMode(t,m){MD[t]=m; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=m; const z=m==='saisie'&&ZFULL.includes(t);
+function setMode(t,m){MD[t]=m; LAST_LECT=null; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=m; const z=m==='saisie'&&ZFULL.includes(t);
   document.body.classList.toggle('zfull',z); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon')); if(z&&sec) sec.classList.add('zon');
   if(t==='lots'||t==='groupes'){LG[t].sel=null; LG[t].ck.clear()} window.scrollTo(0,0); render()}
 document.addEventListener('click',e=>{const b=e.target.closest('.choix [data-md]'); if(b){setMode(b.closest('.choix').dataset.ch,b.dataset.md); return}
@@ -742,7 +743,7 @@ $('#file').addEventListener('change',e=>{
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
-function setTab(t){tab=t; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
+function setTab(t){tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
   if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
   if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
@@ -1110,18 +1111,25 @@ function lu(raw){ const p=plaqueDe(raw); if(!p) return;
 $('#f').addEventListener('submit',e=>{e.preventDefault(); const v=$('#q').value; $('#q').value=''; if(/[a-zà-ÿ]/i.test(v)) chercheNom(v); else lu(v)});
 
 // ---- lecteur Allflex LPR (Bluetooth série, Chrome Android 137+)
-let port=null;
-function lectMaj(){['#p-lect','#lect-pill'].forEach(i=>{const b=$(i); if(!b) return; b.textContent=i==='#p-lect'?(port?'📡 ● Connecté':'📡 Connecter'):(port?'📡 ● Lecteur connecté':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port)})}
+let port=null, LPORT=null, LECT_ETEINT=false, LAST_LECT=null;
+// lecture continue : le même numéro est ignoré tant qu'aucune autre boucle n'a été lue (et quand on change d'écran, on repart à zéro)
+function lectMaj(){['#p-lect','#lect-pill'].forEach(i=>{const b=$(i); if(!b) return; const off=!port&&LECT_ETEINT;
+  b.textContent=i==='#p-lect'?(port?'📡 ● Connecté':off?'📡 Éteint…':'📡 Connecter'):(port?'📡 ● Lecteur connecté':off?'📡 Lecteur éteint · reconnexion dès qu’il se rallume':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port); b.classList.toggle('off',off)})}
+// reconnexion automatique au même lecteur quand il se rallume (sans repasser par la liste Bluetooth)
+setInterval(async()=>{ if(port||!LECT_ETEINT||!LPORT||window._lectEssai) return; window._lectEssai=true;
+  try{ try{await LPORT.close()}catch(e){} await LPORT.open({baudRate:9600}); port=LPORT; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur reconnecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur reconnecté'); lire() }catch(e){}
+  window._lectEssai=false},5000);
 function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); lectMaj()}
+function luLect(l){const p=plaqueDe(l); if(p&&p===LAST_LECT) return; LAST_LECT=p; lu(l)}
 async function lire(){
   const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{});
   const r=dec.readable.getReader(); let buf='';
   let tm=null;
   try{for(;;){const {value,done}=await r.read(); if(done)break; buf+=value; let i;
-    while((i=buf.search(/[\r\n]/))>=0){const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(l) lu(l)}
-    clearTimeout(tm); if(buf.trim()) tm=setTimeout(()=>{const l=buf.trim(); buf=''; if(/\d{12,}/.test(l)) lu(l); else if(l) setSt('Reçu du lecteur : '+l,'err')},400);}}
+    while((i=buf.search(/[\r\n]/))>=0){const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(l) luLect(l)}
+    clearTimeout(tm); if(buf.trim()) tm=setTimeout(()=>{const l=buf.trim(); buf=''; if(/\d{12,}/.test(l)) luLect(l); else if(l) setSt('Reçu du lecteur : '+l,'err')},400);}}
   catch(e){setSt('Lecteur déconnecté : '+e.message,'err')}
-  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on');port=null;lectMaj()}
+  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on'); const p0=port; port=null; if(p0){LECT_ETEINT=true; try{await p0.close()}catch(e){} alerte(); toast('Lecteur éteint ou hors de portée : il se reconnectera dès qu’il se rallume')} lectMaj()}
 }
 $('#cnx').addEventListener('click',async()=>{
   if(port) return;
@@ -1129,7 +1137,7 @@ $('#cnx').addEventListener('click',async()=>{
   const SPP='00001101-0000-1000-8000-00805f9b34fb', mode=$('#mode').value;
   const opt=mode==='b'?{filters:[{bluetoothServiceClassId:SPP}],allowedBluetoothServiceClassIds:[SPP]}:mode==='c'?{}:{allowedBluetoothServiceClassIds:[SPP]};
   try{ port=await navigator.serial.requestPort(opt);
-    await port.open({baudRate:9600}); setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); lire();
+    await port.open({baudRate:9600}); LPORT=port; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); lire();
   }catch(e){port=null; setSt('Connexion impossible : '+e.message,'err')}
 });
 
