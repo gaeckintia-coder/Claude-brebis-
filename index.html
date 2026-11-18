@@ -64,8 +64,10 @@ body.efull.ev-saisie #e-saisie, body.efull.ev-liste #e-liste, body.efull.ev-clot
 body.sfull .wrap>*:not(#v-sai){display:none!important}
 body.tfull .wrap>*:not(#v-tri){display:none!important}
 body.tfull #v-tri{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
-#tri-card .tri-big{border-radius:16px;padding:14px;text-align:center;color:#fff;margin-top:6px}
-#tri-card .tri-big b{display:block;font-family:var(--display);font-size:56px;line-height:1} #tri-card .tri-big span{display:block;font-size:26px;font-weight:800;margin-top:6px}
+body.qfull .wrap>*:not(#v-trb){display:none!important}
+body.qfull #v-trb{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
+#trb-card .tri-big,#tri-card .tri-big{border-radius:16px;padding:14px;text-align:center;color:#fff;margin-top:6px}
+#trb-card .tri-big b,#tri-card .tri-big b{display:block;font-family:var(--display);font-size:56px;line-height:1} #trb-card .tri-big span,#tri-card .tri-big span{display:block;font-size:26px;font-weight:800;margin-top:6px}
 .tri-g{border-left:10px solid;padding:4px 8px;margin:6px 0}
 body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
 #sai-srcl .nums{max-height:30vh;overflow:auto}
@@ -375,6 +377,16 @@ tr.sel td{background:var(--okbg)}
     <div id="vn-pend" class="hint"></div>
   </section>
 
+  <!-- MISE A LA TRAITE : bipage plein écran -->
+  <section id="v-trb" class="card" hidden>
+    <div class="e-top"><button id="trb-x" class="btn2 b-retour" type="button">← Terminer</button><b style="flex:1;text-align:center">Mise à la traite</b><span class="hint" id="trb-n"></span></div>
+    <form id="trb-f" class="row"><input id="trb-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
+    <div id="trb-card"><div class="hint" style="margin-top:12px">Bipez les brebis.</div></div>
+    <div id="trb-list" style="flex:1;overflow:auto"></div>
+    <button id="trb-ok" class="btn b-valid" type="button" style="width:100%;padding:14px;font-size:18px"></button>
+    <span id="trb-st" class="state"></span>
+  </section>
+
   <!-- MORTALITE -->
   <section id="v-mort" class="card" hidden>
     <h2>Mortalité</h2>
@@ -399,9 +411,10 @@ tr.sel td{background:var(--okbg)}
     <div id="tr-misb">
     <div id="tr-lotb"></div>
     <div id="tr-sum" class="count" style="margin-top:8px"></div>
+    <button id="tr-plein" class="btn" type="button" style="width:100%;margin-top:8px;padding:14px;font-size:18px">▶ Mise à la traite</button>
     <form id="tr-f" class="row" style="margin-top:8px"><input id="tr-q" inputmode="numeric" autocomplete="off" placeholder="N° si pas de bipage" aria-label="Numéro"><button class="btn" type="submit">OK</button></form>
     <div id="tr-card"></div>
-    <h3>À mettre à la traite, bipées</h3><div class="hint">Bipez tout le lot de mères : seules celles qui n’ont plus d’agneau sous le pis s’ajoutent ici. Décochez celles à ne pas mettre tout de suite (ex. antibiotique) : vous les rebiperez plus tard.</div>
+    <h3>À mettre à la traite, bipées</h3><div class="hint">Bipez les brebis : seules celles qui n’ont plus d’agneau sous le pis s’ajoutent ici. Décochez celles à ne pas mettre tout de suite (ex. antibiotique) : vous les rebiperez plus tard.</div>
     <div id="tr-bip"></div>
     <button id="tr-ok" class="btn b-valid" type="button" style="width:100%;margin-top:8px;padding:14px;font-size:18px"></button>
     <button id="tr-clr" class="btn2 b-retour" type="button" style="width:100%;margin-top:6px;padding:10px">Annuler : effacer les bipées sans rien changer</button>
@@ -857,9 +870,15 @@ const sexeOf=x=>/Brebis|Antenaise/.test(x.cat)?'F':'M';
 const etatOf=x=>x.agn?'pleine':(/Vide/.test(x.echo||'')?'vide':'sans');
 // registre des lots : un lot existe même vide (créé à l'avance, ou vidé), jusqu'à ce qu'on le supprime
 let LREG=LS.get('cb_lreg',{});
+// ordre des bâtiments : Bergerie, Dehors, Vieille bergerie
+const BATS=['Bergerie','Pâturage 24/24','Vieille bergerie'];
+let LBAT=LS.get('cb_lbat',{});   // {lot: bâtiment}
+function batOf(l){ if(LBAT[l]==='Dehors') LBAT[l]='Pâturage 24/24'; if(LBAT[l]) return LBAT[l]; if(/vieille/i.test(l)) return 'Vieille bergerie'; if(/^bergerie/i.test(l)) return 'Bergerie'; if(/cocuix|aguer|pâturage|paturage|dehors|prairie|parc|pré|champ/i.test(l)) return 'Pâturage 24/24'; return ''}
+const batRang=l=>l==='Sans lot'?9:(i=>i<0?5:i)(BATS.indexOf(batOf(l)));
+const triLots=(a,b)=>batRang(a[0])-batRang(b[0])||b[1]-a[1]||a[0].localeCompare(b[0]);
 function lotsList(){const c={};Object.entries(A()).forEach(([k,x])=>{if(!pres(x))return;const l=lotOf(k)||'Sans lot';c[l]=(c[l]||0)+1});
   let neuf=false; Object.keys(c).forEach(l=>{if(l!=='Sans lot'&&!LREG[l]){LREG[l]={};neuf=true}}); if(neuf) LS.set('cb_lreg',LREG);
-  Object.keys(LREG).forEach(l=>{if(!(l in c)) c[l]=0}); return Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}
+  Object.keys(LREG).forEach(l=>{if(!(l in c)) c[l]=0}); return Object.entries(c).sort(triLots)}
 function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=first?first(v):v;s.append(o)});s.value=cur}
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(tab!=='troupeau'||tvOk(k,x))&&(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||(f('cat')==='adultes'?!jeuneCat(x):f('cat')==='jeunes'?jeuneCat(x):catAff(x)===f('cat')))
@@ -886,7 +905,7 @@ function renderTroupeau(){
   $('#t-tv').innerHTML=`<button type="button" class="btn${TV==='adultes'?'':'2'}" data-tv="adultes" style="flex:1;padding:14px;font-size:18px">Adultes · ${nA}</button><button type="button" class="btn${TV==='jeunes'?'':'2'}" data-tv="jeunes" style="flex:1;padding:14px;font-size:18px">Jeunes · ${J.length}</button>`+
     (TV==='jeunes'?`<div class="row" style="width:100%"><button type="button" class="btn${TJ===''?'':'2'}" data-tj="">Tous</button><button type="button" class="btn${TJ==='renouv'?'':'2'}" data-tj="renouv">Renouvellement · ${nR}</button><button type="button" class="btn${TJ==='agneaux'?'':'2'}" data-tj="agneaux">Agneaux · ${J.length-nR}</button></div>`:'');
   const cL={}; P.forEach(([k,x])=>{if(!tvOk(k,x)) return; const l=lotOf(k)||'Sans lot'; cL[l]=(cL[l]||0)+1});
-  const L=Object.entries(cL).sort((a,b)=>b[1]-a[1]), tot=L.reduce((s,[,n])=>s+n,0), cur=$('#f-lot').value;
+  const L=Object.entries(cL).sort(triLots), tot=L.reduce((s,[,n])=>s+n,0), cur=$('#f-lot').value;
   const ref=Object.keys(A()).filter(k=>pres(A()[k])&&reforme(k)).length;
   const bient=Object.keys(A()).filter(k=>pres(A()[k])&&!reforme(k)&&mam(k)&&restMam(mam(k))<=7).sort((a,b)=>restMam(mam(a))-restMam(mam(b)));
   $('#t-alert').innerHTML=bient.length?`<div class="tend c-bad" style="border:2px solid var(--bad);border-radius:12px;padding:10px;margin-bottom:10px"><b>⚠ Mammites : délai viande bientôt fini – réformer ?</b><div class="nums">${bient.map(k=>`<button type="button" class="lien" data-fiche="${k}">${k} · ${restMam(mam(k))>0?'J-'+restMam(mam(k)):'fini'} ›</button>`).join('')}</div>Réformes déjà décidées : <b>${ref}</b> / ${REMORQUE} pour la remorque${ref+bient.length>=REMORQUE?' · <b>la remorque serait pleine avec elles</b>':''}.</div>`:'';
@@ -991,6 +1010,7 @@ function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
   if(typeof SAI!=='undefined'&&SAI){saiAdd(p);return}
   if(document.body.classList.contains('tfull')){triAdd(p);return}
+  if(document.body.classList.contains('qfull')){trBip(p);return}
   if(tab==='sevrage') sevBip(p); else if(tab==='vente') venBip(p); else if(tab==='traite') (TRM==='tar'?ttBip(p):trBip(p)); else if(tab==='mort') moBip(p); else if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
 $('#f').addEventListener('submit',e=>{e.preventDefault();lu($('#q').value);$('#q').value=''});
 
@@ -1320,12 +1340,13 @@ function destSel(id,kind,excl){const L=kind==='lots'?lotsNoms().filter(x=>x!==ex
 function renderLots(){const el=$('#lg-lots'), S=LG.lots;
   if(!S.sel||!lotsNoms().includes(S.sel)){S.sel=null; const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0);
     el.innerHTML=`<h2>Lots <span class="hint">· l'endroit où sont les bêtes</span></h2><div class="hint">Troupeau total (présents) : <b>${tot}</b></div>`+
-      L.map(([l,n])=>`<button type="button" class="lg-card" data-lgo="lots|${esc(l)}" style="${coulLot(l)?'border-left:10px solid '+coulLot(l):''}"><span>${esc(l)}</span><b>${n}</b></button>`).join('')+
+      L.map(([l,n],i)=>{const bt=l==='Sans lot'?'Sans lot':(batOf(l)||'Bâtiment à choisir'), avant=i?(L[i-1][0]==='Sans lot'?'Sans lot':(batOf(L[i-1][0])||'Bâtiment à choisir')):null;
+        return (bt!==avant&&l!=='Sans lot'?`<h3 style="margin:12px 0 2px">${esc(bt)} · ${L.filter(([x])=>x!=='Sans lot'&&(batOf(x)||'Bâtiment à choisir')===bt).reduce((s,[,m])=>s+m,0)}</h3>`:'')+`<button type="button" class="lg-card" data-lgo="lots|${esc(l)}" style="${coulLot(l)?'border-left:10px solid '+coulLot(l):''}"><span>${esc(l)}</span><b>${n}</b></button>`}).join('')+
       `<button type="button" class="btn" data-sai="lot|" style="width:100%;margin-top:8px;padding:12px">＋ Nouveau lot</button>
        <button type="button" class="btn" data-tri="1" style="width:100%;margin-top:6px;padding:12px">🔀 Brebis mélangées : à quel lot ?</button>
        <button type="button" class="btn2" data-rcolle="lots" style="width:100%;margin-top:6px">🔍 Rechercher une liste reçue de Claude</button>`; return}
   const l=S.sel, M=membresLot(l);
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><details class="lg-act"${LG.lots.co?' open':''}><summary><b>🎨 Changer la couleur du lot</b></summary>${pastilles(coulLot(l),'data-lgcoul')}</details>
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(l)} · ${M.length}</h2><div class="row" style="margin:6px 0"><span class="hint">Bâtiment :</span>${BATS.map(bt=>`<button type="button" class="btn${batOf(l)===bt?'':'2'}" data-lgbat="${bt}" style="padding:8px 10px">${bt}</button>`).join('')}</div><details class="lg-act"${LG.lots.co?' open':''}><summary><b>🎨 Changer la couleur du lot</b></summary>${pastilles(coulLot(l),'data-lgcoul')}</details>
     <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
     ${M.length?lgListe('lots',M):`<div class="hint" style="margin:10px 0">Ce lot est vide pour l’instant.</div><button type="button" class="btn b-valid" data-lgdellot="1" style="width:100%">${S.ask==='dellot'?'Confirmer : supprimer le lot':'Supprimer ce lot vide'}</button>`}
     <div class="lg-act"${M.length?'':' hidden'}><b>Déplacer les ${S.ck.size} cochée(s) vers :</b>${destSel('lg-ld','lots',l)}<button type="button" class="btn b-valid" data-lgmove="1" style="width:100%;margin-top:6px">Déplacer</button></div>
@@ -1360,6 +1381,7 @@ function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} 
     const u=c?coulUsages(c,key):[]; if(u.length){const nm=u.map(k=>(k[0]==='l'?'le lot':'le groupe')+' « '+k.slice(2)+' »').join(', '); const st=$('#lg-st-'+kind);
       st.innerHTML='Cette couleur est aussi utilisée par '+esc(nm)+'. Ce n’est pas gênant. <button type="button" class="btn2 b-retour" data-coulret="'+esc(JSON.stringify(u))+'">La retirer de '+(u.length>1?'ces autres':(u[0][0]==='l'?'l’autre lot':'l’autre groupe'))+'</button>'; st.className='state'} return}
   if(b.dataset.coulret){JSON.parse(b.dataset.coulret).forEach(k=>delete COUL[k]); LS.set('cb_coul',COUL); render(); lgMsg(kind,'Couleur retirée de l’autre lot ou groupe.',1); return}
+  if(b.dataset.lgbat){LBAT[S.sel]=b.dataset.lgbat; LS.set('cb_lbat',LBAT); render(); return}
   if(b.dataset.lgback){S.sel=null; S.ck.clear(); render(); return}
   if(b.dataset.lgall){const M=kind==='lots'?membresLot(S.sel):membresGrp(S.sel); M.forEach(p=>S.ck.add(p)); render(); return}
   if(b.dataset.lgnone){S.ck.clear(); render(); return}
@@ -1371,10 +1393,10 @@ function lgAsk(kind,a){const S=LG[kind]; if(S.ask===a){S.ask=null; return true} 
   if(b.dataset.lgmove){const dest=lgDest('lg-ld'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!dest) return lgMsg(kind,'Choisis le lot de destination.');
     let n=0; S.ck.forEach(p=>{const de=lotOf(p); if(de!==dest){LOTS[p]=dest; mvPush({d,p,de,vers:dest}); n++}}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); S.ck.clear(); render(); lgMsg(kind,n+' bête(s) déplacée(s) vers « '+dest+' ».',1); showBase(); return}
   if(b.dataset.lgreg){const dest=lgDest('lg-lr'); if(!dest) return lgMsg(kind,'Choisis le lot dans lequel regrouper.'); if(!lgAsk(kind,'reg')){$('#lg-lr').value=dest; return}
-    const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); delete LREG[l]; delete COUL['l:'+l]; LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
+    const l=S.sel, M=membresLot(l); M.forEach(p=>{LOTS[p]=dest; mvPush({d,p,de:l,vers:dest})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); delete LREG[l]; delete COUL['l:'+l]; delete LBAT[l]; LS.set('cb_lbat',LBAT); LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=dest; S.ck.clear(); render(); lgMsg(kind,'« '+l+' » regroupé dans « '+dest+' » ('+M.length+' bêtes).',1); showBase(); return}
   if(b.dataset.lgren){const nv=$('#lg-rn').value.trim(), l=S.sel; if(!nv) return lgMsg(kind,'Tape le nouveau nom.'); if(lotsNoms().includes(nv)) return lgMsg(kind,'« '+nv+' » existe déjà : utilise Regrouper.');
-    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); if(COUL['l:'+l]){COUL['l:'+nv]=COUL['l:'+l]; delete COUL['l:'+l]; LS.set('cb_coul',COUL)} LREG[nv]=LREG[l]||{}; delete LREG[l]; LS.set('cb_lreg',LREG); S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
-  if(b.dataset.lgdellot){if(membresLot(S.sel).length) return; if(!lgAsk(kind,'dellot')) return; delete LREG[S.sel]; delete COUL['l:'+S.sel]; LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=null; render(); return}
+    const M=membresLot(l); M.forEach(p=>{LOTS[p]=nv; mvPush({d,p,de:l,vers:nv,ren:1})}); LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); if(LBAT[l]){LBAT[nv]=LBAT[l]; delete LBAT[l]; LS.set('cb_lbat',LBAT)} if(COUL['l:'+l]){COUL['l:'+nv]=COUL['l:'+l]; delete COUL['l:'+l]; LS.set('cb_coul',COUL)} LREG[nv]=LREG[l]||{}; delete LREG[l]; LS.set('cb_lreg',LREG); S.sel=nv; render(); lgMsg(kind,'« '+l+' » renommé « '+nv+' ».',1); showBase(); return}
+  if(b.dataset.lgdellot){if(membresLot(S.sel).length) return; if(!lgAsk(kind,'dellot')) return; delete LREG[S.sel]; delete COUL['l:'+S.sel]; delete LBAT[S.sel]; LS.set('cb_lbat',LBAT); LS.set('cb_lreg',LREG); LS.set('cb_coul',COUL); S.sel=null; render(); return}
   if(b.dataset.lgret){if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); let n=0; S.ck.forEach(p=>n+=grpDel(p,S.sel)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis retirée(s) du groupe.',1); return}
   if(b.dataset.lgadd){const g=lgDest('lg-gd'); if(!S.ck.size) return lgMsg(kind,'Coche d’abord des brebis.'); if(!g) return lgMsg(kind,'Choisis le groupe.'); let n=0; S.ck.forEach(p=>n+=grpAdd(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,n+' brebis ajoutée(s) au groupe « '+g+' ».',1); return}
   if(b.dataset.lgvid){if(!lgAsk(kind,'vid')) return; const g=S.sel; Object.keys(GRP[g]).forEach(p=>grpDel(p,g)); saveG(); S.ck.clear(); render(); lgMsg(kind,'Groupe « '+g+' » vidé.',1); return}
@@ -1465,6 +1487,7 @@ function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id
 function retourTel(){
   if(typeof SAI!=='undefined'&&SAI){ saiFermer(); return true}
   if(document.body.classList.contains('tfull')){ triFermer(); return true}
+  if(document.body.classList.contains('qfull')){ trbFermer(); return true}
   if((tab==='lots'||tab==='groupes')&&LG[tab].sel){ LG[tab].sel=null; LG[tab].ck.clear(); render(); return true}
   if(tab==='recherche'){ setTab(R_ORIG||'lots'); return true}
   if(!$('#sheet').hidden){ const S=ST['#sheet-body']; if(S.pile.length) fiche(S.pile.pop(),'nav','#sheet-body'); else $('#sheet').hidden=true; return true}
@@ -1556,8 +1579,8 @@ $('#v-vente').addEventListener('click',e=>{const b=e.target.closest('button'); i
   if(b.dataset.vt){VT=b.dataset.vt; LS.set('cb_vt',VT); renderVente(); return}
   if(b.id==='vn-gadd'){const g=$('#vn-grp').value; if(!g) return; let n=0; membresGrp(g).forEach(p=>{if(!VEN[p]&&!VL.includes(p)){VL.push(p); n++}}); saveVL(); renderVente(); toast(n+' ajouté(s) depuis « '+g+' »'); return}
   if(b.dataset.vnrm){VL=VL.filter(p=>p!==b.dataset.vnrm); saveVL(); renderVente(); return}
-  if(b.id==='vn-ok'){ if(!VL.length) return; if(!VN_ASK){VN_ASK=true; setTimeout(()=>{VN_ASK=false; renderVente()},6000); renderVente(); return}
-    if(!VT){VN_ASK=false; toast('Choisissez d’abord le type de vente'); renderVente(); return}
+  if(b.id==='vn-ok'){ if(!VL.length) return; if(!VN_ASK){VN_ASK=true; clearTimeout(window._vnT); window._vnT=setTimeout(()=>{VN_ASK=false; renderVente()},6000); renderVente(); return} clearTimeout(window._vnT);
+    if(!VT){VN_ASK=false; clearTimeout(window._vnT); toast('Choisissez d’abord le type de vente'); renderVente(); return}
     VN_ASK=false; const d=$('#vn-date').value||auj();
     VL.forEach(p=>{const x=DB&&DB.animaux[p]; VEN[p]={d,t:VT,j:x?jeuneCat(x):true,prev:x?x.statut:'',lot:lotOf(p)}}); saveVEN(); venAppliquer(); const n=VL.length; VL=[]; saveVL(); $('#vn-card').innerHTML=''; renderVente(); toast(n+' animal(aux) enregistré(s) vendu(s)'); return}
   if(b.id==='vn-clr'){ if(!b.dataset.ask){b.dataset.ask=1; b.textContent='Confirmer : effacer la liste'; setTimeout(()=>{delete b.dataset.ask; b.textContent='Annuler : effacer la liste sans rien enregistrer'},5000); return}
@@ -1591,14 +1614,41 @@ function aTraire(){const P=pisMap(); return tri(Object.keys(P.AG).filter(m=>{con
 function attLait(p){let f=''; SO.T.filter(t=>t.a===p&&!t.clos&&PH().proto[t.p].cible==='brebis'&&!t.traite).forEach(t=>{const e=etatT(t); if(e.lait&&e.lait>auj()&&e.lait>f) f=e.lait}); return f}
 function medTraite(p,big){const c=coulLot(TR_LOT)||'#e0a800', al=attLait(p);
   return `<span class="tag" style="display:inline-block;background:${c};color:#fff;text-shadow:0 1px 2px #0008;${al?'border:7px solid var(--bad);':''}${big?'padding:18px 26px 12px':'padding:14px 12px 4px;flex-shrink:0'}"><b${big?'':' style="font-size:30px"'}>${p}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</span>`}
-function trBip(p){const x=A()[p]; TR_LAST=p;
-  if(!x){alerte();sonHors(); $('#tr-card').innerHTML=`<div class="big bad" style="font-size:24px">${p}<small>Inconnue dans la base</small></div>`; return}
-  const sp=sousPis(p), al=attLait(p), ok=pres(x)&&!jeuneCat(x)&&aAgnele(p)&&!sp.length&&!traiteFaite(p)&&!tarie(p);
-  if(!ok){bip();sonDeja(); $('#tr-card').innerHTML=`<div style="text-align:center;margin-top:6px"><span class="tag${lisere(p)}" style="display:inline-block;padding:18px 26px 12px"><b>${p}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</span></div><div class="hint" style="text-align:center">${tarie(p)?'Tarie (groupe '+esc(grpTar())+')':traiteFaite(p)?'Déjà mise à la traite le '+frJA(TRA[p].d):sp.length?'Garde '+sp.length+' agneau'+(sp.length>1?'x':'')+' sous le pis':'Pas d’agnelage connu cette campagne'}</div>`; renderTraite(); return}
-  bip(); sonTrouve(); if(!(p in TB)){TB[p]=true; saveTB()}
-  $('#tr-card').innerHTML=`<div style="text-align:center;margin-top:6px">${medTraite(p,true)}</div><div class="big ok" style="font-size:20px">À METTRE À LA TRAITE</div><button type="button" class="btn2" data-trtar="${p}" style="width:100%;border-color:${COUL_TAR};color:${COUL_TAR}">Pas de lait (tarie) → groupe ${esc(grpTar())}</button>`+
-    (al?`<div class="big bad" style="font-size:20px">ATTENTE LAIT (traitement)<small>Traite possible à partir du ${frJA(al)}</small></div>`:'');
-  renderTraite()}
+let TRBI=LS.get('cb_trbi',[]);   // bipées dans la séance plein écran : [plaque]
+function trEtat(p){const x=A()[p]; if(!x) return {c:'inc'}; const sp=sousPis(p);
+  if(tarie(p)) return {c:'autre',t:'Tarie'}; if(traiteFaite(p)) return {c:'autre',t:'Déjà mise à la traite le '+frJA(TRA[p].d)};
+  if(!pres(x)) return {c:'autre',t:x.statut}; if(jeuneCat(x)) return {c:'autre',t:catAff(x)};
+  if(sp.length) return {c:'garde',n:sp.length,sp}; if(!aAgnele(p)) return {c:'autre',t:'Pas d’agnelage connu'}; return {c:'traire'}}
+function trCarte(p){const e=trEtat(p), nm=nomOf(p)?`<span style="font-size:18px">${esc(nomOf(p))}</span>`:'';
+  if(e.c==='inc') return `<div class="tri-big" style="background:#777"><b>${p}</b><span>Inconnue dans la base</span></div>`;
+  if(e.c==='traire'){const al=attLait(p); return `<div class="tri-big" style="background:${coulLot(TR_LOT)||'#e0a800'};${al?'border:9px solid var(--bad);':''}"><b>${p}</b>${nm}<span>À LA TRAITE</span>${al?`<span style="background:var(--bad);border-radius:8px;padding:4px;font-size:20px">Attente lait · traite à partir du ${frJA(al)}</span>`:''}</div><button type="button" class="btn2" data-trtar="${p}" style="width:100%;margin-top:6px;border-color:${COUL_TAR};color:${COUL_TAR}">Pas de lait (tarie) → groupe ${esc(grpTar())}</button>`}
+  if(e.c==='garde'){const l=lotOf(p)||'Sans lot'; return `<div class="tri-big" style="background:${triCoul(l)}"><b>${p}</b>${nm}<span>Garde ${e.n} agneau${e.n>1?'x':''}</span><span style="font-size:18px">${esc(l)}</span></div>`}
+  return `<div class="tri-big" style="background:#777"><b>${p}</b>${nm}<span style="font-size:20px">${esc(e.t)}</span></div>`}
+function trBip(p){TR_LAST=p; const e=trEtat(p);
+  if(e.c==='traire'){bip();sonTrouve(); if(!(p in TB)){TB[p]=true; saveTB()}} else if(e.c==='inc'){alerte();sonHors()} else {bip();sonDeja()}
+  if(!TRBI.includes(p)){TRBI.unshift(p); LS.set('cb_trbi',TRBI)}
+  const plein=document.body.classList.contains('qfull'); $(plein?'#trb-card':'#tr-card').innerHTML=trCarte(p); if(plein) trbMaj(); renderTraite()}
+function trbMaj(){const G={traire:[],garde:[],autre:[]}; TRBI.forEach(p=>{const c=trEtat(p).c; (G[c==='inc'?'autre':c]).push(p)});
+  $('#trb-n').textContent=TRBI.length+' bipée'+(TRBI.length>1?'s':'');
+  const bloc=(t,c,L)=>L.length?`<div class="tri-g" style="border-color:${c}"><b>${t}</b> · ${L.length}<div class="nums">${tri(L).map(p=>`<span data-fiche="${p}">${p}${attLait(p)&&t.startsWith('À')?' ⚠':''}</span>`).join('')}</div></div>`:'';
+  const cT=coulLot(TR_LOT)||'#e0a800', nc=G.traire.filter(p=>TB[p]).length;
+  const blocT=G.traire.length?`<div class="tri-g" style="border-color:${cT}"><b>À la traite</b> · ${nc} cochée${nc>1?'s':''} sur ${G.traire.length}<div class="hint">Décochez celles à ne pas mettre tout de suite.</div>${tri(G.traire).map(p=>`<label class="lg-row"><input type="checkbox" data-trck="${p}"${TB[p]?' checked':''}><b>${p}</b>${attLait(p)?' <span class="c-bad">⚠ attente lait → '+frJA(attLait(p))+'</span>':''}</label>`).join('')}</div>`:'';
+  $('#trb-ok').textContent=nc?(TR_ASK?'Confirmer : ':'')+'Passer les '+nc+' cochée(s) à la traite ('+TR_LOT+')':'Aucune cochée'; $('#trb-ok').disabled=!nc;
+  $('#trb-list').innerHTML=blocT+bloc('Gardent leur agneau','#2f6b4f',G.garde)+bloc('Autres','#777',G.autre)}
+function trbOuvrir(){document.body.classList.add('qfull'); $('#v-trb').hidden=false; TRBI=[]; LS.set('cb_trbi',TRBI); $('#trb-card').innerHTML='<div class="hint" style="margin-top:12px">Bipez les brebis.</div>'; trbMaj(); window.scrollTo(0,0)}
+function trbFermer(){document.body.classList.remove('qfull'); $('#v-trb').hidden=true; renderTraite(); render()}
+$('#trb-x').onclick=trbFermer;
+// passer les cochées à la traite (même fonction depuis la page et depuis le plein écran)
+function trPasser(stSel){const st=$(stSel), C=Object.keys(TB).filter(p=>TB[p]); if(!C.length) return;
+  const maj=()=>{renderTraite(); if(document.body.classList.contains('qfull')) trbMaj()};
+  if(!TR_LOT){st.textContent='Choisis d’abord le lot de traite.'; st.className='state err'; return}
+  if(!TR_ASK){TR_ASK=true; clearTimeout(window._trT); window._trT=setTimeout(()=>{TR_ASK=false; maj()},6000); maj(); return} clearTimeout(window._trT);
+  TR_ASK=false; const d=fdate(); let n=0; C.forEach(p=>{const de=lotOf(p); if(de!==TR_LOT){LOTS[p]=TR_LOT; mvPush({d,p,de,vers:TR_LOT}); n++} TRA[p]={d:auj(),lot:TR_LOT}});
+  LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); saveTRA(); TB={}; saveTB(); $('#tr-card').innerHTML=''; showBase(); maj(); st.textContent=C.length+' brebis mises à la traite, '+n+' changée(s) de lot vers « '+TR_LOT+' ».'; st.className='state ok'}
+$('#trb-ok').onclick=()=>trPasser('#trb-st');
+$('#v-trb').addEventListener('change',e=>{const t=e.target; if(t.dataset.trck){TB[t.dataset.trck]=t.checked; saveTB(); trbMaj(); renderTraite()}});
+$('#trb-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#trb-q').value); $('#trb-q').value=''; if(p) trBip(p)});
+$('#v-trb').addEventListener('click',e=>{const b=e.target.closest('button[data-trtar]'); if(!b) return; const p=b.dataset.trtar; tarMettre(p); $('#trb-card').innerHTML=`<div class="tri-big" style="background:${COUL_TAR}"><b>${p}</b><span>TARIE</span><span style="font-size:18px">${esc(grpTar())}</span></div>`; trbMaj(); renderTraite()});
 function renderTraite(){ if(!$('#v-traite')) return;
   $('#tr-mode').innerHTML=`<button type="button" class="btn${TRM==='traite'?'':'2'}" data-trm="traite" style="flex:1;padding:14px;font-size:18px">Mise à la traite</button><button type="button" class="btn${TRM==='tar'?'':'2'}" data-trm="tar" style="flex:1;padding:14px;font-size:18px${TRM==='tar'?';background:'+COUL_TAR:''}">Tarissement</button>`;
   $('#tr-tarb').hidden=TRM!=='tar'; $('#tr-misb').hidden=TRM==='tar'; $('#tr-tarn').textContent=grpTar();
@@ -1616,15 +1666,12 @@ $('#tr-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($(
 $('#v-traite').addEventListener('change',e=>{const t=e.target; if(t.dataset.trck){TB[t.dataset.trck]=t.checked; saveTB(); renderTraite(); return}
   if(t.id==='tr-lot'){const v=t.value; if(v==='__new'){$('#tr-lot-nb').hidden=false; $('#tr-lot-n').focus()} else {TR_LOT=v; LS.set('cb_trlot',v); t.blur(); renderTraite()}}});
 $('#v-traite').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
+  if(b.id==='tr-plein'){ if(!TR_LOT){$('#tr-st').textContent='Choisis d’abord le lot de traite en haut.'; $('#tr-st').className='state err'; return} trbOuvrir(); return}
   if(b.dataset.trm){TRM=b.dataset.trm; LS.set('cb_trm',TRM); renderTraite(); return}
   if(b.dataset.trtar){const p=b.dataset.trtar; tarMettre(p); $('#tr-card').innerHTML=`<div style="text-align:center;margin-top:6px">${medTar(p)}</div><div class="big warn" style="font-size:20px">TARIE<small>groupe ${esc(grpTar())} · pas mise à la traite</small></div>`; renderTraite(); return}
   if(b.dataset.ttno){const p=b.dataset.ttno; grpDel(p,grpTar()); saveG(); _pis=null; $('#tt-card').innerHTML=`<div class="big ok" style="font-size:20px">${p}<small>retirée du tarissement</small></div>`; renderTraite(); return}
   if(b.dataset.lotok){const n=$('#tr-lot-n').value.trim(); if(!n) return; TR_LOT=n; LS.set('cb_trlot',n); if(!LREG[n]){LREG[n]={cree:fdate()}; LS.set('cb_lreg',LREG)} $('#tr-lot-n').blur(); renderTraite(); return}
-  if(b.id==='tr-ok'){const st=$('#tr-st'), C=Object.keys(TB).filter(p=>TB[p]); if(!C.length) return;
-    if(!TR_LOT){st.textContent='Choisis d’abord le lot de traite en haut.'; st.className='state err'; return}
-    if(!TR_ASK){TR_ASK=true; setTimeout(()=>{TR_ASK=false; renderTraite()},6000); renderTraite(); return}
-    TR_ASK=false; const d=fdate(); let n=0; C.forEach(p=>{const de=lotOf(p); if(de!==TR_LOT){LOTS[p]=TR_LOT; mvPush({d,p,de,vers:TR_LOT}); n++} TRA[p]={d:auj(),lot:TR_LOT}});
-    LS.set('cb_lots',LOTS); LS.set('cb_moves',MV); saveTRA(); TB={}; saveTB(); $('#tr-card').innerHTML=''; showBase(); renderTraite(); st.textContent=C.length+' brebis mises à la traite, '+n+' changée(s) de lot vers « '+TR_LOT+' ».'; st.className='state ok'; return}
+  if(b.id==='tr-ok'){trPasser('#tr-st'); return}
   if(b.id==='tr-clr'){ if(!b.dataset.ask){b.dataset.ask=1; b.textContent='Confirmer : effacer'; setTimeout(()=>{delete b.dataset.ask; b.textContent='Annuler : effacer les bipées sans rien changer'},5000); return}
     delete b.dataset.ask; b.textContent='Annuler : effacer les bipées sans rien changer'; TB={}; saveTB(); $('#tr-card').innerHTML=''; renderTraite(); return}
   if(b.id==='tr-send'){const H=Object.entries(TRA).filter(([p,v])=>!v.s), D={}; H.forEach(([p,v])=>{(D[v.d]=D[v.d]||[]).push(p)});
