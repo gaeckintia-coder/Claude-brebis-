@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Claude Brebis</title>
 <meta name="theme-color" content="#2f6b4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
 /* Outil de terrain : une colonne, gros boutons, couleurs franches lisibles au soleil */
@@ -595,6 +598,7 @@ tr.sel td{background:var(--okbg)}
     <p class="hint">Le fichier « donnees_troupeau.json » envoyé par Claude. Les données restent dans ce téléphone.</p>
     <input id="file" type="file" accept=".json,application/json">
     <span id="fst" class="state"></span>
+    <button id="inst" class="btn" type="button" hidden style="margin-top:10px">📲 Installer l'appli sur ce téléphone (marche sans Internet)</button>
     <h2 style="margin-top:16px">Sauvegarde</h2>
     <p class="hint">Copie de tout ce qui est saisi dans ce téléphone (soins, échos, listes, lots, marques). À faire au moins une fois par semaine, et à envoyer aussi à Claude.</p>
     <div class="row"><button id="bk-save" class="btn" type="button">💾 Sauvegarder</button><button id="bk-send" class="btn2" type="button">Envoyer la sauvegarde à Claude</button></div>
@@ -1610,6 +1614,7 @@ $('#camp-sel').addEventListener('change',e=>{CV=e.target.value; LS.set('cb_cv',C
 // ---- sauvegarde / restauration
 function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
+$('#inst').onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{await INSTALL.userChoice}catch(e){} INSTALL=null; $('#inst').hidden=true};
 $('#bk-save').onclick=()=>{const t=JSON.stringify(bkData()); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'application/json'})); a.download=bkNom(); document.body.appendChild(a); a.click(); a.remove();
   LS.set('cb_bk',auj()); $('#bk-st').textContent='Sauvegarde enregistrée dans Téléchargements : '+bkNom(); $('#bk-st').className='state ok'; bkCheck()};
 $('#bk-send').onclick=async e=>{const t=JSON.stringify(bkData()); const f=new File([t],bkNom(),{type:'application/json'});
@@ -2027,6 +2032,9 @@ function lectBouton(){ if(!port){OFF_ASK=false; LECT_ETEINT=false; $('#cnx').cli
   if(!OFF_ASK){OFF_ASK=true; lectMaj(); clearTimeout(window._offT); window._offT=setTimeout(()=>{OFF_ASK=false; lectMaj()},4000); return}
   clearTimeout(window._offT); lectDeconnecter()}
 ['#p-lect','#lect-pill'].forEach(i=>$(i).addEventListener('click',lectBouton)); lectMaj();
+// appli installée : marche sans Internet (fichier sw.js à côté de index.html sur GitHub)
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+let INSTALL=null; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault(); INSTALL=e; const b=$('#inst'); if(b) b.hidden=false});
 showBase(); setTab('accueil');
 </script>
 </body>
