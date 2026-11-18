@@ -67,6 +67,10 @@ body.tfull .wrap>*:not(#v-tri){display:none!important}
 body.tfull #v-tri{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
 body.qfull .wrap>*:not(#v-trb){display:none!important}
 body.xfull .wrap>*:not(#v-edit){display:none!important}
+body.kfull .wrap>*:not(#v-cons){display:none!important}
+body.kfull #v-cons{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:17;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
+body.cfull .wrap>*:not(#v-coll){display:none!important}
+body.cfull #v-coll{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:17;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
 body.xfull #v-edit{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:17;margin:0;border-radius:0;padding:8px 10px;overflow:auto}
 body.qfull #v-trb{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
 #trb-card .tri-big,#tri-card .tri-big{border-radius:16px;padding:14px;text-align:center;color:#fff;margin-top:6px}
@@ -247,6 +251,7 @@ tr.sel td{background:var(--okbg)}
   <!-- SOINS -->
   <section id="v-soins" class="card" hidden>
     <h2>Soins et pharmacie</h2>
+    <button id="s-coll" class="btn" type="button" style="width:100%;padding:12px;font-size:17px">👥 Traitement collectif</button>
     <label class="hint" for="s-mode">Mode de bipage</label>
     <select id="s-mode" aria-label="Mode de bipage">
       <option value="">Tournée : je bipe les brebis en traitement</option>
@@ -263,7 +268,8 @@ tr.sel td{background:var(--okbg)}
     <h3 class="c-bad">Traitement fini · attente lait (marque rouge) · <span id="s-n3">0</span></h3><div class="nums" id="s-l3"></div>
     <h3 class="c-ok">Peuvent passer à la traite (marque verte) · <span id="s-n4">0</span></h3><div class="nums" id="s-l4"></div>
     <h3 class="c-warn">Attente viande en cours · <span id="s-n5">0</span></h3><div class="nums" id="s-l5"></div>
-    <details><summary><h3 style="display:inline">Stock pharmacie</h3></summary><div class="tbl"><table><thead><tr><th>Produit</th><th>Reste</th><th>Flacon</th><th>Lait</th><th>Viande</th></tr></thead><tbody id="s-stock"></tbody></table></div></details>
+    <details><summary><h3 style="display:inline">Stock pharmacie (flacons)</h3></summary><div id="s-stock"></div></details>
+    <details><summary><h3 style="display:inline">Traitements collectifs</h3></summary><div id="s-coll-l"></div></details>
     <details><summary><h3 style="display:inline">Ordonnance et protocoles</h3></summary><div id="s-ordo"></div></details>
     <details><summary><h3 style="display:inline">Registre des soins</h3></summary><div id="s-reg"></div></details>
     <details><summary><h3 style="display:inline">Imprimer le registre sanitaire</h3></summary>
@@ -390,6 +396,10 @@ tr.sel td{background:var(--okbg)}
     <span id="trb-st" class="state"></span>
   </section>
 
+  <!-- CONSULTATION (loupe) -->
+  <section id="v-cons" class="card" hidden></section>
+  <!-- TRAITEMENT COLLECTIF -->
+  <section id="v-coll" class="card" hidden></section>
   <!-- SAISIE INDIVIDUELLE (crayon) -->
   <section id="v-edit" class="card" hidden></section>
 
@@ -722,8 +732,8 @@ function fiche(p,nav,el='#fiche'){
   const mm=mam(p), mr=mm?restMam(mm):null;
   const mamTxt=mm&&!reforme(p)?`<span class="chip ${mr<=7?'c-bad':'c-warn'}">Mammite traitée le ${frDe(mm.d)} · délai viande ${mm.delai} j → ${finMam(mm).toLocaleDateString('fr-FR')} ${mr>7?'(J-'+mr+')':mr>0?'· fini dans '+mr+' j : réformer ?':'· délai fini : réformer ?'}</span>`:'';
   const orTxt=x.or&&!reforme(p)&&!mpis(p)?`<span class="chip c-or">★ Brebis d'or – garder ses agnelles${/^ARR\/ARR$/i.test(x.prp||'')?' et son mâle':' · mâle : génotype à vérifier'}</span>`:'';
-  const niv=orTxt+mamTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
-  $(el).innerHTML=retour+`<div class="tag${lisere(p)}">${pres(x)?`<button type="button" data-rbr="${p}" aria-label="Rechercher ${esc(p)} en bipant" title="Rechercher en bipant" style="position:absolute;top:8px;right:10px;font-size:22px;padding:4px 8px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005">🔍</button>`:''}${el==='#fiche'||el==='#sheet-body'?`<button type="button" data-edit="${p}" aria-label="Saisie pour ${esc(p)}" title="Saisie" style="position:absolute;top:${pres(x)?'62':'8'}px;right:10px;font-size:22px;padding:4px 8px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005">✏️</button>`:''}<small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}<span class="tag-lot">${coulLot(lotOf(p))?`<span class="pb" style="background:${coulLot(lotOf(p))};vertical-align:middle;margin-right:6px"></span>`:''}${esc(lotOf(p)||'Sans lot')}</span></div>
+  const niv=orTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
+  $(el).innerHTML=retour+`<div class="tag${lisere(p)}">${pres(x)?`<button type="button" data-rbr="${p}" aria-label="Chercher en bipant" title="Chercher en bipant" style="position:absolute;top:6px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">📡</button>`:''}<button type="button" data-cons="${p}" aria-label="Consulter" title="Consulter" style="position:absolute;top:${pres(x)?44:6}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">🔍</button><button type="button" data-edit="${p}" aria-label="Saisir" title="Saisir" style="position:absolute;top:${pres(x)?82:44}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">✏️</button><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}<span class="tag-lot">${coulLot(lotOf(p))?`<span class="pb" style="background:${coulLot(lotOf(p))};vertical-align:middle;margin-right:6px"></span>`:''}${esc(lotOf(p)||'Sans lot')}</span></div>
    <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${niv}</div>${famTxt}
    ${(()=>{const H=histLots(p); return H.length>1?`<details class="hint"><summary>Historique des lots (${H.length})</summary>${H.slice().reverse().map(h=>`<div>${h.du?'du '+h.du+' '+(h.au?'au '+h.au:'à aujourd’hui'):'jusqu’au '+h.au} : <b>${esc(h.lot)}</b>${h.ren?' (renommé ensuite)':''}</div>`).join('')}</details>`:''})()}
    <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsOf(p).length+grpsAutoOf(p).length?'':'<span class="hint">aucun</span>'}</div>
@@ -762,6 +772,7 @@ function fiche(p,nav,el='#fiche'){
     if(mb.dataset.mort){MORT[k]={d:auj(),prev:x.statut}; mortAppliquer()} else {x.statut=MORT[k].prev||'Présent'; delete MORT[k]; LS.set('cb_data',DB)}
     LS.set('cb_mort',MORT); _pis=null; fiche(k,'nav',el); render(); return}
   const eb=e.target.closest('[data-edit]'); if(eb){edOuvrir(eb.dataset.edit); return}
+  const cb=e.target.closest('[data-cons]'); if(cb){consOuvrir(cb.dataset.cons); return}
   const ng=e.target.closest('[data-nomgo]'); if(ng){fiche(ng.dataset.nomgo); return}
   const rb=e.target.closest('[data-rbr]');
   if(rb){const k=rb.dataset.rbr; rech={titre:k+(nomOf(k)?' ('+nomOf(k)+')':''),debut:new Date().toISOString(),cible:[k],trouvees:[],trop:[],solo:1}; LS.set('cb_rech',rech); R_ORIG='fiche'; $('#sheet').hidden=true; setTab('recherche'); return}
@@ -1014,6 +1025,7 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(t
 // ---- entrée d'un numéro (lecteur ou clavier)
 function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
+  if(document.body.classList.contains('kfull')||document.body.classList.contains('cfull')) return;
   if(document.body.classList.contains('xfull')){const i=$('#ed-adin'); if(i){i.value=p; bip()} return}
   if(typeof SAI!=='undefined'&&SAI){saiAdd(p);return}
   if(document.body.classList.contains('tfull')){triAdd(p);return}
@@ -1049,9 +1061,9 @@ const PH_DEF={ordo:{num:'O240624',date:'10/11/2026',veto:'Clinique vétérinaire
  prod:{cronyxin:{voie:'IM',nom:'Cronyxin',flacon:100,lait:2.5,viande:47,subst:'Flunixine – anti-inflammatoire',poso:'IM 2 ml / 50 kg, 1 fois par jour, 1 à 3 jours'},
   pharmasin:{voie:'IM',nom:'Pharmasin',flacon:250,lait:4.5,viande:42,subst:'Tylosine – antibiotique',poso:'IM 1 ml / 20 kg, 3 à 5 jours'},
   intramicine:{voie:'IM / SC',nom:'Intramicine',flacon:250,lait:7,viande:30,subst:'Pénicilline + dihydrostreptomycine – antibiotique',poso:'IM ou SC 1 ml / 10 kg, 3 jours minimum (lait : 14 traites)'},
-  acticoli:{voie:'orale',nom:'Acti Coli',flacon:100,lait:null,viande:1,subst:'Colistine – agneaux, voie orale',poso:'0,5 ml matin et soir, 3 à 5 jours (agneaux jusqu’à 10 kg)'},
-  boostagno:{voie:'orale',nom:'Boostagno',flacon:100,lait:0,viande:0,subst:'Complément agneaux, voie orale',poso:'1 dose à la naissance, à renouveler 6 h après'},
-  kynoselen:{voie:'IM / SC',nom:'Kynoselen',flacon:100,lait:null,viande:4,subst:'Sélénium – agneaux',poso:'2 ml / 10 kg pendant 3 jours'}},
+  acticoli:{suivi:false,voie:'orale',nom:'Acti Coli',flacon:100,lait:null,viande:1,subst:'Colistine – agneaux, voie orale',poso:'0,5 ml matin et soir, 3 à 5 jours (agneaux jusqu’à 10 kg)'},
+  boostagno:{suivi:false,voie:'orale',nom:'Boostagno',flacon:100,lait:0,viande:0,subst:'Complément agneaux, voie orale',poso:'1 dose à la naissance, à renouveler 6 h après'},
+  kynoselen:{suivi:false,voie:'IM / SC',nom:'Kynoselen',flacon:100,lait:null,viande:4,subst:'Sélénium – agneaux',poso:'2 ml / 10 kg pendant 3 jours'}},
  stock:{date:'2026-11-10',ml:{cronyxin:100,pharmasin:250,intramicine:250,acticoli:100,boostagno:100,kynoselen:100}},
  proto:{mammite:{nom:'Mammite',cible:'brebis',jours:[[['cronyxin',3],['pharmasin',4]],[['cronyxin',3],['pharmasin',4]],[['cronyxin',3],['pharmasin',4]],[['pharmasin',4]]]},
   agnelage:{nom:'Problème d’agnelage',cible:'brebis',jours:[[['intramicine',8]],[['intramicine',8]],[['intramicine',8]],[['intramicine',8]]]},
@@ -1104,7 +1116,7 @@ function soinsBip(p){S_CUR=p; const md=$('#s-mode').value;
   if(md){const [pp,m]=md.split('|'); if(!actifsT(p).some(t=>t.p===pp)) demarrer(p,pp,m)}
   const L=actifsT(p).map(etatT); if(L.some(e=>e.cat==='afaire')){bip();sonTrouve()} else if(L.length){bip();sonDeja()} else {alerte();sonHors()}
   renderSoins(); $('#s-card').scrollIntoView({block:'start',behavior:'smooth'})}
-function stockMl(){const P=PH(), s={...P.stock.ml}; SO.T.forEach(t=>t.doses.forEach(d=>{if(d.d.slice(0,10)>=P.stock.date) d.prod.forEach(([k,ml])=>{s[k]=(s[k]||0)-ml})})); return s}
+function stockMl(){ if(FL){const s={}; FL.L.forEach(f=>{if(!f.fini) s[f.k]=(s[f.k]||0)+flReste(f)}); return s} const P=PH(), s={...P.stock.ml}; SO.T.forEach(t=>t.doses.forEach(d=>{if(d.d.slice(0,10)>=P.stock.date) d.prod.forEach(([k,ml])=>{s[k]=(s[k]||0)-ml})})); return s}
 function renderSoins(){ if(!$('#v-soins')) return; const a=auj();
   SO.T.forEach(t=>{if(!t.clos){const e=etatT(t); if(e.cat==='clos'){t.clos=1}}});
   const G={afaire:[],fait:[],attlait:[],traite:[],viande:[]};
@@ -1116,9 +1128,9 @@ function renderSoins(){ if(!$('#v-soins')) return; const a=auj();
   $('#s-n3').textContent=G.attlait.length; $('#s-l3').innerHTML=G.attlait.map(x=>chip(x,'lait '+frJ(x[1].lait))).join('');
   $('#s-n4').textContent=G.traite.length; $('#s-l4').innerHTML=G.traite.map(x=>chip(x,'traite')).join('');
   $('#s-n5').textContent=G.viande.length; $('#s-l5').innerHTML=G.viande.map(x=>chip(x,'viande '+frJ(x[1].viande))).join('');
-  $('#s-card').innerHTML=S_CUR?carteSoin(S_CUR):'<div class="hint" style="margin-top:8px">Bipe une brebis : ses soins du jour s’affichent ici.</div>';
-  const P=PH(), s=stockMl();
-  $('#s-stock').innerHTML=Object.entries(P.prod).map(([k,v])=>{const r=s[k]??0; return `<tr><td>${esc(v.nom)}</td><td class="${r<v.flacon*0.2?'c-bad':''}"><b>${fml(Math.round(r*10)/10)} ml</b></td><td>${v.flacon} ml</td><td>${v.lait==null?'interdit':fml(v.lait)+' j'}</td><td>${fml(v.viande)} j</td></tr>`}).join('');
+  $('#s-card').innerHTML=(FL&&FL_ALERT.length?flAlerteHtml():'')+(S_CUR?carteSoin(S_CUR):'<div class="hint" style="margin-top:8px">Bipe une brebis : ses soins du jour s’affichent ici.</div>');
+  const P=PH(); flInit(); renderStock();
+  $('#s-coll-l').innerHTML=(SO.C||[]).slice().sort((a,b)=>b.d.localeCompare(a.d)).map(c=>`<div class="lg-act"><b>${frJA(c.d)} · ${esc(pNom(c.k))}</b> ${fml(c.ml)} ml × ${c.an.length} animaux${c.motif?' · '+esc(c.motif):''}<div class="hint">flacons ${c.fl.map(([n,q])=>'n°'+n+' ('+fml(q)+' ml)').join(', ')||'—'}${c.s?'':' <span class="c-warn">•</span>'}</div><button type="button" class="btn2 b-retour" data-cdel="${c.id}">${FL_ASK==='c'+c.id?'Confirmer : effacer (erreur)':'🗑 Effacer (erreur)'}</button></div>`).join('')||'<span class="hint">Aucun.</span>';
   $('#s-ordo').innerHTML=`<p class="hint">Ordonnance ${esc(P.ordo.num)} du ${esc(P.ordo.date)} – ${esc(P.ordo.veto)}. Stock de départ au ${frJ(P.stock.date)} : 1 flacon de chaque.</p>`+
     Object.values(P.prod).map(v=>`<div><b>${esc(v.nom)}</b> – ${esc(v.subst)}<br><span class="hint">${esc(v.poso)} · attente lait ${v.lait==null?'interdit':fml(v.lait)+' j'}, viande ${fml(v.viande)} j</span></div>`).join('')+
     `<h3>Protocoles (brebis de 75 kg)</h3>`+Object.values(P.proto).map(p=>`<div><b>${esc(p.nom)}</b> : ${p.jours.map((j,i)=>'J'+(i+1)+' '+j.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + ')).join(' · ')}</div>`).join('');
@@ -1128,10 +1140,18 @@ function renderSoins(){ if(!$('#v-soins')) return; const a=auj();
 }
 $('#v-soins').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
   const T=id=>SO.T.find(t=>t.id===id);
+  if(b.id==='s-coll'){coOuvrir(); return}
+  if(b.dataset.flfini){flFini(+b.dataset.flfini); FL_ALERT=FL_ALERT.filter(([k,n])=>n!==+b.dataset.flfini); renderSoins(); return}
+  if(b.dataset.flpas){FL_ALERT=FL_ALERT.filter(([k,n])=>n!==+b.dataset.flpas); renderSoins(); return}
+  if(b.dataset.flcur){const f=flGet(+b.dataset.flcur); FL.cur[f.k]=f.n; if(!f.ouv) f.ouv=auj(); saveFL(); renderSoins(); return}
+  if(b.dataset.flrouvre){const f=flGet(+b.dataset.flrouvre); delete f.fini; saveFL(); renderSoins(); return}
+  if(b.dataset.flfin){const n=+b.dataset.flfin; if(FL_ASK!=='f'+n){FL_ASK='f'+n; clearTimeout(window._flT); window._flT=setTimeout(()=>{FL_ASK=null; renderSoins()},5000); renderSoins(); return} FL_ASK=null; flFini(n); renderSoins(); return}
+  if(b.dataset.flcorrok){const n=+b.dataset.flcorrok, f=flGet(n), v=parseFloat(String($(`[data-flcorr="${n}"]`).value).replace(',','.')); if(isNaN(v)) return; f.corr=(f.corr||0)+(v-flReste(f)); saveFL(); renderSoins(); return}
+  if(b.dataset.cdel){const id=b.dataset.cdel; if(FL_ASK!=='c'+id){FL_ASK='c'+id; clearTimeout(window._flT); window._flT=setTimeout(()=>{FL_ASK=null; renderSoins()},5000); renderSoins(); return} FL_ASK=null; const c=SO.C.find(x=>x.id===id); (c.finis||[]).forEach(n=>{const f=flGet(n); if(f) delete f.fini}); SO.C=SO.C.filter(x=>x!==c); saveSO(); saveFL(); renderSoins(); return}
   if(b.dataset.sb){S_CUR=b.dataset.sb; renderSoins(); $('#s-card').scrollIntoView({block:'start',behavior:'smooth'}); return}
   if(b.dataset.sfait){const t=T(b.dataset.sfait), e=etatT(t); const box=b.parentElement;
     const prod=e.dosesJ.map(([k,ml])=>{const i=box.querySelector(`[data-ml="${k}"]`); return [k,parseFloat(String(i?i.value:ml).replace(',','.'))||0]});
-    const n=new Date(); t.doses.push({d:isoJ(n)+'T'+pad2(n.getHours())+':'+pad2(n.getMinutes()),prod,par:LS.get('cb_spar','')}); saveSO(); bip(); renderSoins(); render(); return}
+    flInit(); const fl={}; prod.forEach(([k])=>{if(FL.cur[k]) fl[k]=FL.cur[k]}); const n=new Date(); t.doses.push({d:isoJ(n)+'T'+pad2(n.getHours())+':'+pad2(n.getMinutes()),prod,par:LS.get('cb_spar',''),fl}); saveSO(); flApresDose(prod); bip(); renderSoins(); render(); return}
   if(b.dataset.straite){T(b.dataset.straite).traite=auj(); saveSO(); renderSoins(); return}
   if(b.dataset.sannule){const t=T(b.dataset.sannule); t.doses.pop(); saveSO(); renderSoins(); return}
   if(b.dataset.sdel){const t=T(b.dataset.sdel); if(t.delAsk){SO.T=SO.T.filter(x=>x!==t)} else {t.delAsk=1; setTimeout(()=>{if(t.delAsk){delete t.delAsk;renderSoins()}},5000)} saveSO(); renderSoins(); render(); return}
@@ -1140,9 +1160,9 @@ $('#v-soins').addEventListener('click',e=>{const b=e.target.closest('button'); i
   if(b.id==='s-send'){const R=[]; SO.T.forEach(t=>t.doses.forEach((d,i)=>{if(!d.s) R.push(frJ(d.d.slice(0,10))+' '+d.d.slice(11,16)+' · '+t.a+' · '+nomT(t)+' J'+(i+1)+' : '+d.prod.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + '))}));
     const enc=SO.T.filter(t=>!t.clos).map(t=>{const e=etatT(t);return t.a+' · '+nomT(t)+' · '+({afaire:'à faire J'+e.jour,fait:'fait J'+e.n,attlait:'attente lait → '+frJ(e.lait),traite:'peut passer à la traite',viande:'attente viande → '+frJ(e.viande)})[e.cat]+(t.traite?' (remise à la traite le '+frJ(t.traite)+')':'')});
     const arr=SO.T.filter(t=>t.arret&&!t.arretS).map(t=>t.a+' · '+nomT(t)+' arrêté le '+frJ(t.arret));
-    const s=stockMl();
-    envoyer('Claude Brebis – soins du '+fdate()+'\n\nAdministrations ('+R.length+') :\n'+(R.join('\n')||'aucune')+'\n\nTraitements en cours ('+enc.length+') :\n'+(enc.join('\n')||'aucun')+(arr.length?'\n\nArrêtés :\n'+arr.join('\n'):'')+'\n\nStock : '+Object.entries(PH().prod).map(([k,v])=>v.nom+' '+fml(Math.round((s[k]??0)*10)/10)+' ml').join(' · '),b); return}
-  if(b.id==='s-sent'){SO.T.forEach(t=>{t.doses.forEach(d=>d.s=1); if(t.arret) t.arretS=1}); saveSO(); renderSoins(); return}
+    const s=stockMl(), CC=(SO.C||[]).filter(c=>!c.s);
+    envoyer('Claude Brebis – soins du '+fdate()+'\n\nAdministrations ('+R.length+') :\n'+(R.join('\n')||'aucune')+(CC.length?'\n\nTraitements collectifs :\n'+CC.map(c=>frJ(c.d)+' · '+pNom(c.k)+' '+fml(c.ml)+' ml × '+c.an.length+(c.motif?' · '+c.motif:'')+' · flacons '+c.fl.map(([n,q])=>'n°'+n+' '+fml(q)+' ml').join(', ')+'\n'+tri(c.an).join(' ')).join('\n'):'')+'\n\nTraitements en cours ('+enc.length+') :\n'+(enc.join('\n')||'aucun')+(arr.length?'\n\nArrêtés :\n'+arr.join('\n'):'')+'\n\nStock : '+Object.entries(PH().prod).map(([k,v])=>v.nom+' '+fml(Math.round((s[k]??0)*10)/10)+' ml'+(FL&&FL.cur[k]?' (en cours n°'+FL.cur[k]+')':'')).join(' · '),b); return}
+  if(b.id==='s-sent'){SO.T.forEach(t=>{t.doses.forEach(d=>d.s=1); if(t.arret) t.arretS=1}); (SO.C||[]).forEach(c=>c.s=1); saveSO(); renderSoins(); return}
 });
 $('#s-par').value=LS.get('cb_spar',''); $('#s-par').addEventListener('change',()=>LS.set('cb_spar',$('#s-par').value.trim()));
 $('#s-du').value=plusJ(auj(),-365); $('#s-au').value=auj();
@@ -1152,9 +1172,11 @@ $('#s-print').addEventListener('click',()=>{const du=$('#s-du').value||'0000', a
     const par=[...new Set(t.doses.map(d=>d.par).filter(Boolean))].join(', ');
     Object.entries(prods).forEach(([k,l],i)=>{const v=P.prod[k]||{nom:k}; const last=l[l.length-1][0];
       const fl=v.lait==null?'interdit':frJA(plusJ(last,Math.ceil(v.lait))), fv=frJA(plusJ(last,Math.ceil(v.viande||0)));
-      rows.push(`<tr><td>${frJA(l[0][0])}</td><td>${frJA(last)}</td><td><b>${t.a}</b>${A()[t.a]?'':' (mère)'}</td><td>${esc(nomT(t))}${t.arret?' – arrêté le '+frJA(t.arret):''}</td><td>${esc(v.nom)}</td><td>${[...new Set(l.map(x=>fml(x[1])))].join(' / ')} ml × ${l.length} j</td><td>${esc(v.voie||'')}</td><td>${esc(P.ordo.num)} du ${esc(P.ordo.date)}</td><td>${v.lait==null?'interdit':fml(v.lait)+' j'} → ${fl}</td><td>${fml(v.viande)} j → ${fv}</td><td>${t.traite?frJA(t.traite):''}</td><td>${esc(par)}</td></tr>`)})});
+      rows.push(`<tr><td>${frJA(l[0][0])}</td><td>${frJA(last)}</td><td><b>${t.a}</b>${A()[t.a]?'':' (mère)'}</td><td>${esc(nomT(t))}${t.arret?' – arrêté le '+frJA(t.arret):''}</td><td>${esc(v.nom)}</td><td>${[...new Set(l.map(x=>fml(x[1])))].join(' / ')} ml × ${l.length} j</td><td>${esc(v.voie||'')}</td><td>${(()=>{const N=[...new Set(t.doses.map(d=>d.fl&&d.fl[k]).filter(Boolean))]; return N.length?N.map(n=>{const f=FL&&flGet(n); return 'flacon n°'+n+(f&&f.ordo?' – ord. '+esc(f.ordo):'')}).join('<br>'):esc(P.ordo.num)+' du '+esc(P.ordo.date)})()}</td><td>${v.lait==null?'interdit':fml(v.lait)+' j'} → ${fl}</td><td>${fml(v.viande)} j → ${fv}</td><td>${t.traite?frJA(t.traite):''}</td><td>${esc(par)}</td></tr>`)})});
+  (SO.C||[]).forEach(c=>{if(c.d<du||c.d>au) return; const v=P.prod[c.k]||{nom:c.k};
+    rows.push(`<tr><td>${frJA(c.d)}</td><td>${frJA(c.d)}</td><td><b>Collectif : ${c.an.length} animaux</b><br><span style="font-size:9px">${tri(c.an).join(' ')}</span></td><td>${esc(c.motif||'Traitement collectif')}</td><td>${esc(v.nom)}</td><td>${fml(c.ml)} ml × 1 j</td><td>${esc(v.voie||'')}</td><td>${c.fl.map(([n])=>{const f=FL&&flGet(n); return 'flacon n°'+n+(f&&f.ordo?' – ord. '+esc(f.ordo):'')}).join('<br>')}</td><td>${v.lait==null?'interdit':fml(v.lait)+' j → '+frJA(plusJ(c.d,Math.ceil(v.lait)))}</td><td>${fml(v.viande||0)} j → ${frJA(plusJ(c.d,Math.ceil(v.viande||0)))}</td><td></td><td>${esc(c.par||'')}</td></tr>`)});
   $('#print-reg').innerHTML=`<h1>Registre sanitaire – traitements médicamenteux</h1><div>GAEC KINTIA – 360 chemin Arrozpidea, 64130 Chéraute – EDE 64188013 – ovins lait · Vétérinaire : ${esc(P.ordo.veto)} · Période du ${frJA(du)} au ${frJA(au)} · édité le ${fdate()}</div><br>
-   <table><thead><tr><th>Début</th><th>Fin</th><th>Animal</th><th>Motif</th><th>Médicament</th><th>Dose × durée</th><th>Voie</th><th>Ordonnance</th><th>Attente lait → fin</th><th>Attente viande → fin</th><th>Remise à la traite</th><th>Fait par</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="12">Aucun traitement sur la période.</td></tr>'}</tbody></table>`;
+   <table><thead><tr><th>Début</th><th>Fin</th><th>Animal</th><th>Motif</th><th>Médicament</th><th>Dose × durée</th><th>Voie</th><th>Flacon / ordonnance</th><th>Attente lait → fin</th><th>Attente viande → fin</th><th>Remise à la traite</th><th>Fait par</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="12">Aucun traitement sur la période.</td></tr>'}</tbody></table>`;
   setTimeout(()=>window.print(),100)});
 $('#s-mode').addEventListener('change',()=>{LS.set('cb_smode',$('#s-mode').value)});
 try{$('#s-mode').value=LS.get('cb_smode','')}catch(e){}
@@ -1492,6 +1514,8 @@ bkCheck();
 let QUIT=0;
 function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;font-size:16px;max-width:90vw;text-align:center';document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,2500)}
 function retourTel(){
+  if(document.body.classList.contains('kfull')){consFermer(); return true}
+  if(document.body.classList.contains('cfull')){coFermer(); return true}
   if(document.body.classList.contains('xfull')){ if(ED.page){ED.page=null; renderEdit()} else edFermer(); return true}
   if(typeof SAI!=='undefined'&&SAI){ saiFermer(); return true}
   if(document.body.classList.contains('tfull')){ triFermer(); return true}
@@ -1619,7 +1643,7 @@ function ttBip(p){const x=A()[p]; if(!x){alerte();sonHors(); $('#tt-card').inner
   const sp0=sousPis(p), deja=tarie(p); if(deja){bip();sonDeja()} else {tarMettre(p); bip(); sonTrouve()}
   $('#tt-card').innerHTML=`<div style="text-align:center;margin-top:6px">${medTar(p)}</div><div class="big warn" style="font-size:20px">${deja?'DÉJÀ TARIE':'TARIE'}<small>groupe ${esc(grpTar())}</small></div>${sp0.length&&!deja?`<div class="big bad" style="font-size:18px">${sp0.length} agneau${sp0.length>1?'x':''} sans lait : ${sp0.join(' ')}<small>→ groupe Orphelins (ou faire adopter)</small></div>`:''}<button type="button" class="btn2 b-retour" data-ttno="${p}" style="width:100%">Erreur : retirer du tarissement</button>`; renderTraite()}
 function aTraire(){const P=pisMap(); return tri(Object.keys(P.AG).filter(m=>{const x=A()[m]; return x&&pres(x)&&!jeuneCat(x)&&!(P.M[m]||[]).length&&!traiteFaite(m)&&!tarie(m)}))}
-function attLait(p){let f=''; SO.T.filter(t=>t.a===p&&!t.clos&&PH().proto[t.p].cible==='brebis'&&!t.traite).forEach(t=>{const e=etatT(t); if(e.lait&&e.lait>auj()&&e.lait>f) f=e.lait}); return f}
+function attLait(p){let f=''; if(typeof attCollectif==='function'){const c=attCollectif(p).lait; if(c&&c>auj()) f=c} SO.T.filter(t=>t.a===p&&!t.clos&&PH().proto[t.p].cible==='brebis'&&!t.traite).forEach(t=>{const e=etatT(t); if(e.lait&&e.lait>auj()&&e.lait>f) f=e.lait}); return f}
 function medTraite(p,big){const c=coulLot(TR_LOT)||'#e0a800', al=attLait(p);
   return `<span class="tag" style="display:inline-block;background:${c};color:#fff;text-shadow:0 1px 2px #0008;${al?'border:7px solid var(--bad);':''}${big?'padding:18px 26px 12px':'padding:14px 12px 4px;flex-shrink:0'}"><b${big?'':' style="font-size:30px"'}>${p}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</span>`}
 let TRBI=LS.get('cb_trbi',[]);   // bipées dans la séance plein écran : [plaque]
@@ -1779,6 +1803,106 @@ const sansAcc=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCa
 function chercheNom(v){const q=sansAcc(v), M=tri(Object.keys(A()).filter(k=>nomOf(k)&&sansAcc(nomOf(k)).includes(q)));
   if(M.length===1){setTab('fiche'); fiche(M[0]); return}
   setTab('fiche'); $('#fiche').innerHTML=M.length?`<h2>Noms trouvés · ${M.length}</h2><div class="nums">${M.map(k=>`<button type="button" class="lien" data-nomgo="${k}">${k} · ${esc(nomOf(k))}${pres(A()[k])?'':' †'} ›</button>`).join('')}</div>`:`<div class="big warn" style="font-size:22px">${esc(v)}<small>Aucune brebis avec ce nom</small></div>`}
+// ---- flacons numérotés (1, 2, 3… d'une ordonnance à l'autre) : un flacon en cours par produit
+let FL=LS.get('cb_fl',null); const saveFL=()=>LS.set('cb_fl',FL);   // {L:[{n,k,ordo,date,lot,per,vol,ouv,fini,corr}], cur:{produit:n}}
+const suivi=k=>(PH().prod[k]||{}).suivi!==false;
+function flInit(){ if(!FL){const P=PH(); FL={L:[],cur:{}}; let n=1;
+    Object.entries(P.prod).forEach(([k,v])=>{if(suivi(k)&&(P.stock.ml[k]||0)>0){FL.L.push({n,k,ordo:P.ordo.num,date:P.ordo.date,vol:v.flacon,ouv:P.stock.date}); FL.cur[k]=n; n++}});
+    SO.T.forEach(t=>t.doses.forEach(d=>{if(!d.fl){d.fl={}; d.prod.forEach(([k])=>{if(FL.cur[k]) d.fl[k]=FL.cur[k]})}})); saveSO()}
+  // flacons des nouvelles ordonnances envoyées par Claude (fichier de données)
+  ((DB&&DB.pharma&&DB.pharma.flacons)||[]).forEach(f=>{if(!FL.L.some(x=>x.n===f.n)) FL.L.push({...f})});
+  // produits que Jack ne suit pas en stock : leurs flacons sont retirés (n° annulés)
+  FL.L=FL.L.filter(f=>suivi(f.k)); Object.keys(FL.cur).forEach(k=>{if(!suivi(k)) delete FL.cur[k]});
+  SO.T.forEach(t=>t.doses.forEach(d=>{if(d.fl) Object.keys(d.fl).forEach(k=>{if(!suivi(k)) delete d.fl[k]})}));
+  Object.keys(PH().prod).filter(suivi).forEach(k=>{const c=FL.cur[k]; if(!c||(flGet(c)||{}).fini){const s=flSuivant(k,c); if(s) FL.cur[k]=s.n; else delete FL.cur[k]}});
+  saveFL()}
+const flGet=n=>FL.L.find(f=>f.n===n);
+function flUse(n){let u=0; SO.T.forEach(t=>t.doses.forEach(d=>d.prod.forEach(([k,ml])=>{if(d.fl&&d.fl[k]===n) u+=ml}))); (SO.C||[]).forEach(c=>(c.fl||[]).forEach(([m,ml])=>{if(m===n) u+=ml})); return u}
+const flReste=f=>Math.max(0,Math.round((f.vol-flUse(f.n)+(f.corr||0))*10)/10);
+function flSuivant(k,sauf){return FL.L.filter(f=>f.k===k&&!f.fini&&f.n!==sauf).sort((a,b)=>(a.per&&b.per?a.per.localeCompare(b.per):0)||a.n-b.n)[0]||null}
+function flPlan(k,total){const parts=[]; let need=total; const ordre=[]; const c=FL.cur[k]&&flGet(FL.cur[k]); if(c&&!c.fini) ordre.push(c);
+  FL.L.filter(f=>f.k===k&&!f.fini&&(!c||f.n!==c.n)).sort((a,b)=>(a.per&&b.per?a.per.localeCompare(b.per):0)||a.n-b.n).forEach(f=>ordre.push(f));
+  for(const f of ordre){ if(need<=0) break; const r=flReste(f), t=Math.min(r,need); if(t<=0&&f!==ordre[ordre.length-1]) continue; parts.push([f.n,Math.round(t*10)/10,r-t<=0.05]); need-=t}
+  return {parts,manque:Math.max(0,Math.round(need*10)/10)}}
+const flNom=n=>{const f=flGet(n); return f?'n°'+n+' ('+(f.ordo||'?')+')':'n°'+n};
+let FL_ALERT=[];   // [[produit, n]] flacons presque finis après le dernier soin
+function flApresDose(prod){FL_ALERT=[]; prod.filter(([k])=>suivi(k)).forEach(([k,ml])=>{const n=FL.cur[k], f=n&&flGet(n); if(f&&flReste(f)<ml) FL_ALERT.push([k,n])})}
+function flFini(n){const f=flGet(n); if(!f) return; f.fini=auj(); if(FL.cur[f.k]===n){const s=flSuivant(f.k,n); if(s){FL.cur[f.k]=s.n; if(!s.ouv) s.ouv=auj()} else delete FL.cur[f.k]} saveFL()}
+function flAlerteHtml(){return FL_ALERT.map(([k,n])=>{const f=flGet(n), s=flSuivant(k,n); return `<div class="big warn" style="font-size:18px;margin-top:8px">Flacon ${flNom(n)} · ${esc(pNom(k))}<small>reste environ ${fml(flReste(f))} ml</small></div><div class="row"><button type="button" class="btn b-valid" data-flfini="${n}" style="flex:1">${s?'Fini → passer au n°'+s.n:'Fini (plus de flacon d’avance : à commander)'}</button><button type="button" class="btn2 b-retour" data-flpas="${n}">Pas encore</button></div>`}).join('')}
+function renderStock(){const P=PH(); let h='';
+  Object.entries(P.prod).filter(([k])=>suivi(k)).forEach(([k,v])=>{const L=FL.L.filter(f=>f.k===k), c=FL.cur[k]&&flGet(FL.cur[k]), av=L.filter(f=>!f.fini&&(!c||f.n!==c.n)), tot=L.filter(f=>!f.fini).reduce((s,f)=>s+flReste(f),0);
+    h+=`<div class="lg-act"><b>${esc(v.nom)}</b> <span class="hint">· lait ${v.lait==null?'interdit':fml(v.lait)+' j'}, viande ${fml(v.viande)} j · total ${fml(Math.round(tot*10)/10)} ml</span>
+      <div>${c?`En cours : <b>flacon n°${c.n}</b> · reste ${fml(flReste(c))} / ${v.flacon||c.vol} ml`:'<b class="c-bad">Aucun flacon en cours</b>'}${av.length?' · d’avance : '+av.map(f=>'n°'+f.n).join(', '):''}</div>
+      <details><summary class="hint">✏️ Flacons (${L.length})</summary>${L.slice().sort((a,b)=>b.n-a.n).map(f=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:4px 0"><span style="flex:1"><b>n°${f.n}</b> · ${esc(f.ordo||'')}${f.lot?' · lot '+esc(f.lot):''}${f.per?' · pér. '+esc(f.per):''} · ${f.fini?'<span class="c-mute">fini le '+frJA(f.fini)+'</span>':(c&&c.n===f.n?'<b class="c-ok">en cours</b>':'d’avance')} · reste ${fml(flReste(f))} ml</span>
+        ${f.fini?`<button type="button" class="btn2" data-flrouvre="${f.n}">Rouvrir</button>`:`${c&&c.n===f.n?'':`<button type="button" class="btn2" data-flcur="${f.n}">Mettre en cours</button>`}<button type="button" class="btn2 b-retour" data-flfin="${f.n}">${FL_ASK==='f'+f.n?'Confirmer : fini':'Fini'}</button><input data-flcorr="${f.n}" inputmode="decimal" placeholder="reste ml" style="width:5.5em;font:inherit;padding:4px"><button type="button" class="btn2" data-flcorrok="${f.n}">Corriger</button>`}</div>`).join('')}</details></div>`});
+  const NS=Object.entries(P.prod).filter(([k])=>!suivi(k)).map(([k,v])=>v.nom); $('#s-stock').innerHTML=h+(NS.length?`<div class="hint">Sans suivi de stock : ${esc(NS.join(', '))}</div>`:'')}
+let FL_ASK=null;
+// ---- traitements collectifs
+SO.C=SO.C||[];
+let CO={dep:'adultes',mil:{},sx:{},lot:{},an:{},k:'',ml:'',motif:'',d:'',ask:false};
+function coBase(){const d=CO.dep; return Object.keys(A()).filter(p=>{const x=A()[p]; if(!pres(x)) return false;
+  if(d==='adultes') return !jeuneCat(x); if(d==='jeunes') return jeuneCat(x); if(d.startsWith('l:')) return (lotOf(p)||'Sans lot')===d.slice(2); if(d.startsWith('g:')) return membreDe(d.slice(2),p); return false})}
+const coMil=p=>{const n=isoNe((A()[p]||{}).ne); return n?n.slice(0,4):'?'};
+const coSx=p=>femelle(A()[p])?'F':'M';
+const coLot=p=>lotOf(p)||'Sans lot';
+function coSel(){return coBase().filter(p=>!CO.mil[coMil(p)]&&!CO.sx[coSx(p)]&&!CO.lot[coLot(p)]&&!CO.an[p])}
+function coOuvrir(){CO={dep:'adultes',mil:{},sx:{},lot:{},an:{},k:'',ml:'',motif:'',d:auj(),ask:false}; document.body.classList.add('cfull'); $('#v-coll').hidden=false; renderColl(); window.scrollTo(0,0)}
+function coFermer(){document.body.classList.remove('cfull'); $('#v-coll').hidden=true; renderSoins(); render()}
+function renderColl(){const B=coBase(), S=coSel(), P=PH(), cnt=(f)=>{const c={}; B.forEach(p=>{const v=f(p); c[v]=(c[v]||0)+1}); return Object.entries(c).sort((a,b)=>a[0].localeCompare(b[0]))};
+  const ck=(grp,v,n,lab)=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:3px 10px 3px 0;font-size:17px"><input type="checkbox" data-co="${grp}|${esc(v)}"${CO[grp][v]?'':' checked'} style="width:22px;height:22px">${esc(lab||v)} <span class="hint">· ${n}</span></label>`;
+  const L=lotsNoms(), G=[...grpsUser(),...grpsAuto()];
+  const pr=P.prod[CO.k], ml=parseFloat(String(CO.ml).replace(',','.'))||0, tot=Math.round(ml*S.length*10)/10, plan=CO.k&&ml&&suivi(CO.k)?flPlan(CO.k,tot):{parts:[],manque:0};
+  const finL=pr&&pr.lait!=null?plusJ(CO.d||auj(),Math.ceil(pr.lait)):'';
+  $('#v-coll').innerHTML=`<div class="e-top"><button type="button" class="btn2 b-retour" data-cox="1">← Retour</button><b style="flex:1;text-align:center">Traitement collectif</b></div>
+   <div class="row" style="margin-top:6px"><button type="button" class="btn${CO.dep==='adultes'?'':'2'}" data-codep="adultes" style="flex:1">Adultes</button><button type="button" class="btn${CO.dep==='jeunes'?'':'2'}" data-codep="jeunes" style="flex:1">Jeunes</button></div>
+   <select id="co-dep" style="margin-top:4px"><option value="">ou un lot / un groupe…</option><optgroup label="Lots">${L.map(l=>`<option value="l:${esc(l)}"${CO.dep==='l:'+l?' selected':''}>${esc(l)}</option>`).join('')}</optgroup><optgroup label="Groupes">${G.map(g=>`<option value="g:${esc(g)}"${CO.dep==='g:'+g?' selected':''}>${esc(g)}</option>`).join('')}</optgroup></select>
+   <h3>Millésimes</h3><div>${cnt(coMil).map(([v,n])=>ck('mil',v,n,v==='?'?'inconnu':v)).join('')}</div>
+   <h3>Sexe</h3><div>${cnt(coSx).map(([v,n])=>ck('sx',v,n,v==='F'?'Femelles':'Mâles')).join('')}</div>
+   ${CO.dep.startsWith('l:')?'':`<h3>Lots</h3><div>${cnt(coLot).map(([v,n])=>ck('lot',v,n)).join('')}</div>`}
+   <div class="big ok" style="font-size:30px;margin-top:8px">${S.length}<small>animaux sélectionnés</small></div>
+   <details><summary class="hint">Voir la liste (décocher un animal)</summary><div>${tri(B.filter(p=>!CO.mil[coMil(p)]&&!CO.sx[coSx(p)]&&!CO.lot[coLot(p)])).map(p=>`<label style="display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0"><input type="checkbox" data-coan="${p}"${CO.an[p]?'':' checked'}>${p}</label>`).join('')}</div></details>
+   <h3>Traitement</h3>
+   <select id="co-k"><option value="">— Produit —</option>${Object.entries(P.prod).map(([k,v])=>`<option value="${k}"${CO.k===k?' selected':''}>${esc(v.nom)}</option>`).join('')}</select>
+   <div class="row" style="margin-top:6px"><label>Dose par animal <input id="co-ml" inputmode="decimal" value="${esc(CO.ml)}" style="width:5em;font:inherit;padding:6px"> ml</label><label>Date <input type="date" id="co-d" value="${CO.d}"></label></div>
+   <input id="co-motif" value="${esc(CO.motif)}" placeholder="Motif (ex. vermifuge, vaccin…)" style="font:inherit;padding:8px;width:100%;box-sizing:border-box;margin-top:6px">
+   ${pr&&ml?`<div class="lg-act">Total : <b>${fml(tot)} ml</b> pour ${S.length} animaux · voie ${esc(pr.voie||'')}<br>${suivi(CO.k)?'Flacons : '+(plan.parts.map(([n,q,f])=>'n°'+n+' : '+fml(q)+' ml'+(f?' (fini)':'')).join(' · ')||'aucun'):'Produit sans suivi de stock'}${plan.manque?`<br><b class="c-bad">Stock insuffisant : il manque ${fml(plan.manque)} ml</b>`:''}
+     ${pr.lait==null?`<br><b class="c-bad">⚠ Produit interdit chez les animaux en lactation</b>`:pr.lait>0?`<br><b class="c-bad">⚠ ${S.length} animaux en attente lait : traite possible à partir du ${frJA(finL)}</b>`:''}${pr.viande?`<br>Attente viande jusqu’au ${frJA(plusJ(CO.d||auj(),Math.ceil(pr.viande)))}`:''}</div>`:''}
+   <button type="button" class="btn b-valid" data-cook="1" style="width:100%;margin-top:8px;padding:14px;font-size:18px"${S.length&&CO.k&&ml?'':' disabled'}>${CO.ask?'Confirmer : ':''}Traiter les ${S.length} animaux</button><div id="co-st" class="state"></div>`}
+$('#v-coll').addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.co){const [g,v]=t.dataset.co.split('|'); if(t.checked) delete CO[g][v]; else CO[g][v]=1; CO.ask=false; renderColl(); return}
+  if(t.dataset.coan){if(t.checked) delete CO.an[t.dataset.coan]; else CO.an[t.dataset.coan]=1; CO.ask=false; const o=t.closest('details'); renderColl(); if(o) $('#v-coll details').open=true; return}
+  if(t.id==='co-dep'&&t.value){CO.dep=t.value; CO.mil={}; CO.sx={}; CO.lot={}; CO.an={}; CO.ask=false; renderColl(); return}
+  if(t.id==='co-k'){CO.k=t.value; CO.ask=false; renderColl(); return}
+  if(t.id==='co-ml'){CO.ml=t.value; CO.ask=false; renderColl(); return}
+  if(t.id==='co-d'){CO.d=t.value; renderColl(); return}
+  if(t.id==='co-motif'){CO.motif=t.value; return}});
+$('#v-coll').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.cox){coFermer(); return}
+  if(b.dataset.codep){CO.dep=b.dataset.codep; CO.mil={}; CO.sx={}; CO.lot={}; CO.an={}; CO.ask=false; renderColl(); return}
+  if(b.dataset.cook){CO.motif=$('#co-motif').value.trim(); const S=coSel(), ml=parseFloat(String(CO.ml).replace(',','.'))||0; if(!S.length||!CO.k||!ml) return;
+    if(!CO.ask){CO.ask=true; clearTimeout(window._coT); window._coT=setTimeout(()=>{CO.ask=false; renderColl()},6000); renderColl(); return} clearTimeout(window._coT);
+    const tot=Math.round(ml*S.length*10)/10, plan=suivi(CO.k)?flPlan(CO.k,tot):{parts:[],manque:0}, finis=[];
+    const c={id:'C'+Date.now(),d:CO.d||auj(),k:CO.k,ml,motif:CO.motif,par:LS.get('cb_spar',''),an:S,fl:plan.parts.map(([n,q])=>[n,q]),dep:CO.dep};
+    SO.C.push(c); plan.parts.forEach(([n,q,f])=>{if(f){finis.push(n); flFini(n)}}); c.finis=finis; saveSO(); saveFL();
+    CO.ask=false; coFermer(); toast(S.length+' animaux traités ('+pNom(c.k)+')'); return}});
+function attCollectif(p){let lait='',viande=''; (SO.C||[]).forEach(c=>{if(!c.an.includes(p)) return; const v=PH().prod[c.k]||{}; if(v.lait!=null){const f=plusJ(c.d,Math.ceil(v.lait)); if(f>lait) lait=f} const fv=plusJ(c.d,Math.ceil(v.viande||0)); if(fv>viande) viande=fv}); return {lait,viande}}
+// ---- page de consultation (🔍 de la médaille)
+function consOuvrir(p){$('#sheet').hidden=true; document.body.classList.add('kfull'); $('#v-cons').hidden=false; CONS=p; renderCons(); window.scrollTo(0,0)}
+let CONS=null;
+function consFermer(){CONS=null; document.body.classList.remove('kfull'); $('#v-cons').hidden=true; render()}
+function renderCons(){const p=CONS, x=A()[p]||{}; let h=`<div class="e-top"><button type="button" class="btn2 b-retour" data-consx="1">← Retour à la fiche</button><b style="flex:1;text-align:center">${esc(p)}${nomOf(p)?' · '+esc(nomOf(p)):''}</b></div><h2 style="margin-top:8px">Consultation</h2>`;
+  const al=attLait(p), ac=attCollectif(p); if(al||ac.lait>auj()||ac.viande>auj()) h+=`<div class="big bad" style="font-size:18px">${al||ac.lait>auj()?'Attente lait : traite possible à partir du '+frJA([al,ac.lait].filter(Boolean).sort().pop()):''}${ac.viande>auj()?'<small>attente viande jusqu’au '+frJA(ac.viande)+'</small>':''}</div>`;
+  const T=SO.T.filter(t=>t.a===p).sort((a,b)=>b.debut.localeCompare(a.debut));
+  h+=`<h3>Soins individuels · ${T.length}</h3>`+(T.map(t=>{const e=etatT(t); return `<div class="lg-act"><b>${esc(nomT(t))}</b> · ${frJA(t.debut)}${t.arret?' · arrêté le '+frJA(t.arret):''}<div class="hint">${t.doses.map((d,i)=>`J${i+1} ${frJ(d.d.slice(0,10))} : ${d.prod.map(([k,ml])=>esc(pNom(k))+' '+fml(ml)+' ml'+(d.fl&&d.fl[k]?' (flacon '+flNom(d.fl[k])+')':'')).join(' + ')}`).join('<br>')||'aucune dose'}</div><div class="hint">Lait : ${e.lait?'traite possible à partir du '+frJA(e.lait):'—'} · viande : ${e.viande?frJA(e.viande):'—'}</div></div>`}).join('')||'<div class="hint">Aucun.</div>');
+  const C=(SO.C||[]).filter(c=>c.an.includes(p)).sort((a,b)=>b.d.localeCompare(a.d));
+  h+=`<h3>Traitements collectifs · ${C.length}</h3>`+(C.map(c=>`<div class="lg-act"><b>${esc(pNom(c.k))}</b> ${fml(c.ml)} ml · ${frJA(c.d)}${c.motif?' · '+esc(c.motif):''}<div class="hint">avec ${c.an.length} animaux · flacon${c.fl.length>1?'s':''} ${c.fl.map(([n])=>flNom(n)).join(', ')||'—'}</div></div>`).join('')||'<div class="hint">Aucun.</div>');
+  const H=histLots(p); h+=`<h3>Lots</h3><div class="hint">${H.slice().reverse().map(r=>`${r.du?'du '+r.du+' '+(r.au?'au '+r.au:'à aujourd’hui'):'jusqu’au '+r.au} : <b>${esc(r.lot)}</b>`).join('<br>')}</div>`;
+  const Gm=GM.filter(m=>m.p===p); if(Gm.length) h+=`<h3>Groupes</h3><div class="hint">${Gm.map(m=>m.d.slice(0,10)+' · '+(m.a==='+'?'ajoutée à':'retirée de')+' « '+esc(m.g)+' »').join('<br>')}</div>`;
+  const Ev=[]; Object.entries(EC).forEach(([d,j])=>{if(j[p]) Ev.push(frJA(d)+' · écho : '+(j[p].st?j[p].st+' j, '+j[p].nb+' agn.':'vide'))}); if(TRA[p]) Ev.push(frJA(TRA[p].d)+' · mise à la traite ('+esc(TRA[p].lot)+')'); if(tarie(p)) Ev.push('tarie ('+grpTar()+')'); if(VEN[p]) Ev.push(frJA(VEN[p].d)+' · vendue'); if(MORT[p]) Ev.push(frJA(MORT[p].d)+' · morte');
+  if(Ev.length) h+=`<h3>Événements</h3><div class="hint">${Ev.join('<br>')}</div>`;
+  $('#v-cons').innerHTML=h}
+$('#v-cons').addEventListener('click',e=>{if(e.target.closest('[data-consx]')) consFermer()});
+flInit();
 showBase(); setTab('accueil');
 </script>
 </body>
