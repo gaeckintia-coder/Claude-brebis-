@@ -1,7 +1,7 @@
-// Claude Brebis – marche sans Internet.
+// OviLink – marche sans Internet.
 // La page est gardée dans le téléphone. Avec du réseau, on prend toujours la dernière version mise sur GitHub ;
 // sans réseau, on ouvre la copie gardée. Les données du troupeau ne passent jamais par ici (elles restent dans le téléphone).
-const CACHE='claude-brebis-v1';
+const CACHE='ovilink-v1';
 const BASE=['./','./index.html','./manifest.webmanifest','./icone-192.png','./icone-512.png','./icone-512-maskable.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(BASE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
