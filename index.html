@@ -95,7 +95,12 @@ body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:
 body.page #p-camp{display:block;margin:-6px 0 8px} #camp-ban{margin:0 0 8px;padding:8px;border-radius:10px;background:var(--warnbg);color:var(--warn);font-weight:700}
 body.page header, body.page #c-lect, body.page .tabs, body.page #v-donnees, body.page #bk-alert{display:none!important}
 body.page #pbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px}
-#pbar b{flex:1;font-size:20px} #p-lect{font-size:12px}
+#pbar b{flex:1;font-size:20px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lect-b{flex-shrink:0;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--mute);white-space:nowrap}
+.lect-b.on{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+#lect-pill{position:fixed;top:3px;right:8px;z-index:40;display:none}
+body.efull #lect-pill,body.qfull #lect-pill,body.ttfull #lect-pill,body.zfull #lect-pill,body.xfull #lect-pill,body.sfull #lect-pill,body.tfull #lect-pill,body.kfull #lect-pill,body.cfull #lect-pill{display:block}
+body.efull #v-echo,body.qfull #v-trb,body.ttfull #v-ttb,body.zfull .zon,body.xfull #v-edit,body.sfull #v-sai,body.tfull #v-tri,body.kfull #v-cons,body.cfull #v-coll{padding-top:34px!important}
 body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important} body:not(.page) .tabs button{padding:22px 6px!important;font-size:19px!important;border-radius:16px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
@@ -180,7 +185,7 @@ tr.sel td{background:var(--okbg)}
     </details>
   </div>
 
-  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><span id="p-lect" class="hint"></span></div><div id="p-camp" class="hint"></div>
+  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
   <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
@@ -598,6 +603,7 @@ tr.sel td{background:var(--okbg)}
   </section>
 </div>
 
+<button id="lect-pill" type="button" class="lect-b"></button>
 <div id="print-reg"></div>
 <div id="sheet" hidden><div class="sheet-in">
   <div class="row"><button id="sheet-x" class="btn" type="button">✕ Fermer la fiche</button><span class="hint">Le bipage continue dans l'onglet en cours.</span></div>
@@ -737,7 +743,7 @@ $('#file').addEventListener('change',e=>{
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){tab=t; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
-  if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); $('#p-lect').textContent=port?'● lecteur connecté':'lecteur non connecté'; window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
+  if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
   if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
 // ---- fiche
@@ -1105,7 +1111,8 @@ $('#f').addEventListener('submit',e=>{e.preventDefault(); const v=$('#q').value;
 
 // ---- lecteur Allflex LPR (Bluetooth série, Chrome Android 137+)
 let port=null;
-function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); const pl=$('#p-lect'); if(pl) pl.textContent=port?'● lecteur connecté':'lecteur non connecté'}
+function lectMaj(){['#p-lect','#lect-pill'].forEach(i=>{const b=$(i); if(!b) return; b.textContent=i==='#p-lect'?(port?'📡 ● Connecté':'📡 Connecter'):(port?'📡 ● Lecteur connecté':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port)})}
+function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); lectMaj()}
 async function lire(){
   const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{});
   const r=dec.readable.getReader(); let buf='';
@@ -1114,7 +1121,7 @@ async function lire(){
     while((i=buf.search(/[\r\n]/))>=0){const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(l) lu(l)}
     clearTimeout(tm); if(buf.trim()) tm=setTimeout(()=>{const l=buf.trim(); buf=''; if(/\d{12,}/.test(l)) lu(l); else if(l) setSt('Reçu du lecteur : '+l,'err')},400);}}
   catch(e){setSt('Lecteur déconnecté : '+e.message,'err')}
-  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on');port=null}
+  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on');port=null;lectMaj()}
 }
 $('#cnx').addEventListener('click',async()=>{
   if(port) return;
@@ -2000,6 +2007,7 @@ flInit();
   if(!COUL['g:À réformer']&&!pris('#c62828')){COUL['g:À réformer']='#c62828'; ch=true}
   const lt=TR_LOT||lotsNoms().find(l=>/traite/i.test(l)); if(lt&&!COUL['l:'+lt]&&!pris('#1f5fa8')){COUL['l:'+lt]='#1f5fa8'; ch=true}
   if(ch) LS.set('cb_coul',COUL)})();
+['#p-lect','#lect-pill'].forEach(i=>$(i).addEventListener('click',()=>{ if(!port) $('#cnx').click()})); lectMaj();
 showBase(); setTab('accueil');
 </script>
 </body>
