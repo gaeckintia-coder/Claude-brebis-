@@ -1145,10 +1145,13 @@ $('#cnx').addEventListener('click',async e=>{
   if(!('serial' in navigator)){setSt('Il faut Chrome sur Android (version 137 ou plus).','err');return}
   const SPP='00001101-0000-1000-8000-00805f9b34fb', mode=$('#mode').value;
   const opt=mode==='b'?{filters:[{bluetoothServiceClassId:SPP}],allowedBluetoothServiceClassIds:[SPP]}:mode==='c'?{}:{allowedBluetoothServiceClassIds:[SPP]};
-  try{ port=await navigator.serial.requestPort(opt);
-    if(port.readable||port.writable) await lectFermer(port);
-    await port.open({baudRate:9600}); LPORT=port; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); lire();
-  }catch(e){port=null; setSt('Connexion impossible : '+e.message,'err')}
+  let P; try{ P=await navigator.serial.requestPort(opt) }catch(e){ setSt('Aucun lecteur choisi : '+e.message,'err'); return}
+  // après une déconnexion, Android met parfois quelques secondes à libérer la liaison : on réessaie
+  let err=null; for(let i=1;i<=5;i++){
+    try{ await lectFermer(P); await P.open({baudRate:9600}); err=null; break }
+    catch(e){ err=e; setSt('Connexion… essai '+i+'/5 ('+e.message+')',''); lectMaj(); toast('Connexion au lecteur… essai '+i+'/5'); await new Promise(r=>setTimeout(r,1500*i)) } }
+  if(err){ port=null; setSt('Connexion impossible : '+err.message+' — éteindre puis rallumer le lecteur, et réessayer','err'); toast('Connexion impossible : éteindre puis rallumer le lecteur, et réessayer'); return}
+  port=P; LPORT=P; LECT_ETEINT=false; USER_OFF=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur connecté'); lire();
 });
 
 // ---- soins et pharmacie
