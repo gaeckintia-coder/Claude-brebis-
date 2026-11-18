@@ -1,6 +1,6 @@
 {
-  "name": "Claude Brebis",
-  "short_name": "Brebis",
+  "name": "OviLink – gestion de troupeau ovin",
+  "short_name": "OviLink",
   "description": "Suivi du troupeau de brebis – GAEC Kintia",
   "start_url": "./",
   "scope": "./",

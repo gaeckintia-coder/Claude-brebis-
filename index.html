@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Claude Brebis</title>
+<title>OviLink</title>
 <meta name="theme-color" content="#2f6b4f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icone-192.png">
@@ -23,6 +23,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .wrap{max-width:560px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:12px}
 header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
 h1{font-family:var(--display);font-size:30px;margin:0}
+h1.logo{display:flex;align-items:center;gap:8px;line-height:1}h1.logo img{width:40px;height:40px;border-radius:9px}h1.logo>span{display:flex;flex-direction:column}h1.logo small{font-family:system-ui,sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5b6b60;margin-top:3px}
 .base{font-size:12px;color:var(--mute)}
 button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 16px;cursor:pointer}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -173,7 +174,7 @@ tr.sel td{background:var(--okbg)}
 <body>
 <div class="wrap">
   <header>
-    <h1>Claude Brebis</h1>
+    <h1 class="logo"><img src="icone-192.png" alt=""><span><span><b style="color:#1c523a">Ovi</b><b style="color:#c41e24">Link</b></span><small>gestion de troupeau ovin</small></span></h1>
     <span class="base" id="base">Aucune donnée chargée</span>
     <label class="camp-l">Campagne <select id="camp-sel" aria-label="Campagne"></select></label>
   </header>
@@ -950,14 +951,14 @@ $('#l-yes').onclick=()=>{liste={debut:null,items:[],dbl:0};LS.set('cb_liste',lis
 // ---- envoi à Claude (partage ou copie)
 const fdate=iso=>{const d=iso?new Date(iso):new Date();return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
 async function envoyer(texte,btn){
-  try{ if(navigator.share){await navigator.share({title:'Claude Brebis',text:texte});return} }catch(e){ if(e.name==='AbortError') return }
+  try{ if(navigator.share){await navigator.share({title:'OviLink',text:texte});return} }catch(e){ if(e.name==='AbortError') return }
   try{await navigator.clipboard.writeText(texte); btn.textContent='Copié : colle-le dans Claude'; setTimeout(()=>btn.textContent='Envoyer à Claude',3000)}
   catch(e){ const t=document.createElement('textarea'); t.value=texte; btn.after(t); t.select(); }
 }
 $('#l-send').onclick=e=>{const it=tri(liste.items);
-  envoyer(`Claude Brebis – liste bipée du ${fdate(liste.debut)}\n${it.length} animaux${liste.dbl?` (${liste.dbl} bipés 2 fois)`:''}\n\n`+it.join('\n'),e.target)};
+  envoyer(`OviLink – liste bipée du ${fdate(liste.debut)}\n${it.length} animaux${liste.dbl?` (${liste.dbl} bipés 2 fois)`:''}\n\n`+it.join('\n'),e.target)};
 $('#r-send').onclick=e=>{const m=tri(rech.cible.filter(p=>!rech.trouvees.includes(p)));
-  envoyer(`Claude Brebis – recherche « ${rech.titre} » du ${fdate(rech.debut)}\nTrouvées : ${rech.trouvees.length}/${rech.cible.length}\n\nManquantes (${m.length}) :\n${m.join('\n')||'aucune'}\n\nBipées en trop (${rech.trop.length}) :\n${tri(rech.trop).join('\n')||'aucune'}\n\nTrouvées (${rech.trouvees.length}) :\n${tri(rech.trouvees).join('\n')}`,e.target)};
+  envoyer(`OviLink – recherche « ${rech.titre} » du ${fdate(rech.debut)}\nTrouvées : ${rech.trouvees.length}/${rech.cible.length}\n\nManquantes (${m.length}) :\n${m.join('\n')||'aucune'}\n\nBipées en trop (${rech.trop.length}) :\n${tri(rech.trop).join('\n')||'aucune'}\n\nTrouvées (${rech.trouvees.length}) :\n${tri(rech.trouvees).join('\n')}`,e.target)};
 
 // ---- troupeau
 const pres=x=>/Présent/.test(x.statut||'');
@@ -1076,7 +1077,7 @@ const mamChg=()=>Object.entries(MT).filter(([k,v])=>!v.sent);
 const mpChg=()=>Object.entries(MP).filter(([k,v])=>!v.sent&&!!v.on!==!!(A()[k]&&A()[k].mpis));
 $('#t-send').onclick=e=>{const ch=mpChg(), mc=mamChg(), gc=gmChg(), nc=Object.entries(NOMS).filter(([k,v])=>!v.s), ac=Object.entries(NOUR).filter(([k,v])=>!v.s), mo=Object.entries(MORT).filter(([k,v])=>!v.s); if(!MV.length&&!ch.length&&!mc.length&&!gc.length&&!nc.length&&!ac.length&&!mo.length)return;const g={};MV.forEach(m=>{const k=m.d.slice(0,10)+' · '+(m.ren?'lot « '+(m.de||'Sans lot')+' » renommé « '+m.vers+' »':(m.de||'Sans lot')+' → '+m.vers);(g[k]=g[k]||[]).push(m.p)});
   const on=ch.filter(([k,v])=>v.on).map(([k])=>k), off=ch.filter(([k,v])=>!v.on).map(([k])=>k);
-  envoyer('Claude Brebis – mouvements de lots\n\n'+(mo.length?'Morts :\n'+mo.map(([k,v])=>frJA(v.d)+' · '+k+' '+(A()[k]?catAff(A()[k]):'')+' (mère '+((A()[k]||{}).mere||'?')+(nourrice(k)&&nourrice(k)!==(A()[k]||{}).mere?', nourrice '+nourrice(k):'')+')').join('\n')+'\n\n':'')+(ac.length?'Mères nourricières (adoptions) :\n'+ac.map(([k,v])=>v.d.slice(0,10)+' · agneau '+k+' (né de '+((A()[k]||{}).mere||'?')+') élevé par '+v.n).join('\n')+'\n\n':'')+(nc.length?'Noms des brebis :\n'+nc.map(([k,v])=>k+' : '+(v.nom||'(nom effacé)')).join('\n')+'\n\n':'')+(gc.length?'Groupes :\n'+gc.map(m=>m.a==='x'?m.d.slice(0,10)+' · groupe « '+m.g+' » supprimé':m.a==='r'?m.d.slice(0,10)+' · groupe renommé : '+m.g:m.d.slice(0,10)+' · '+m.p+(m.a==='+'?' ajoutée au groupe « ':' retirée du groupe « ')+m.g+' »').join('\n')+'\n\n':'')+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
+  envoyer('OviLink – mouvements de lots\n\n'+(mo.length?'Morts :\n'+mo.map(([k,v])=>frJA(v.d)+' · '+k+' '+(A()[k]?catAff(A()[k]):'')+' (mère '+((A()[k]||{}).mere||'?')+(nourrice(k)&&nourrice(k)!==(A()[k]||{}).mere?', nourrice '+nourrice(k):'')+')').join('\n')+'\n\n':'')+(ac.length?'Mères nourricières (adoptions) :\n'+ac.map(([k,v])=>v.d.slice(0,10)+' · agneau '+k+' (né de '+((A()[k]||{}).mere||'?')+') élevé par '+v.n).join('\n')+'\n\n':'')+(nc.length?'Noms des brebis :\n'+nc.map(([k,v])=>k+' : '+(v.nom||'(nom effacé)')).join('\n')+'\n\n':'')+(gc.length?'Groupes :\n'+gc.map(m=>m.a==='x'?m.d.slice(0,10)+' · groupe « '+m.g+' » supprimé':m.a==='r'?m.d.slice(0,10)+' · groupe renommé : '+m.g:m.d.slice(0,10)+' · '+m.p+(m.a==='+'?' ajoutée au groupe « ':' retirée du groupe « ')+m.g+' »').join('\n')+'\n\n':'')+Object.entries(g).map(([k,v])=>k+' ('+v.length+') :\n'+tri(v).join(' ')).join('\n\n')+(on.length?'\n\nMauvais pis – ne pas garder la suite, risque réforme ('+on.length+') :\n'+tri(on).join(' '):'')+(off.length?'\n\nRetirées de « mauvais pis » ('+off.length+') :\n'+tri(off).join(' '):'')+(mc.length?'\n\nMammites :\n'+mc.map(([k,v])=>v.off?k+' : mammite retirée':k+' : traitée le '+frDe(v.d)+', délai viande '+v.delai+' j (fin le '+finMam(v).toLocaleDateString('fr-FR')+')').join('\n'):''),e.target)};
 $('#t-clr').onclick=()=>$('#t-confirm').hidden=false;
 $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
 $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(NOMS).forEach(v=>v.s=1);Object.values(NOUR).forEach(v=>v.s=1);LS.set('cb_nour',NOUR);Object.values(MORT).forEach(v=>v.s=1);LS.set('cb_mort',MORT);LS.set('cb_noms',NOMS);GM.forEach(m=>m.s=1);saveG();Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
@@ -1259,7 +1260,7 @@ $('#v-soins').addEventListener('click',e=>{const b=e.target.closest('button'); i
     const enc=SO.T.filter(t=>!t.clos).map(t=>{const e=etatT(t);return t.a+' · '+nomT(t)+' · '+({afaire:'à faire J'+e.jour,fait:'fait J'+e.n,attlait:'attente lait → '+frJ(e.lait),traite:'peut passer à la traite',viande:'attente viande → '+frJ(e.viande)})[e.cat]+(t.traite?' (remise à la traite le '+frJ(t.traite)+')':'')});
     const arr=SO.T.filter(t=>t.arret&&!t.arretS).map(t=>t.a+' · '+nomT(t)+' arrêté le '+frJ(t.arret));
     const s=stockMl(), CC=(SO.C||[]).filter(c=>!c.s);
-    envoyer('Claude Brebis – soins du '+fdate()+'\n\nAdministrations ('+R.length+') :\n'+(R.join('\n')||'aucune')+(CC.length?'\n\nTraitements collectifs :\n'+CC.map(c=>frJ(c.d)+' · '+pNom(c.k)+' '+fml(c.ml)+' ml × '+c.an.length+(c.motif?' · '+c.motif:'')+' · flacons '+c.fl.map(([n,q])=>'n°'+n+' '+fml(q)+' ml').join(', ')+'\n'+tri(c.an).join(' ')).join('\n'):'')+'\n\nTraitements en cours ('+enc.length+') :\n'+(enc.join('\n')||'aucun')+(arr.length?'\n\nArrêtés :\n'+arr.join('\n'):'')+'\n\nStock : '+Object.entries(PH().prod).map(([k,v])=>v.nom+' '+fml(Math.round((s[k]??0)*10)/10)+' ml'+(FL&&FL.cur[k]?' (en cours n°'+FL.cur[k]+')':'')).join(' · '),b); return}
+    envoyer('OviLink – soins du '+fdate()+'\n\nAdministrations ('+R.length+') :\n'+(R.join('\n')||'aucune')+(CC.length?'\n\nTraitements collectifs :\n'+CC.map(c=>frJ(c.d)+' · '+pNom(c.k)+' '+fml(c.ml)+' ml × '+c.an.length+(c.motif?' · '+c.motif:'')+' · flacons '+c.fl.map(([n,q])=>'n°'+n+' '+fml(q)+' ml').join(', ')+'\n'+tri(c.an).join(' ')).join('\n'):'')+'\n\nTraitements en cours ('+enc.length+') :\n'+(enc.join('\n')||'aucun')+(arr.length?'\n\nArrêtés :\n'+arr.join('\n'):'')+'\n\nStock : '+Object.entries(PH().prod).map(([k,v])=>v.nom+' '+fml(Math.round((s[k]??0)*10)/10)+' ml'+(FL&&FL.cur[k]?' (en cours n°'+FL.cur[k]+')':'')).join(' · '),b); return}
   if(b.id==='s-sent'){SO.T.forEach(t=>{t.doses.forEach(d=>d.s=1); if(t.arret) t.arretS=1}); (SO.C||[]).forEach(c=>c.s=1); saveSO(); renderSoins(); return}
 });
 $('#s-par').value=LS.get('cb_spar',''); $('#s-par').addEventListener('change',()=>LS.set('cb_spar',$('#s-par').value.trim()));
@@ -1314,7 +1315,7 @@ function echoBip(p){ if(!eOuverte()){alerte(); toast('Ouvrez d’abord une séan
   if(d){alerte();sonDeja()} else if(A()[p]){bip();sonTrouve()} else {alerte();sonHors()}
   $('#e-msg').textContent=''; eCarte(); eMaj(); renderEcho()}
 function eTexte(d){const j=eJour(d), L=tri(Object.keys(j)), s=eStats(j);
-  return `Claude Brebis – séance d’échographie du ${frJA(d)}\n${s.n} brebis (${s.pl} pleines, ${s.vi} vides, ${s.ag} agneaux attendus)\n\nplaque;stade_j;agneaux;agnelage_prevu\n`+L.map(k=>k+';'+(j[k].st||'vide')+';'+(j[k].st?j[k].nb:'')+';'+eAgn(d,j[k].st)).join('\n')}
+  return `OviLink – séance d’échographie du ${frJA(d)}\n${s.n} brebis (${s.pl} pleines, ${s.vi} vides, ${s.ag} agneaux attendus)\n\nplaque;stade_j;agneaux;agnelage_prevu\n`+L.map(k=>k+';'+(j[k].st||'vide')+';'+(j[k].st?j[k].nb:'')+';'+eAgn(d,j[k].st)).join('\n')}
 $('#v-echo').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return;
   if((b.dataset.est!=null||b.dataset.enb)&&$('#e-q').value.trim()){const v=$('#e-q').value; $('#e-q').value=''; lu(v)}
   if(b.dataset.est!=null){E_SEL.st=+b.dataset.est; if(E_SEL.st===0) E_SEL.nb=0; else if(E_SEL.nb===0) E_SEL.nb=null; eMaj(); return}
@@ -1458,7 +1459,7 @@ $('#d-auto2').onclick=async()=>{ if(DAUTO) return; if(!('serial' in navigator)){
   on=false; try{await rd.cancel()}catch(e){} try{rd.releaseLock()}catch(e){} try{await P.close()}catch(e){}
   pr.className='big ok'; pr.innerHTML='Test n°2 terminé<small>Photo de l’écran du DAC, puis « Envoyer le journal à Claude »</small>'; dlog('i','FIN TEST N°2 · '+rx+' octet(s) reçu(s)');
   DAUTO=false; $('#d-auto2').disabled=false};
-$('#d-claude').onclick=e=>envoyer('Claude Brebis – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
+$('#d-claude').onclick=e=>envoyer('OviLink – test de connexion du '+fdate()+'\nNavigateur : '+navigator.userAgent+'\nWeb Serial : '+('serial' in navigator)+' · Web Bluetooth : '+!!navigator.bluetooth+'\n\n'+DLOG.map(l=>l.t+' '+l.sens+' '+(l.u?l.u+'  | ':'')+l.txt).join('\n'),e.target);
 
 // ---- onglets Lots et Groupes (même fonctionnement) + saisie plein écran
 const LG={lots:{sel:null,ck:new Set(),ask:null},groupes:{sel:null,ck:new Set(),ask:null}};
@@ -1615,15 +1616,15 @@ function campMaj(){const sel=$('#camp-sel'); sel.innerHTML=campListe().map(c=>`<
   const b=$('#camp-ban'); b.hidden=enCours(); b.textContent='Vous regardez la campagne '+CV+'. Les lots montrent toujours les bêtes d’aujourd’hui.'}
 $('#camp-sel').addEventListener('change',e=>{CV=e.target.value; LS.set('cb_cv',CV); ['lots','groupes'].forEach(k=>{LG[k].sel=null;LG[k].ck.clear()}); E_VOIR=null; campMaj(); render()});
 // ---- sauvegarde / restauration
-function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'Claude Brebis',quand:new Date().toISOString(),cles:o}}
+function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'OviLink',quand:new Date().toISOString(),cles:o}}
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
 $('#inst').onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{await INSTALL.userChoice}catch(e){} INSTALL=null; $('#inst').hidden=true};
 $('#bk-save').onclick=()=>{const t=JSON.stringify(bkData()); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'application/json'})); a.download=bkNom(); document.body.appendChild(a); a.click(); a.remove();
   LS.set('cb_bk',auj()); $('#bk-st').textContent='Sauvegarde enregistrée dans Téléchargements : '+bkNom(); $('#bk-st').className='state ok'; bkCheck()};
 $('#bk-send').onclick=async e=>{const t=JSON.stringify(bkData()); const f=new File([t],bkNom(),{type:'application/json'});
-  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sauvegarde Claude Brebis'}); LS.set('cb_bk',auj()); bkCheck(); return} }catch(err){ if(err.name==='AbortError') return }
-  envoyer('Claude Brebis – sauvegarde du '+fdate()+'\n'+t,e.target); LS.set('cb_bk',auj()); bkCheck()};
-$('#bk-file').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(j.app!=='Claude Brebis'||!j.cles) throw new Error('ce n’est pas une sauvegarde Claude Brebis');
+  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sauvegarde OviLink'}); LS.set('cb_bk',auj()); bkCheck(); return} }catch(err){ if(err.name==='AbortError') return }
+  envoyer('OviLink – sauvegarde du '+fdate()+'\n'+t,e.target); LS.set('cb_bk',auj()); bkCheck()};
+$('#bk-file').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!['OviLink','Claude Brebis'].includes(j.app)||!j.cles) throw new Error('ce n’est pas une sauvegarde OviLink');
     Object.entries(j.cles).forEach(([k,v])=>localStorage.setItem(k,v)); $('#bk-st').textContent='Sauvegarde du '+fdate(j.quand)+' restaurée. Rechargement…'; $('#bk-st').className='state ok'; setTimeout(()=>location.reload(),1200)}
   catch(err){$('#bk-st').textContent='Restauration impossible : '+err.message; $('#bk-st').className='state err'}}; r.readAsText(f)});
 function bkCheck(){const d=LS.get('cb_bk',null); const saisies=(LS.get('cb_soins',{T:[]}).T||[]).length+Object.keys(LS.get('cb_echo',{})).length+(LS.get('cb_moves',[])||[]).length;
@@ -1700,7 +1701,7 @@ $('#v-sevrage').addEventListener('click',e=>{const b=e.target.closest('button');
       if(LOTS[k]===v.lot){delete LOTS[k]; LS.set('cb_lots',LOTS)} MV=MV.filter(m=>!(m.p===k&&m.vers===v.lot)); HL=HL.filter(m=>!(m.p===k&&m.vers===v.lot)); LS.set('cb_moves',MV); LS.set('cb_hlot',HL)}
     else {v.delAsk=1; setTimeout(()=>{if(SEV[k]){delete SEV[k].delAsk; renderSev()}},5000)} saveSEV(); renderSev(); return}
   if(b.id==='sv-send'){const L=Object.entries(SEV).filter(([k,v])=>!v.s);
-    envoyer('Claude Brebis – passage en renouvellement (sevrage) du '+fdate()+'\n\n'+(L.map(([k,v])=>frJ(v.d)+' · '+k+' '+(v.sexe==='F'?'femelle':'mâle')+' → lot « '+v.lot+' »').join('\n')||'aucun'),b); return}
+    envoyer('OviLink – passage en renouvellement (sevrage) du '+fdate()+'\n\n'+(L.map(([k,v])=>frJ(v.d)+' · '+k+' '+(v.sexe==='F'?'femelle':'mâle')+' → lot « '+v.lot+' »').join('\n')||'aucun'),b); return}
   if(b.id==='sv-sent'){Object.values(SEV).forEach(v=>v.s=1); saveSEV(); renderSev(); return}});
 $('#sv-f').addEventListener('submit',e=>{e.preventDefault(); const p=plaqueDe($('#sv-q').value); $('#sv-q').value=''; if(p) sevBip(p)});
 
@@ -1740,7 +1741,7 @@ $('#v-vente').addEventListener('click',e=>{const b=e.target.closest('button'); i
     const n=VL.length; VL=[]; saveVL(); $('#vn-card').innerHTML=''; setMode('vente','choix'); toast(n+' animal(aux) enregistré(s) vendu(s)'); return}
   if(b.dataset.vnann){VL=[]; saveVL(); $('#vn-card').innerHTML=''; setMode('vente','choix'); toast('Vente annulée : rien n’a été enregistré'); return}
   if(b.id==='vn-send'){const L=Object.entries(VEN).filter(([k,v])=>!v.s), D={}; L.forEach(([p,v])=>{const kk=v.d+'|'+(v.t||''); (D[kk]=D[kk]||{j:[],a:[]})[v.j?'j':'a'].push(p)});
-    envoyer('Claude Brebis – ventes\n\n'+(Object.keys(D).sort().map(d=>'Vente du '+frJA(d.split('|')[0])+(d.split('|')[1]?' – '+vtNom(d.split('|')[1]):'')+'\nJeunes ('+D[d].j.length+') : '+tri(D[d].j).join(' ')+'\nAdultes ('+D[d].a.length+') : '+tri(D[d].a).join(' ')).join('\n\n')||'aucune'),b); return}
+    envoyer('OviLink – ventes\n\n'+(Object.keys(D).sort().map(d=>'Vente du '+frJA(d.split('|')[0])+(d.split('|')[1]?' – '+vtNom(d.split('|')[1]):'')+'\nJeunes ('+D[d].j.length+') : '+tri(D[d].j).join(' ')+'\nAdultes ('+D[d].a.length+') : '+tri(D[d].a).join(' ')).join('\n\n')||'aucune'),b); return}
   if(b.id==='vn-sent'){Object.values(VEN).forEach(v=>v.s=1); saveVEN(); renderVente(); return}});
 
 // ---- mise à la traite : la brebis n'a plus d'agneau sous le pis (vendu, mort, passé en renouvellement ou adopté par une autre)
@@ -1824,7 +1825,7 @@ $('#v-traite').addEventListener('click',e=>{const b=e.target.closest('button'); 
   if(b.dataset.trgo){ if(b.dataset.trgo==='tar'){ttOuvrir(); return} if(!TR_LOT){$('#tr-st').textContent='Choisis d’abord le lot de traite.'; $('#tr-st').className='state err'; return} trbOuvrir(); return}
   if(b.dataset.lotok){const n=$('#tr-lot-n').value.trim(); if(!n) return; TR_LOT=n; LS.set('cb_trlot',n); trCoulDef(n); if(!LREG[n]){LREG[n]={cree:fdate()}; LS.set('cb_lreg',LREG)} $('#tr-lot-n').blur(); renderTraite(); return}
   if(b.id==='tr-send'){const H=Object.entries(TRA).filter(([p,v])=>!v.s), D={}; H.forEach(([p,v])=>{(D[v.d]=D[v.d]||[]).push(p)});
-    envoyer('Claude Brebis – mises à la traite\n\n'+(Object.keys(D).sort().map(d=>frJA(d)+' ('+D[d].length+') → lot « '+TRA[D[d][0]].lot+' » :\n'+tri(D[d]).join(' ')).join('\n\n')||'aucune'),b); return}
+    envoyer('OviLink – mises à la traite\n\n'+(Object.keys(D).sort().map(d=>frJA(d)+' ('+D[d].length+') → lot « '+TRA[D[d][0]].lot+' » :\n'+tri(D[d]).join(' ')).join('\n\n')||'aucune'),b); return}
   if(b.id==='tr-sent'){Object.values(TRA).forEach(v=>v.s=1); saveTRA(); renderTraite(); return}});
 // ---- mortalité : agneaux, brebis, béliers
 let MO_CUR=null, MO_NEW=null, MO_ASK=false;
