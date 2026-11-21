@@ -164,6 +164,7 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr.mbl td{border-bottom:none}
 th{font-size:12px;color:var(--mute);cursor:pointer}
 td input{width:22px;height:22px}
 tr.sel td{background:var(--okbg)}
@@ -2014,6 +2015,9 @@ const agBadge=k=>{const c=agCode(k); return c?` <span class="agc agc-${c==='✝'
 const horsFerme=k=>{const x=A()[k]; return !!x&&!pres(x)};
 const numL=(k,go)=>k?`<b class="lien${horsFerme(k)?' off':''}" ${go?'data-go':'data-fiche'}="${esc(k)}">${esc(k)}</b>`:'?';
 const agL=(k,go)=>numL(k,go)+agBadge(k);
+// ligne sous la mère dans la liste des mises bas (comme le carnet du CBI)
+function mbSous(v){const L=v.ag.map(a=>{if(a.mn) return '<span class="c-bad">✝ mort-né</span>'; const n=nourrice(a.n); return `${a.sx==='M'?'♂':'♀'} ${agL(a.n)}${n&&n!==v.m?` <span class="hint">(adopté par ${numL(n)})</span>`:''}`});
+  mbAdoptes(v.m).forEach(k=>L.push(`✚ adopte ${agL(k)}`)); return `<div class="hint" style="font-size:14px;line-height:1.9">${L.join(' &nbsp;·&nbsp; ')}</div>`}
 const stH=(a,m,go)=>esc(mbStatut(a,m)).replace(/\b(\d{5})\b/g,(m0,k)=>A()[k]?numL(k,go):k);
 function mbLignes(v){const A2=mbAdoptes(v.m); return v.ag.map(a=>a.mn?'✝ agneau mort':a.n+' '+(agCode(a.n)||'')+' '+a.sx+' ('+mbStatut(a,v.m)+')').join(', ')+(A2.length?' · adopte le n° '+A2.map(k=>k+' '+agCode(k)).join(', '):'')}
 function mbLignesH(v,go){const A2=mbAdoptes(v.m); return v.ag.map(a=>a.mn?'<div class="c-bad">✝ agneau mort</div>':`<div>${agL(a.n,go)} ${a.sx==='M'?'♂':'♀'} <span class="hint">· ${stH(a,v.m,go)}</span></div>`).join('')+A2.map(k=>`<div><b>Adopte le n° ${agL(k,go)}</b> <span class="hint">· né de ${numL(A()[k].mere,go)}</span></div>`).join('')}
@@ -2142,7 +2146,7 @@ function renderMB(){ if(!$('#v-mb')) return;
       ${MBF.du||MBF.au?'':`<div class="hint">Campagne ${CV}.</div>`}
       <div class="count" style="margin-top:8px"><div><b>${B.mb}</b>mises bas</div><div><b>${B.ag}</b>agneaux</div><div><b>${B.mn}</b>mort-nés</div></div>
       <div class="hint">${B.ad} adopté(s) · portées : ${B.s} simple(s), ${B.d} double(s), ${B.t} triple(s) ou plus</div>
-      <div class="tbl"><table><thead><tr>${th('m','Mère')}${th('d','Date')}${th('n','Nb')}<th>Portée</th>${th('mo','Mode')}</tr></thead><tbody>${L.map(v=>`<tr data-mbopen="${esc(v.id)}"><td><b class="lien" data-fiche="${v.m}">${v.m}</b></td><td>${frJ(v.d)}</td><td>${v.ag.length}</td><td>${mbPortee(v)}</td><td>${v.mode||''}${v.s?'':' <span class="c-warn">•</span>'}</td></tr>${MBF.open===v.id?`<tr><td colspan="5" style="white-space:normal;background:var(--bg)">${mbLignesH(v)}${v.pere?`<div class="hint">Père : ${numL(v.pere)}${v.mode?' ('+v.mode+')':''}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></td></tr>`:''}`).join('')||'<tr><td colspan="5" class="hint">Aucune mise bas.</td></tr>'}</tbody></table></div>
+      <div class="tbl"><table><thead><tr>${th('m','Mère')}${th('d','Date')}${th('n','Nb')}<th>Portée</th>${th('mo','Mode')}</tr></thead><tbody>${L.map(v=>`<tr class="mbl" data-mbopen="${esc(v.id)}"><td><b class="lien" data-fiche="${v.m}">${v.m}</b></td><td>${frJ(v.d)}</td><td>${v.ag.length}</td><td>${mbPortee(v)}</td><td>${v.mode||''}${v.s?'':' <span class="c-warn">•</span>'}</td></tr><tr class="mbsous" data-mbopen="${esc(v.id)}"><td colspan="5" style="white-space:normal;padding-top:0">${mbSous(v)}</td></tr>${MBF.open===v.id?`<tr><td colspan="5" style="white-space:normal;background:var(--bg)">${mbLignesH(v)}${v.pere?`<div class="hint">Père : ${numL(v.pere)}${v.mode?' ('+v.mode+')':''}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></td></tr>`:''}`).join('')||'<tr><td colspan="5" class="hint">Aucune mise bas.</td></tr>'}</tbody></table></div>
       <div class="row" style="margin-top:8px"><button type="button" class="btn" data-mbprint="1">🖨 Imprimer / PDF</button><button type="button" class="btn" data-mbsend="1">Envoyer à Claude</button><button type="button" class="btn2" data-mbsent="1">Marquer comme envoyé</button></div>
       <div class="hint">${(n=>n?n+' mise(s) bas pas encore envoyée(s) à Claude (•).':'Tout est envoyé.')(all.filter(v=>!v.s).length+Object.values(BIBS).filter(v=>!v.s).length)}</div>`}}
 $('#v-mb').addEventListener('submit',e=>{if(e.target.id!=='mb-f') return; e.preventDefault(); const p=plaqueDe($('#mb-q').value); $('#mb-q').value=''; if(p) mbMere(p)});
