@@ -165,6 +165,7 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
 tr.mbl td{border-bottom:none}
+.gros>div>[data-fiche],.gros>div>[data-go],.gros>div>b>[data-fiche],.gros>div>b>[data-go],dd.gros>[data-go]{font-size:24px!important;padding:4px 12px!important;line-height:1.5} .gros>div>.agc,.gros>div>b>.agc{font-size:17px} .gros>div{margin:4px 0}
 th{font-size:12px;color:var(--mute);cursor:pointer}
 td input{width:22px;height:22px}
 tr.sel td{background:var(--okbg)}
@@ -830,7 +831,7 @@ function fiche(p,nav,el='#fiche'){
    ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
-   <dt>Mère</dt><dd>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd>${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lien(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}</dd></dl>
+   <dt>Mère</dt><dd${jeuneCat(x)?' class="gros"':''}>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd class="gros">${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lien(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}</dd></dl>
    ${MORT[p]?`<div class="row"><span class="chip c-bad">Mort le ${frJA(MORT[p].d)}</span></div>`:''}
    ${famille(p,x)}
    ${desc.length?(()=>{const mo=moyLJ(desc),t=troupLJ();
@@ -2027,10 +2028,10 @@ function ficheAgneaux(p,x){ if(!femelle(x)||jeuneCat(x)) return '';
   const autres=tri(Object.keys(A()).filter(k=>{const y=A()[k]; return !vus.has(k)&&y.mere===p&&jeuneCat(y)&&campOf(isoNe(y.ne))===CV}));
   const ad=mbAdoptes(p).filter(k=>!vus.has(k)); if(!M.length&&!autres.length&&!ad.length) return '';
   const lg=k=>{const y=A()[k]||{}; return `<div>${agL(k,1)} ${/Agneau|Bélier|Antenais/.test(y.cat||'')?'♂':'♀'} <span class="hint">· ${stH({n:k},p,1)}</span></div>`};
-  return `<div class="lg-act" style="border:2px solid var(--accent);margin:4px 0"><h2 style="margin:0 0 4px">Agneaux de la saison</h2>
+  return `<div class="lg-act gros" style="border:2px solid var(--accent);margin:4px 0"><h2 style="margin:0 0 4px">Agneaux de la saison</h2>
    ${M.map(v=>`<div class="hint">Mise bas du ${frJA(v.d)} · portée ${mbPortee(v)}</div>${v.ag.map(a=>a.mn?'<div class="c-bad">✝ agneau mort</div>':lg(a.n)).join('')}`).join('')}
    ${autres.map(lg).join('')}${ad.map(k=>`<div><b>Adopte le n° ${agL(k,1)}</b> <span class="hint">· né de ${numL(A()[k].mere,1)}</span></div>`).join('')}
-   <div class="hint" style="margin-top:4px">A actif · AD actif et adopté · BIB au biberon · ORPH orphelin · ✝ mort · S sevré · V vendu</div></div>`}
+</div>`}
 // page ✏️ → 🐑 Agnelage de la brebis
 function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
   let h=`<h2 style="margin-top:8px">Agnelage</h2>${D?`<div class="hint">Dernière MB : ${numL(D.m)} le ${frJ(D.d)} · ${D.ag.length} agn.</div>`:''}
