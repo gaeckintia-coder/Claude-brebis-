@@ -750,7 +750,7 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbImport==='function') mbImport(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
@@ -1978,6 +1978,14 @@ function mbAppliquer(){ if(!DB) return; Object.values(MBS).forEach(v=>v.ag.forEa
     if(!x) x=DB.animaux[a.n]={cat:a.sx==='M'?'Agneau':'Agnelle',statut:'Présent',ne:frJA(v.d),mere:v.m,pere:v.pere||'',lot:'',mb:v.id};
     else if(x.mb===v.id){x.mere=v.m; x.pere=v.pere||''; x.ne=frJA(v.d); x.cat=a.sx==='M'?'Agneau':'Agnelle'}
     if(a.art) x.art=1; else delete x.art})); if(typeof BIBS!=='undefined') Object.keys(BIBS).forEach(k=>{const y=DB.animaux[k]; if(y) y.art=1}); LS.set('cb_data',DB)}
+// mises bas venues du fichier de données (carnet d'agnelage du CBI) : la saisie du téléphone reste prioritaire
+function mbImport(){ if(!DB) return; let n=0;
+  (DB.mb||[]).forEach(v=>{const id=v.m+'|'+v.d; if(MBS[id]) return; const loc=Object.values(MBS).find(o=>o.m===v.m&&campOf(o.d)===campOf(v.d)); if(loc&&!loc.cbi) return; if(loc) delete MBS[loc.id];
+    MBS[id]={id,m:v.m,d:v.d,pere:v.pere||'',mode:v.mode||'',ag:v.ag.map(a=>({...a})),t:new Date().toISOString(),s:1,cbi:1}; n++});
+  (DB.adop||[]).forEach(([k,m,d])=>{if(!NOUR[k]){NOUR[k]={n:m,d:frJA(d),prev:'',cbi:1}}});
+  (DB.morts||[]).forEach(([k,d])=>{if(!MORT[k]) MORT[k]={d,prev:'Présent',s:1,cbi:1}});
+  if(SER.deux){['m','f'].forEach(c=>{let mx=0; Object.values(MBS).forEach(v=>v.ag.forEach(a=>{if(a.n&&/^\d{5}$/.test(a.n)&&(c==='m'?a.sx==='M':a.sx==='F')&&a.n.slice(0,2)===SER[c].slice(0,2)) mx=Math.max(mx,+a.n)})); if(mx&&+SER[c]<=mx) SER[c]=pad5(mx+1)}); saveSER()}
+  saveMB(); LS.set('cb_nour',NOUR); LS.set('cb_mort',MORT); _pis=null; return n}
 let MB_RET=[];   // agneaux retirés d'une mise bas (pour remettre le compteur des numéros)
 function mbReculer(){ MB_RET.sort((a,b)=>b.n.localeCompare(a.n)).forEach(({n,sx})=>{ if(A()[n]) return;
     if(/^P/.test(n)){const i=parseInt(n.split('-')[1],10); if(+SER.pn===i+1) SER.pn=i; return}
@@ -1993,7 +2001,7 @@ function mbAvancer(ag){ ag.forEach(a=>{ if(a.mn||!a.n) return;
     const c=serCle(a.sx), i=parseInt(a.n,10), cur=parseInt(SER[c],10)||0; if(i>=cur&&i-cur<50) SER[c]=pad5(i+1)}); saveSER()}
 const serTexte=()=>SER.prov?'repère provisoire P'+SER.pm+'-'+String(SER.pn).padStart(4,'0'):SER.deux?'♂ '+(SER.m||'?')+' · ♀ '+(SER.f||'?'):'n° '+(SER.c||'?');
 // pères : béliers d'IA dont la date colle avec la mise bas (liste du centre ovin, à venir), puis béliers de lutte
-function mbPeres(m,d){const O=[]; ((DB&&DB.ia)||[]).filter(r=>r.b===m).forEach(r=>{const j=Math.round((new Date(d+'T12:00:00')-new Date(r.d+'T12:00:00'))/86400000); if(j>=140&&j<=160) O.push({v:r.p,t:'IA '+r.p+' (IA du '+frJA(r.d)+')',mode:'IA'})});
+function mbPeres(m,d){const O=[]; ((DB&&DB.ia)||[]).filter(r=>r.b===m).forEach(r=>{const j=Math.round((new Date(d+'T12:00:00')-new Date(r.d+'T12:00:00'))/86400000); if(j>=140&&j<=160) O.push({v:r.p,t:'IA '+(r.lib||r.p)+' (IA du '+frJA(r.d)+')',mode:'IA'})});
   return O}
 function mbStatut(a,m){ if(a.mn) return 'mort-né'; const x=A()[a.n]; if(!x) return ''; if(!pres(x)) return String(x.statut||'').toLowerCase(); if(renouv(a.n)) return 'renouvellement'; if(BIBS[a.n]) return 'au biberon depuis le '+frJ(BIBS[a.n].d); if(x.art) return 'au biberon';
   if(orphelin(a.n)) return 'orphelin, en attente d’une nouvelle mère';
