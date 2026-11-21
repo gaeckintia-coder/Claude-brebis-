@@ -751,7 +751,7 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbImport==='function') mbImport(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbImport==='function') mbImport(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof bibAppliquer==='function') bibAppliquer(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
@@ -1992,7 +1992,7 @@ function mbReculer(){ MB_RET.sort((a,b)=>b.n.localeCompare(a.n)).forEach(({n,sx}
     if(/^P/.test(n)){const i=parseInt(n.split('-')[1],10); if(+SER.pn===i+1) SER.pn=i; return}
     const c=serCle(sx); if(SER[c]===pad5(parseInt(n,10)+1)) SER[c]=n}); MB_RET=[]; saveSER()}
 function mbRetirer(n,id){const x=DB.animaux[n]; if(x) MB_RET.push({n,sx:/Agneau|Bélier|Antenais/.test(x.cat||'')?'M':'F'}); if(x&&x.mb===id&&!MORT[n]) delete DB.animaux[n];
-  if(NOUR[n]){delete NOUR[n]; LS.set('cb_nour',NOUR)} if(LOTS[n]!==undefined){delete LOTS[n]; LS.set('cb_lots',LOTS)}}
+  if(NOUR[n]){delete NOUR[n]; LS.set('cb_nour',NOUR)} if(LOTS[n]!==undefined){delete LOTS[n]; LS.set('cb_lots',LOTS)} if(typeof BIBS!=='undefined'&&BIBS[n]){delete BIBS[n]; saveBIB()}}
 // numéros des agneaux : 2 séries (mâles / femelles) ou 1 série commune, ou repères provisoires
 const serCle=sx=>SER.deux?(sx==='M'?'m':'f'):'c';
 function mbProchain(sx,pris,id){ if(SER.prov){let i=+SER.pn||1; for(;;){const k='P'+SER.pm+'-'+String(i).padStart(4,'0'); if(!pris.includes(k)&&!(A()[k]&&A()[k].mb!==id)) return k; i++}}
@@ -2178,7 +2178,7 @@ function mbImprimer(){const L=mbFiltre(), B=mbBilan(L);
 // mise au biberon : l'agneau sort de sous sa mère et va dans le lot « Biberon »
 let BIBS=LS.get('cb_bib',{}); const saveBIB=()=>LS.set('cb_bib',BIBS);   // {agneau:{d,pl (LOTS avant),pn (NOUR avant),s}}
 const LOT_BIB='Biberon';
-function bibAppliquer(){ if(!DB) return; Object.keys(BIBS).forEach(k=>{const x=DB.animaux[k]; if(x) x.art=1}); LS.set('cb_data',DB)}
+function bibAppliquer(){ if(!DB) return; Object.keys(BIBS).forEach(k=>{if(LOTS[k]===undefined&&!(DB.animaux[k]||{}).lot){delete BIBS[k]; const y=DB.animaux[k]; if(y) delete y.art}}); saveBIB(); Object.keys(BIBS).forEach(k=>{const x=DB.animaux[k]; if(x) x.art=1}); LS.set('cb_data',DB)}
 function bibMettre(k,d){const x=DB.animaux[k]; if(!x) return; const de=lotOf(k);
   BIBS[k]={d,pl:LOTS[k],pn:NOUR[k]?JSON.stringify(NOUR[k]):'',s:0}; if(NOUR[k]){delete NOUR[k]; LS.set('cb_nour',NOUR)}
   x.art=1; LOTS[k]=LOT_BIB; if(!LREG[LOT_BIB]){LREG[LOT_BIB]={cree:fdate()}; LS.set('cb_lreg',LREG)} if(de!==LOT_BIB) mvPush({d:fdate(),p:k,de,vers:LOT_BIB});
