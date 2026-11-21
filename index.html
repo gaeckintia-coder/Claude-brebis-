@@ -1202,9 +1202,9 @@ function nomT(t){return PH().proto[t.p].nom+(t.motif?' – '+t.motif:'')}
 function demarrer(a,p,motif){const t={id:a+'-'+p+'-'+Date.now(),a,p,motif:motif||'',debut:auj(),doses:[]}; SO.T.push(t); saveSO(); return t}
 function mamSoin(k){const t=SO.T.find(t=>t.a===k&&t.p==='mammite'&&!t.clos); if(!t) return null; const e=etatT(t);
   return {d:t.debut,delai:Math.round((new Date(e.viande+'T12:00:00')-new Date(t.debut+'T12:00:00'))/86400000)}}
-let S_CUR=null;
+let S_CUR=null, S_RAT=null;
 function carteSoin(a){const x=A()[a]; const L=actifsT(a); const pr=PH().proto;
-  let h=`<div class="row" style="align-items:center;margin-top:10px"><span class="tag${x?lisere(a):''}" style="font-size:28px;padding:6px 14px"><b>${a}</b></span><span class="hint">${x?esc(x.lot||x.cat):'Pas dans la base (agneau ou animal inconnu)'}</span>${x?`<button type="button" class="btn2" data-fiche="${a}">Voir la fiche ›</button>`:''}</div>`;
+  let h=`<div class="row" style="align-items:center;margin-top:10px"><span class="tag${x?lisere(a):''}" style="font-size:28px;padding:6px 14px"><b>${a}</b></span><span class="hint">${x?esc(x.lot||x.cat):'Pas dans la base (agneau ou animal inconnu)'}</span>${x?`<button type="button" class="btn2" data-fiche="${a}">Voir la fiche ›</button>`:''}</div><button type="button" class="btn2 b-retour" data-sferme="1" style="width:100%;margin-top:6px">← Fermer, rien changé</button>`;
   if(!L.length) h+=`<div class="big warn">Aucun traitement en cours<small>Choisir un traitement à démarrer :</small></div>`;
   L.forEach(t=>{const e=etatT(t);
     const box={afaire:['bad','À FAIRE AUJOURD’HUI','Jour '+e.jour+' sur '+e.tot],fait:['ok','DÉJÀ FAIT AUJOURD’HUI','Jour '+e.n+' sur '+e.tot+' · prochain demain'],
@@ -1214,10 +1214,16 @@ function carteSoin(a){const x=A()[a]; const L=actifsT(a); const pr=PH().proto;
       <div class="big ${box[0]}" style="font-size:30px;margin-top:6px">${box[1]}<small>${box[2]}</small></div>`;
     if(!e.fini&&!e.faitAuj) h+=`<div style="margin-top:8px"><b>Doses du jour ${e.jour} :</b>${e.dosesJ.map(([k,ml])=>`<div class="row" style="align-items:center"><span style="flex:1">${esc(pNom(k))}</span><input type="number" step="0.5" min="0" inputmode="decimal" style="width:5em" data-ml="${k}" value="${ml}"> ml</div>`).join('')}
       <button type="button" class="btn" style="width:100%;margin-top:6px" data-sfait="${t.id}">✔ Fait</button></div>`;
+    if(!e.fini&&!e.faitAuj&&S_RAT!==t.id) h+=`<button type="button" class="btn2" style="width:100%;margin-top:6px" data-srat="${t.id}">↺ Rattraper une dose oubliée (jour passé)</button>`;
+    if(!e.fini&&S_RAT===t.id){const dmin=t.doses.length?plusJ(t.doses[t.doses.length-1].d.slice(0,10),1):plusJ(auj(),-30), dmax=plusJ(auj(),-1), dv=dmax<dmin?dmin:dmax;
+      h+=`<div style="border:2px solid var(--warn);border-radius:12px;padding:8px;margin-top:8px"><b>Rattraper le jour ${t.doses.length+1} sur ${e.tot}</b><div class="hint">Dose faite un jour passé mais pas enregistrée.</div>
+      <div class="row" style="align-items:center;margin-top:6px"><span style="flex:1">Date</span><input type="date" id="s-ratd" min="${dmin}" max="${dmax}" value="${dv}"><input type="time" id="s-rath" value="19:00" style="width:6.5em"></div>
+      ${pr[t.p].jours[t.doses.length].map(([k,ml])=>`<div class="row" style="align-items:center"><span style="flex:1">${esc(pNom(k))}</span><input type="number" step="0.5" min="0" inputmode="decimal" style="width:5em" data-rml="${k}" value="${ml}"> ml</div>`).join('')}
+      <div class="row" style="margin-top:6px"><button type="button" class="btn2 b-retour" data-sratann="1" style="flex:1">Annuler</button><button type="button" class="btn" data-sratok="${t.id}" style="flex:1">Enregistrer</button></div></div>`}
     if(e.cat==='traite') h+=`<button type="button" class="btn" style="width:100%;margin-top:8px" data-straite="${t.id}">Passée à la traite (marque verte)</button>`;
     h+=`<div class="hint" style="margin-top:6px">Fin d’attente lait : <b>${e.interdit&&!e.lait?'interdit':frJ(e.lait)||'—'}</b> · viande : <b>${frJ(e.viande)||'—'}</b>${e.fini?'':' (si le traitement va jusqu’au bout)'}</div>`;
     if(t.doses.length) h+=`<div class="hint">${t.doses.map((d,i)=>`J${i+1} le ${frJ(d.d.slice(0,10))} : ${d.prod.map(([k,ml])=>pNom(k)+' '+fml(ml)+' ml').join(' + ')}`).join('<br>')}</div>`;
-    h+=`<div class="row" style="margin-top:6px"><button type="button" class="btn2" data-sstop="${t.id}">${t.stopAsk?'Confirmer l’arrêt du traitement':'Arrêter ce traitement'}</button>${t.doses.length&&e.faitAuj?`<button type="button" class="btn2" data-sannule="${t.id}">Annuler la dose d’aujourd’hui</button>`:''}<button type="button" class="btn2 c-bad" data-sdel="${t.id}">${t.delAsk?'Confirmer : effacer (erreur)':'🗑 Effacer (erreur de saisie)'}</button></div></div>`});
+    h+=`<div class="row" style="margin-top:6px"><button type="button" class="btn2" data-sstop="${t.id}">${t.stopAsk?'Confirmer l’arrêt du traitement':'Arrêter ce traitement'}</button>${t.doses.length&&e.faitAuj?`<button type="button" class="btn2" data-sannule="${t.id}">Annuler la dose d’aujourd’hui</button>`:''}<button type="button" class="btn2 c-bad" data-sdel="${t.id}">${t.delAsk?'Confirmer : tout effacer'+(t.doses.length?' ('+t.doses.length+' dose'+(t.doses.length>1?'s':'')+')':''):'🗑 Effacer tout le traitement'+(t.doses.length?' ('+t.doses.map((d,i)=>'J'+(i+1)+' du '+frJ(d.d.slice(0,10))).join(', ')+' compris)':'')}</button></div></div>`});
   const st=[['mammite','','Mammite'],['agnelage','Non-délivrance','Non-délivrance'],['agnelage','Césarienne','Césarienne'],['agnelage','Agnelage difficile','Agnelage difficile'],['agnelage','Agneau mort dedans','Agneau mort dedans'],['coli','','Diarrhée agneau']];
   h+=`<div class="hint" style="margin-top:10px">Démarrer un traitement :</div><div class="row" style="flex-wrap:wrap">${st.map(([p,m,l])=>`<button type="button" class="btn2" data-sstart="${p}|${m}">${l}</button>`).join('')}</div>`;
   return h}
@@ -1262,6 +1268,15 @@ $('#v-soins').addEventListener('click',e=>{const b=e.target.closest('button'); i
     const prod=e.dosesJ.map(([k,ml])=>{const i=box.querySelector(`[data-ml="${k}"]`); return [k,parseFloat(String(i?i.value:ml).replace(',','.'))||0]});
     flInit(); const fl={}; prod.forEach(([k])=>{if(FL.cur[k]) fl[k]=FL.cur[k]}); const n=new Date(); t.doses.push({d:isoJ(n)+'T'+pad2(n.getHours())+':'+pad2(n.getMinutes()),prod,par:LS.get('cb_spar',''),fl}); saveSO(); flApresDose(prod); bip(); renderSoins(); render(); return}
   if(b.dataset.straite){T(b.dataset.straite).traite=auj(); saveSO(); renderSoins(); return}
+  if(b.dataset.sferme){S_CUR=null; S_RAT=null; renderSoins(); window.scrollTo(0,0); return}
+  if(b.dataset.srat){S_RAT=b.dataset.srat; renderSoins(); return}
+  if(b.dataset.sratann){S_RAT=null; renderSoins(); return}
+  if(b.dataset.sratok){const t=T(b.dataset.sratok), e=etatT(t), d=$('#s-ratd').value, h=$('#s-rath').value||'12:00'; const box=b.closest('div').parentElement;
+    const last=t.doses.length?t.doses[t.doses.length-1].d.slice(0,10):'';
+    if(!d){toast('Choisissez la date'); return} if(d>=auj()){toast('Pour aujourd’hui, utilisez « ✔ Fait »'); return} if(last&&d<=last){toast('La dose précédente est du '+frJ(last)+' : choisissez un jour après'); return}
+    const prod=PH().proto[t.p].jours[t.doses.length].map(([k,ml])=>{const i=box.querySelector(`[data-rml="${k}"]`); return [k,parseFloat(String(i?i.value:ml).replace(',','.'))||0]});
+    flInit(); const fl={}; prod.forEach(([k])=>{if(FL.cur[k]) fl[k]=FL.cur[k]});
+    t.doses.push({d:d+'T'+h,prod,par:LS.get('cb_spar',''),fl,rat:1}); if(d<t.debut) t.debut=d; S_RAT=null; saveSO(); flApresDose(prod); bip(); renderSoins(); render(); toast('Jour '+t.doses.length+' du '+frJ(d)+' enregistré'); return}
   if(b.dataset.sannule){const t=T(b.dataset.sannule); t.doses.pop(); saveSO(); renderSoins(); return}
   if(b.dataset.sdel){const t=T(b.dataset.sdel); if(t.delAsk){SO.T=SO.T.filter(x=>x!==t)} else {t.delAsk=1; setTimeout(()=>{if(t.delAsk){delete t.delAsk;renderSoins()}},5000)} saveSO(); renderSoins(); render(); return}
   if(b.dataset.sstop){const t=T(b.dataset.sstop); if(t.stopAsk){t.clos=1; t.arret=auj(); delete t.stopAsk} else t.stopAsk=1; saveSO(); renderSoins(); return}
