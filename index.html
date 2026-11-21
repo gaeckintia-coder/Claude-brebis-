@@ -1109,7 +1109,9 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(t
 function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(port) setSt('Dernier numéro lu : '+String(raw).replace(/\D/g,''),'ok');
   if(document.body.classList.contains('kfull')||document.body.classList.contains('cfull')) return;
-  if(document.body.classList.contains('xfull')){const a=document.activeElement; if(ED.mb&&a&&a.dataset&&a.dataset.mbn!=null){a.value=p; ED.mb.ag[+a.dataset.mbn].n=p; ED.mb.ag[+a.dataset.mbn].tape=1; bip(); return} const i=$('#ed-adin'); if(i){i.value=p; bip()} return}
+  if(document.body.classList.contains('xfull')){const a=document.activeElement; if(ED.mb&&a&&a.dataset&&a.dataset.mbn!=null){a.value=p; ED.mb.ag[+a.dataset.mbn].n=p; ED.mb.ag[+a.dataset.mbn].tape=1; bip(); return}
+    if(ED.mb&&a&&a.dataset&&a.dataset.mbad!=null){const k=ED.mb.ad[+a.dataset.mbad]; k.n=p; k.ok=0; ED.adq=null; bip(); renderEdit(); return}
+    if(ED.mb&&(ED.mb.ad||[]).some(k=>!k.n)){const k=ED.mb.ad.find(k=>!k.n); k.n=p; bip(); renderEdit(); return} const i=$('#ed-adin'); if(i){i.value=p; bip()} return}
   if(typeof SAI!=='undefined'&&SAI){saiAdd(p);return}
   if(document.body.classList.contains('tfull')){triAdd(p);return}
   if(document.body.classList.contains('qfull')){trBip(p);return}
@@ -1908,11 +1910,11 @@ function renderEdit(){ if(!ED.p) return; const p=ED.p, x=A()[p]||{}, pg=ED.page;
     <label class="hint" style="display:block;margin-top:6px">Date du résultat <input type="date" id="pan-d" value="${c?c.d:auj()}"></label>
     <div class="zbar"><button type="button" class="btn2 b-retour" data-edback="1">Annuler</button><button type="button" class="btn b-valid" data-panok="1">Enregistrer</button></div>${c?`<button type="button" class="btn2 c-bad" data-pandel="1" style="margin-top:6px">${ED.ask==='pan'?'Confirmer : retirer (erreur)':'🗑 Retirer (erreur)'}</button>`:''}`}
   $('#v-edit').innerHTML=top+h+'<div id="ed-st" class="state"></div>'}
-$('#v-edit').addEventListener('input',e=>{const t=e.target; if(!ED.mb) return; if(t.dataset.mbn!=null){const a=ED.mb.ag[+t.dataset.mbn]; a.n=t.value.trim(); a.tape=1} if(t.id==='mb-d') ED.mb.d=t.value; if(t.id==='mb-pere') ED.mb.pere=t.value});
-$('#v-edit').addEventListener('change',e=>{const t=e.target; if(ED.mb&&(t.id==='mb-d'||t.id==='mb-pere')){if(t.id==='mb-d') ED.mb.d=t.value||auj(); else ED.mb.pere=t.value; return} if(t.id==='ed-lot'){const nb=$('#ed-lot-nb'); nb.hidden=t.value!=='__new'; if(!nb.hidden) $('#ed-lot-n').focus()}});
+$('#v-edit').addEventListener('input',e=>{const t=e.target; if(!ED.mb) return; if(t.dataset.mbad!=null){const a=ED.mb.ad[+t.dataset.mbad]; a.n=t.value.trim(); a.ok=0; ED.adq=null} if(t.dataset.mbadsx!=null) ED.mb.ad[+t.dataset.mbadsx].sx=t.value; if(t.dataset.mbn!=null){const a=ED.mb.ag[+t.dataset.mbn]; a.n=t.value.trim(); a.tape=1} if(t.id==='mb-d') ED.mb.d=t.value; if(t.id==='mb-pere') ED.mb.pere=t.value});
+$('#v-edit').addEventListener('change',e=>{const t=e.target; if(ED.mb&&t.dataset.mbadsx!=null){ED.mb.ad[+t.dataset.mbadsx].sx=t.value; return} if(ED.mb&&t.dataset.mbad!=null){ED.mb.ad[+t.dataset.mbad].n=t.value.trim(); renderEdit(); return} if(ED.mb&&(t.id==='mb-d'||t.id==='mb-pere')){if(t.id==='mb-d') ED.mb.d=t.value||auj(); else ED.mb.pere=t.value; return} if(t.id==='ed-lot'){const nb=$('#ed-lot-nb'); nb.hidden=t.value!=='__new'; if(!nb.hidden) $('#ed-lot-n').focus()}});
 $('#v-edit').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const p=ED.p, msg=(t,ok)=>{const s=$('#ed-st'); s.textContent=t; s.className='state '+(ok?'ok':'err')};
   const ask=k=>{if(ED.ask===k){ED.ask=null; return true} ED.ask=k; clearTimeout(window._edT); window._edT=setTimeout(()=>{ED.ask=null; renderEdit()},5000); renderEdit(); return false};
-  if(b.dataset.edback){ if(ED.mb||ED.adc){ED.mb=null; ED.adc=null; renderEdit(); return} if(ED.page){ED.page=null; ED.ask=null; renderEdit()} else edFermer(); return}
+  if(b.dataset.edback){ if(ED.mb||ED.adc){ED.mb=null; ED.adc=null; ED.adq=null; ED.mvq=null; renderEdit(); return} if(ED.page){ED.page=null; ED.ask=null; renderEdit()} else edFermer(); return}
   if(b.dataset.edpg){const k=b.dataset.edpg;
     if(k==='soins'){edFermer(); setTab('soins'); setMode('soins','saisie'); soinsBip(p); return}
     if(k==='mort'){edFermer(); setTab('mort'); setMode('mort','saisie'); moBip(p); return}
@@ -1962,7 +1964,8 @@ function mbPeres(m,d){const O=[]; ((DB&&DB.ia)||[]).filter(r=>r.b===m).forEach(r
   return O}
 function mbStatut(a,m){ if(a.mn) return 'mort-né'; const x=A()[a.n]; if(!x) return ''; if(!pres(x)) return String(x.statut||'').toLowerCase(); if(renouv(a.n)) return 'renouvellement'; if(x.art) return 'allaitement artificiel';
   const n=nourrice(a.n); return n===m?'sous la mère':n?'adopté par '+n:'sans nourrice'}
-function mbLignes(v){return v.ag.map(a=>a.mn?'mort-né':a.n+' '+a.sx+' ('+mbStatut(a,v.m)+')').join(', ')}
+const mbAdoptes=m=>tri(Object.keys(NOUR).filter(k=>NOUR[k].n===m&&A()[k]&&A()[k].mere!==m));
+function mbLignes(v){const A2=mbAdoptes(v.m); return v.ag.map(a=>a.mn?'mort-né':a.n+' '+a.sx+' ('+mbStatut(a,v.m)+')').join(', ')+(A2.length?' · adopté'+(A2.length>1?'s':'')+' : '+A2.join(' '):'')}
 // page ✏️ → 🐑 Agnelage de la brebis
 function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
   let h=`<h2 style="margin-top:8px">Agnelage</h2>${D?`<div class="hint">Dernière MB : <b>${esc(D.m)}</b> le ${frJ(D.d)} · ${D.ag.length} agn.</div>`:''}`;
@@ -1972,7 +1975,10 @@ function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
      <div class="hint" style="margin-top:6px">Prochains numéros : <b>${serTexte()}</b> <button type="button" class="btn2" data-mbser="1" style="padding:2px 10px">✎</button></div>
      ${ED.serEd?mbSerForm('mbs'):''}
      <div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:6px"><button type="button" class="btn" data-mbadd="M" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">♂ Mâle</button><button type="button" class="btn" data-mbadd="F" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">♀ Femelle</button><button type="button" class="btn2 b-retour" data-mbadd="X" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">✝ Mort-né</button></div>
+     <button type="button" class="btn2" data-mbadd="A" style="width:100%;margin-top:6px;padding:14px;font-size:19px;border:2px solid var(--accent);color:var(--accent)">🍼 Adoption</button>
      <div style="margin-top:6px">${F.ag.map((a,i)=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><b>${i+1}.</b>${a.mn?'<span style="flex:1" class="c-bad"><b>Mort-né</b> (sans numéro)</span>':`<input data-mbn="${i}" value="${esc(a.n)}" inputmode="numeric" aria-label="Numéro de l’agneau ${i+1}" style="font:inherit;font-size:20px;padding:6px;width:6.5em"><span style="flex:1">${sx[a.sx]}</span>${SER.art?`<button type="button" class="btn2" data-mbart="${i}">${a.art?'🍼 biberon':'sous la mère'}</button>`:''}`}<button type="button" class="btn2" data-mbrm="${i}" aria-label="Enlever la ligne ${i+1}" style="padding:4px 10px">✕</button></div>`).join('')||'<div class="hint">Appuyez sur ♂, ♀ ou ✝ pour chaque agneau. Le numéro proposé peut être corrigé (ou bipé).</div>'}</div>
+     ${(F.ad||[]).length?`<div style="margin-top:6px"><b>🍼 Agneaux adoptés</b> <span class="hint">(pas comptés dans sa portée)</span>${F.ad.map((a,i)=>{const x=A()[plaqueDe(a.n||'')||'']; return `<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><span>🍼</span><input data-mbad="${i}" value="${esc(a.n)}" inputmode="numeric" placeholder="n° bipé ou tapé" aria-label="Numéro de l’agneau adopté" style="font:inherit;font-size:20px;padding:6px;width:6.5em"><span style="flex:1" class="hint">${x?esc(catAff(x))+(x.mere?' · né de '+esc(x.mere):''):a.n?`<select data-mbadsx="${i}" aria-label="Sexe"><option value="">sexe ?</option><option value="M"${a.sx==='M'?' selected':''}>♂ mâle</option><option value="F"${a.sx==='F'?' selected':''}>♀ femelle</option></select>`:''}</span><button type="button" class="btn2" data-mbadrm="${i}" aria-label="Enlever l’adoption" style="padding:4px 10px">✕</button></div>`}).join('')}</div>`:''}
+     ${ED.adq!=null&&F.ad&&F.ad[ED.adq]?(()=>{const a=F.ad[ED.adq], x=A()[a.n]||{}; return `<div class="big warn" style="font-size:19px;margin-top:8px">Confirmez-vous qu’il s’agit bien de l’agneau <b>${esc(a.n)}</b><small>de la brebis ${esc(x.mere||'?')}${x.ne?', né le '+esc(x.ne):''}${nourrice(a.n)&&nourrice(a.n)!==x.mere?' · aujourd’hui sous '+esc(nourrice(a.n)):''} ?</small></div><div class="row"><button type="button" class="btn b-valid" data-mbadoui="1" style="flex:1;padding:14px">✔ Oui</button><button type="button" class="btn2 b-retour" data-mbadnon="1" style="flex:1;padding:14px">Non</button></div>`})():''}
      ${P.length?`<label class="hint" style="display:block;margin-top:8px">Père (IA) <select id="mb-pere"><option value="">— inconnu —</option>${P.map(o=>`<option value="${esc(o.v)}"${o.v===F.pere?' selected':''}>${esc(o.t)}</option>`).join('')}</select></label>`:'<div class="hint" style="margin-top:8px">Père : inconnu. Il viendra de la liste des IA, ou plus tard d’une analyse (agnelles de renouvellement).</div>'}
      ${ED.mvq?`<div class="big warn" style="font-size:19px;margin-top:8px">${esc(ED.mvq.n)} est noté chez ${esc(ED.mvq.de)}<small>Le passer chez ${esc(p)} ? (il sera enlevé de la mise bas de ${esc(ED.mvq.de)})</small></div><div class="row"><button type="button" class="btn b-valid" data-mbmvoui="1" style="flex:1;padding:14px">✔ Oui, le passer chez ${esc(p)}</button><button type="button" class="btn2 b-retour" data-mbmvnon="1" style="flex:1;padding:14px">Non</button></div>`:''}
      <div class="zbar"><button type="button" class="btn2 b-retour" data-mbann="1">Annuler</button><button type="button" class="btn b-valid" data-mbok="1">Enregistrer</button></div>`;
@@ -2008,25 +2014,44 @@ function mbClic(b,p,msg,ask){const F=ED.mb;
   if(b.dataset.mbser){ED.serEd=!ED.serEd; renderEdit(); return true}
   if(b.dataset.mbserok){const err=mbSerLire(b.dataset.mbserok); if(err){msg(err); return true} ED.serEd=false; if(F) F.ag.forEach((a,i)=>{if(!a.mn&&!a.tape) a.n=mbProchain(a.sx,F.ag.slice(0,i).map(z=>z.n),F.oid)}); renderEdit(); if(b.dataset.mbserok==='mbr') renderMB(); msg('Numéros enregistrés.',1); return true}
   if(!F) return false;
+  if(b.dataset.mbadd==='A'){F.ad=F.ad||[]; F.ad.push({n:'',sx:''}); ED.adq=null; renderEdit(); const i=document.querySelector(`[data-mbad="${F.ad.length-1}"]`); if(i) i.focus(); return true}
+  if(b.dataset.mbadrm!=null){F.ad.splice(+b.dataset.mbadrm,1); ED.adq=null; renderEdit(); return true}
+  if(b.dataset.mbadoui){F.ad[ED.adq].ok=1; ED.adq=null; const k=document.querySelector('#v-edit [data-mbok]'); if(k) k.click(); return true}
+  if(b.dataset.mbadnon){const a=F.ad[ED.adq]; ED.adq=null; renderEdit(); msg('Vérifiez le numéro de l’agneau '+(a?a.n:'')+'.'); return true}
   if(b.dataset.mbadd){const sx=b.dataset.mbadd; if(sx==='X') F.ag.push({sx:'',n:'',mn:1}); else {const n=mbProchain(sx,F.ag.map(a=>a.n),F.oid); F.ag.push({sx,n,mn:0}); if(!n) msg('Réglez d’abord les numéros (✎).')} bip(); renderEdit(); return true}
   if(b.dataset.mbmvoui){F.move=[...(F.move||[]),ED.mvq.n]; ED.mvq=null; const k=document.querySelector('#v-edit [data-mbok]'); if(k) k.click(); return true}
   if(b.dataset.mbmvnon){ED.mvq=null; renderEdit(); msg('Changez le numéro de l’agneau, ou laissez-le chez sa mère.'); return true}
   if(b.dataset.mbrm!=null){F.ag.splice(+b.dataset.mbrm,1); ED.mvq=null; renderEdit(); return true}
   if(b.dataset.mbart!=null){const a=F.ag[+b.dataset.mbart]; a.art=a.art?0:1; renderEdit(); return true}
-  if(b.dataset.mbann){ED.mb=null; ED.mvq=null; renderEdit(); toast('Mise bas annulée : rien n’a été enregistré'); return true}
-  if(b.dataset.mbok){ const d=F.d||auj(), id=mbId(p,d), vus=[];
-    if(!F.ag.length){msg('Ajoutez au moins un agneau (ou un mort-né).'); return true}
+  if(b.dataset.mbann){ED.mb=null; ED.mvq=null; ED.adq=null; renderEdit(); toast('Mise bas annulée : rien n’a été enregistré'); return true}
+  if(b.dataset.mbok){ const d=F.d||auj(), id=mbId(p,d), vus=[], AD=F.ad||[];
+    if(!F.ag.length&&!AD.length){msg('Ajoutez au moins un agneau, un mort-né ou une adoption.'); return true}
+    if(!F.ag.length&&F.oid){msg('Pour effacer toute la mise bas, utilisez « 🗑 Supprimer ».'); return true}
     for(const a of F.ag){ if(a.mn) continue; if(!a.n){msg('Il manque un numéro d’agneau.'); return true}
       if(!/^(\d{5}|P\d{2}-\d{4})$/.test(a.n)){msg(a.n+' : le numéro doit faire 5 chiffres.'); return true}
       if(vus.includes(a.n)){msg(a.n+' est en double.'); return true} vus.push(a.n);
       const x=A()[a.n]; if(x&&x.mb!==F.oid&&x.mb!==id){ if(x.mb&&MBS[x.mb]){ if(!(F.move||[]).includes(a.n)){ED.mvq={n:a.n,de:MBS[x.mb].m}; renderEdit(); return true} continue}
         msg(a.n+' existe déjà dans la base ('+catAff(x)+(x.mere?', mère '+x.mere:'')+').'); return true}}
-    if(MBS[id]&&id!==F.oid){msg(p+' a déjà une mise bas le '+frJA(d)+' : corrigez-la plutôt.'); return true}
-    const pe=mbPeres(p,d).find(o=>o.v===F.pere);
-    (F.move||[]).forEach(n=>{const x=DB.animaux[n]; if(!x||!x.mb||!MBS[x.mb]||x.mb===F.oid) return; const S=MBS[x.mb]; S.ag=S.ag.filter(a=>a.n!==n); S.t=new Date().toISOString(); S.s=0; if(!S.ag.length) delete MBS[S.id]; x.mb=F.oid||id; if(NOUR[n]&&NOUR[n].n===p){delete NOUR[n]; LS.set('cb_nour',NOUR)}});
-    if(F.oid){const O=MBS[F.oid]; O.ag.forEach(a=>{if(a.n&&!vus.includes(a.n)) mbRetirer(a.n,F.oid)}); vus.forEach(n=>{const x=DB.animaux[n]; if(x&&x.mb===F.oid) x.mb=id}); if(F.oid!==id) delete MBS[F.oid]}
-    MBS[id]={id,m:p,d,pere:F.pere,mode:pe?pe.mode:'',ag:F.ag.map(a=>({n:a.mn?'':a.n,sx:a.mn?'':a.sx,mn:a.mn?1:0,art:a.art?1:0})),t:new Date().toISOString(),s:0};
-    saveMB(); mbAvancer(MBS[id].ag); mbAppliquer(); _pis=null; ED.mb=null; renderEdit(); msg('Mise bas enregistrée : '+mbPortee(MBS[id])+(vus.length?' · '+vus.join(' '):''),1); toast('Mise bas de '+p+' enregistrée'); return true}
+    if(F.ag.length&&MBS[id]&&id!==F.oid){msg(p+' a déjà une mise bas le '+frJA(d)+' : corrigez-la plutôt.'); return true}
+    // adoptions : vérifier chaque agneau, puis confirmer un par un (agneau X de la brebis Y né le …)
+    const advus=[];
+    for(let k=0;k<AD.length;k++){const a=AD[k]; a.n=plaqueDe(a.n||'')||''; if(!a.n){msg('Adoption : il manque le numéro de l’agneau.'); return true}
+      if(vus.includes(a.n)){msg(a.n+' est déjà dans sa portée (♂ / ♀) : ce n’est pas une adoption.'); return true} if(advus.includes(a.n)){msg(a.n+' est en double.'); return true} advus.push(a.n);
+      const x=A()[a.n];
+      if(!x){ if(!a.sx){renderEdit(); msg(a.n+' n’est pas encore dans la base : choisissez son sexe.'); return true} continue}
+      if(!jeuneCat(x)||!pres(x)){msg(a.n+' n’est pas un agneau présent.'); return true}
+      if(x.mere===p&&!NOUR[a.n]){msg(a.n+' est déjà son agneau.'); return true}
+      if(nourrice(a.n)===p){msg(p+' élève déjà '+a.n+'.'); return true}
+      if(!a.ok){ED.adq=k; renderEdit(); return true}}
+    const pe=mbPeres(p,d).find(o=>o.v===F.pere); let txt='';
+    if(F.ag.length){
+      (F.move||[]).forEach(n=>{const x=DB.animaux[n]; if(!x||!x.mb||!MBS[x.mb]||x.mb===F.oid) return; const S=MBS[x.mb]; S.ag=S.ag.filter(a=>a.n!==n); S.t=new Date().toISOString(); S.s=0; if(!S.ag.length) delete MBS[S.id]; x.mb=F.oid||id; if(NOUR[n]&&NOUR[n].n===p){delete NOUR[n]; LS.set('cb_nour',NOUR)}});
+      if(F.oid){const O=MBS[F.oid]; O.ag.forEach(a=>{if(a.n&&!vus.includes(a.n)) mbRetirer(a.n,F.oid)}); vus.forEach(n=>{const x=DB.animaux[n]; if(x&&x.mb===F.oid) x.mb=id}); if(F.oid!==id) delete MBS[F.oid]}
+      MBS[id]={id,m:p,d,pere:F.pere,mode:pe?pe.mode:'',ag:F.ag.map(a=>({n:a.mn?'':a.n,sx:a.mn?'':a.sx,mn:a.mn?1:0,art:a.art?1:0})),t:new Date().toISOString(),s:0};
+      saveMB(); mbAvancer(MBS[id].ag); mbAppliquer(); txt='Mise bas enregistrée : '+mbPortee(MBS[id])+(vus.length?' · '+vus.join(' '):'')}
+    const faits=[]; AD.forEach(a=>{const err=adopter(p,a.n,a.sx==='M'?'Agneau':a.sx==='F'?'Agnelle':''); if(!err) faits.push(a.n)});
+    if(faits.length) txt+=(txt?' · ':'')+'adopté'+(faits.length>1?'s':'')+' : '+faits.join(' ');
+    _pis=null; ED.mb=null; ED.adq=null; ED.mvq=null; renderEdit(); msg(txt,1); toast((F.ag.length?'Mise bas':'Adoption')+' de '+p+' enregistrée'); return true}
   return false}
 // tuile « Mises bas » : biper la mère (saisie) · toutes les mises bas (consultation, bilan, impression)
 function mbMere(p){const x=A()[p], st=$('#mb-msg');
@@ -2055,7 +2080,7 @@ function renderMB(){ if(!$('#v-mb')) return;
       ${MBF.du||MBF.au?'':`<div class="hint">Campagne ${CV}.</div>`}
       <div class="count" style="margin-top:8px"><div><b>${B.mb}</b>mises bas</div><div><b>${B.ag}</b>agneaux</div><div><b>${B.mn}</b>mort-nés</div></div>
       <div class="hint">${B.ad} adopté(s) · portées : ${B.s} simple(s), ${B.d} double(s), ${B.t} triple(s) ou plus</div>
-      <div class="tbl"><table><thead><tr>${th('m','Mère')}${th('d','Date')}${th('n','Nb')}<th>Portée</th>${th('mo','Mode')}</tr></thead><tbody>${L.map(v=>`<tr data-mbopen="${esc(v.id)}"><td><b class="lien" data-fiche="${v.m}">${v.m}</b></td><td>${frJ(v.d)}</td><td>${v.ag.length}</td><td>${mbPortee(v)}</td><td>${v.mode||''}${v.s?'':' <span class="c-warn">•</span>'}</td></tr>${MBF.open===v.id?`<tr><td colspan="5" style="white-space:normal;background:var(--bg)">${v.ag.map(a=>a.mn?'<div class="c-bad">✝ mort-né</div>':`<div><b class="lien" data-fiche="${a.n}">${a.n}</b> ${a.sx==='M'?'♂':'♀'} · ${esc(mbStatut(a,v.m))}</div>`).join('')}${v.pere?`<div class="hint">Père : ${esc(v.pere)}${v.mode?' ('+v.mode+')':''}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></td></tr>`:''}`).join('')||'<tr><td colspan="5" class="hint">Aucune mise bas.</td></tr>'}</tbody></table></div>
+      <div class="tbl"><table><thead><tr>${th('m','Mère')}${th('d','Date')}${th('n','Nb')}<th>Portée</th>${th('mo','Mode')}</tr></thead><tbody>${L.map(v=>`<tr data-mbopen="${esc(v.id)}"><td><b class="lien" data-fiche="${v.m}">${v.m}</b></td><td>${frJ(v.d)}</td><td>${v.ag.length}</td><td>${mbPortee(v)}</td><td>${v.mode||''}${v.s?'':' <span class="c-warn">•</span>'}</td></tr>${MBF.open===v.id?`<tr><td colspan="5" style="white-space:normal;background:var(--bg)">${v.ag.map(a=>a.mn?'<div class="c-bad">✝ mort-né</div>':`<div><b class="lien" data-fiche="${a.n}">${a.n}</b> ${a.sx==='M'?'♂':'♀'} · ${esc(mbStatut(a,v.m))}</div>`).join('')}${mbAdoptes(v.m).map(k=>`<div>🍼 <b class="lien" data-fiche="${k}">${k}</b> · adopté (né de ${esc(A()[k].mere||'?')})</div>`).join('')}${v.pere?`<div class="hint">Père : ${esc(v.pere)}${v.mode?' ('+v.mode+')':''}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></td></tr>`:''}`).join('')||'<tr><td colspan="5" class="hint">Aucune mise bas.</td></tr>'}</tbody></table></div>
       <div class="row" style="margin-top:8px"><button type="button" class="btn" data-mbprint="1">🖨 Imprimer / PDF</button><button type="button" class="btn" data-mbsend="1">Envoyer à Claude</button><button type="button" class="btn2" data-mbsent="1">Marquer comme envoyé</button></div>
       <div class="hint">${(n=>n?n+' mise(s) bas pas encore envoyée(s) à Claude (•).':'Tout est envoyé.')(all.filter(v=>!v.s).length)}</div>`}}
 $('#v-mb').addEventListener('submit',e=>{if(e.target.id!=='mb-f') return; e.preventDefault(); const p=plaqueDe($('#mb-q').value); $('#mb-q').value=''; if(p) mbMere(p)});
