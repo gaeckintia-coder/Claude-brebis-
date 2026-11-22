@@ -1,0 +1,1807 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+<title>KEENAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout : une colonne pour le téléphone devant la mélangeuse ; chaque réglage s'ouvre dans sa propre fenêtre plein écran */
+:root{
+  --bg:#eef1ea; --surface:#fbfcf8; --ink:#1f2a22; --muted:#5d6b5f; --line:#d3dacd;
+  --straw:#d9a521; --straw-soft:#f6e9c4;
+  --green:#2f6b3f; --red:#b3261e; --rust:#9a4a22; --sober:#5f7464;
+  --done:#e3ecdf; --warn-bg:#fbeed6; --warn:#8a5a00; --crit-bg:#fbe4e1; --bar:#24342a; --bar-ink:#f3f6ef;
+  --display:"Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, Segoe UI, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a16; --surface:#1c241f; --ink:#e7ece4; --muted:#9fac9f; --line:#2e3a32;
+  --straw:#e8b83a; --straw-soft:#3a3218;
+  --green:#5fa972; --red:#e0635a; --rust:#d27c4f; --sober:#8ea493;
+  --done:#1f2d24; --warn-bg:#352a12; --warn:#f0c46a; --crit-bg:#3d1f1c; --bar:#2c3b31; --bar-ink:#eef3ea; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a16; --surface:#1c241f; --ink:#e7ece4; --muted:#9fac9f; --line:#2e3a32;
+  --straw:#e8b83a; --straw-soft:#3a3218;
+  --green:#5fa972; --red:#e0635a; --rust:#d27c4f; --sober:#8ea493;
+  --done:#1f2d24; --warn-bg:#352a12; --warn:#f0c46a; --crit-bg:#3d1f1c; --bar:#2c3b31; --bar-ink:#eef3ea; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:flex;flex-direction:column;gap:16px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:1.5rem;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.1rem;font-weight:600}
+.eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--straw);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;color:#fff;min-height:46px}
+.btn-sober{background:var(--sober)}
+.btn-rust{background:var(--rust)}
+.btn-red{background:var(--red)}
+.btn-green{background:var(--green)}
+.btn-line{background:transparent;color:var(--muted);border:2px solid var(--line)}
+
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.total{font-family:var(--display);font-size:3rem;font-weight:800;line-height:1}
+.total small{font-size:1.2rem;font-weight:600;color:var(--muted)}
+.lotline{background:none;border:0;padding:0;color:var(--muted);text-align:left;text-decoration:underline;text-underline-offset:3px}
+.progress{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.progress span{display:block;height:100%;background:var(--straw);width:0;transition:width .3s}
+@media (prefers-reduced-motion:reduce){.progress span{transition:none}}
+.progress-row{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.row b{font-family:var(--display);font-size:1.25rem}
+.sep{border-top:1px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper b{font-family:var(--display);font-size:1.6rem;min-width:3.4ch;text-align:center}
+.step{width:48px;height:48px;border-radius:12px;border:2px solid var(--sober);background:var(--surface);color:var(--ink);font-size:1.5rem;font-weight:800;line-height:1}
+.pct-off b{color:var(--warn)}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px}
+.srow > div:first-child{display:contents}
+.srow h2{grid-column:1;grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .stepper{grid-column:2;grid-row:1;gap:6px}
+.srow .note{grid-column:1 / -1;grid-row:2}
+.srow .stepper b{font-size:1.35rem;min-width:4.2ch;white-space:nowrap}
+.srow .step{width:44px;height:44px}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.itemMain{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit}
+.adj{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.adjb{min-width:72px;height:40px;border-radius:10px;border:2px solid var(--sober);background:var(--bg);color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.ecart{text-align:center;font-size:.85rem;font-weight:700;color:var(--warn)}
+.ecart.muted{color:var(--muted);font-weight:400}
+.item .tick{width:36px;height:36px;border-radius:50%;border:3px solid var(--straw);display:grid;place-items:center;font-weight:800;font-family:var(--display);color:var(--straw)}
+.item .name{font-weight:700;font-size:1.05rem;display:block}
+.item .sub{color:var(--muted);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.item .qty{text-align:right;font-family:var(--display);font-weight:800;font-size:1.6rem;line-height:1.1}
+.item .qty span{display:block;font-family:var(--body);font-weight:700;font-size:.85rem;color:var(--muted)}
+.item .bass{display:block;font-family:var(--display);font-size:1.15rem;color:var(--ink)}
+.item.done{background:var(--done);border-color:var(--done)}
+.item.done .tick{background:var(--straw);color:var(--surface)}
+.item.done .name,.item.done .qty{opacity:.55}
+.item.water .tick{border-color:var(--green);color:var(--green)}
+.item.water.done .tick{background:var(--green)}
+.item.godet{border-color:var(--straw)}
+.pesee{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pesee .btn{min-height:42px;padding:8px 14px}
+.pval{background:none;border:0;padding:4px 0;color:inherit;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.pv-cible{font-size:.9rem}
+.pbtn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:58px;padding:8px 14px;border-radius:12px;border:2px solid var(--sober);background:var(--bg);color:var(--ink);text-align:left}
+.pbtn.fait{border-color:var(--straw)}
+.pb-l,.pb-r{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pb-r{align-items:flex-end;text-align:right}
+.pb-t{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pb-c{font-size:.95rem}
+.pb-c b,.pb-s{font-family:var(--display);font-weight:800;font-size:1.1rem}
+.pv-cible b{font-family:var(--display);font-size:1.05rem}
+.pv-tap{font-size:.75rem;color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+.pesee .ecart b{color:var(--red)}
+.pdisp{font-family:var(--display);font-weight:800;font-size:3.4rem;text-align:center;line-height:1.1;background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:10px;font-variant-numeric:tabular-nums}
+.pdisp small{font-size:1.2rem;color:var(--muted)}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.prow .btn{padding:8px 10px;font-size:.95rem}
+.prow .pdisp{font-size:2.8rem;display:flex;align-items:center;justify-content:center;gap:6px;padding:6px}
+.pres{text-align:center;font-size:1.05rem;color:var(--muted);min-height:3em}
+.pres b{font-family:var(--display);font-size:1.5rem;color:var(--ink)}
+.pres.warn b{color:var(--red)}
+.pres.ok b{color:var(--green)}
+.pad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pad button{height:62px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--display);font-size:1.6rem;font-weight:800}
+.pad button:active{background:var(--done)}
+#pOk:disabled{opacity:.45}
+.msadj{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:8px;font-size:.88rem;color:var(--muted)}
+.msadj b{font-family:var(--display);font-size:1.15rem;color:var(--ink);min-width:3.6ch;text-align:center;white-space:nowrap}
+.step.sm{width:38px;height:38px;font-size:1.2rem}
+.timer{background:var(--surface);border:2px dashed var(--sober);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.timer.run{border-style:solid;border-color:var(--green);text-align:center}
+.timer.pause{border-style:solid;border-color:var(--straw);text-align:center}
+.etimer{display:flex;flex-direction:column;gap:8px;border-radius:10px;padding:10px 12px;background:var(--bg);text-align:center}
+.etimer b{font-family:var(--display);font-size:1.2rem}
+.etimer.run{outline:2px solid var(--green)}
+.etimer.pause{outline:2px solid var(--straw)}
+.etimer.fini{outline:2px solid var(--red);background:var(--crit-bg);animation:flash 1s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.etimer.fini{animation:none}}
+.item.locked{opacity:.45;border-style:dashed;padding:10px 14px}
+.item.locked .lrow{display:flex;justify-content:space-between;gap:12px;font-weight:700}
+.lockmsg{text-align:center;font-weight:700}
+.timer.fini{border-style:solid;border-color:var(--red);background:var(--crit-bg);text-align:center;animation:flash 1s steps(2) infinite}
+@keyframes flash{50%{border-color:var(--straw)}}
+@media (prefers-reduced-motion:reduce){.timer.fini{animation:none}}
+.timer .tname{font-family:var(--display);font-weight:600;font-size:1.05rem}
+.timer .tbig{font-family:var(--display);font-weight:800;font-size:3.2rem;line-height:1}
+.item.godet .tick{border-color:var(--rust);color:var(--rust)}
+.item.godet.done .tick{background:var(--rust)}
+.chip{font-size:.72rem;font-weight:700;background:var(--warn-bg);color:var(--warn);padding:2px 8px;border-radius:99px}
+.cumul{font-size:.8rem;color:var(--muted)}
+.switch{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--muted)}
+.switch input{width:22px;height:22px;flex:none;accent-color:var(--straw);margin-top:1px}
+.note{font-size:.85rem;color:var(--muted)}
+.status{font-size:.8rem;color:var(--muted);text-align:center;min-height:1.2em}
+
+/* Fenêtres de réglage */
+.backbar{display:flex;align-items:center;gap:12px}
+.menu{display:flex;flex-direction:column;gap:10px}
+.mcard{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:16px}
+.mcard b{font-family:var(--display);font-size:1.15rem}
+.mcard span{color:var(--muted);font-size:.9rem}
+.box{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:14px}
+.card{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.card:first-child{border-top:0;padding-top:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted);font-weight:700;min-width:0}
+input[type=number],input[type=text]{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.check{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--muted)}
+.check input{width:22px;height:22px;accent-color:var(--green)}
+.actions{display:flex;gap:10px}
+.actions .btn{flex:1}
+.calc{font-size:.85rem;color:var(--muted)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px;font-weight:700}
+.seg button[aria-pressed="true"]{border-color:var(--green);background:var(--done)}
+
+.arrows{display:flex;flex-direction:column;gap:4px}
+.arr{width:40px;height:34px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-size:.9rem;line-height:1}
+.arr:disabled{opacity:.3;cursor:default}
+.arow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:12px 14px}
+.arow.off{opacity:.6}
+.arow .open{background:none;border:0;padding:0;text-align:left;color:var(--ink);min-width:0}
+.arow .open b{display:block;font-size:1.05rem}
+.arow .open span{color:var(--muted);font-size:.85rem}
+.use{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;font-weight:700;color:var(--muted)}
+.use input{width:26px;height:26px;accent-color:var(--green)}
+
+.livebar{position:sticky;bottom:env(safe-area-inset-bottom,0px);background:var(--bar);color:var(--bar-ink);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.livebar .big{font-family:var(--display);font-size:1.5rem;font-weight:800}
+.livebar .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8;display:block}
+.danger{display:flex;flex-direction:column;gap:8px}
+.seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.seg3 button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 6px;font-weight:700;font-size:.82rem;line-height:1.2}
+.seg3.seg4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg3 button[aria-pressed="true"]{border-color:var(--green);background:var(--done)}
+.lotmat{font-size:.9rem;color:var(--muted)}
+.lotmat b{color:var(--ink);font-family:var(--display);font-size:1.1rem}
+.lotstats{display:flex;flex-direction:column;gap:10px}
+.lsrow{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.lsrow.off{opacity:.5}
+.lsname{min-width:0;display:flex;flex-direction:column}
+.lsname span,.lsval span{font-size:.8rem;color:var(--muted)}
+.lsval{text-align:right;display:flex;flex-direction:column}
+.lsval b{font-family:var(--display);font-size:1.25rem}
+.lbhead{display:flex;flex-direction:column}
+.lblots{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.9rem}
+.lblots .lbl{display:inline;margin-right:4px}
+.topbtns{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.topbtns .btn{min-height:40px;padding:8px 12px;font-size:.9rem}
+.refusbox{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:10px;padding:10px 12px}
+.refusin{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.refusin input{font-size:1.2rem}
+select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.stat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.stat b{display:block;font-family:var(--display);font-size:1.4rem}
+.stat span{font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.brow{display:flex;flex-direction:column;gap:4px}
+.brow .row b{font-size:1.1rem}
+.track{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.track span{display:block;height:100%;background:var(--straw)}
+.track.water span{background:var(--green)}
+.dayrow{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.dayrow:first-child{border-top:0;padding-top:0}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:.85rem}
+.alert{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:12px 14px;font-weight:700;font-size:.95rem}
+.err{color:var(--red);font-weight:700;font-size:.9rem}
+.mini{position:fixed;top:0;left:0;right:0;z-index:5;background:var(--bar);color:var(--bar-ink);padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px}
+.mini-in{max-width:560px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mini b{font-family:var(--display);font-size:1.2rem}
+.mini .nxt{min-width:0;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini .prog{font-size:.85rem;opacity:.85;white-space:nowrap}
+.btn-red.ready{box-shadow:0 0 0 4px var(--straw-soft);outline:2px solid var(--straw)}
+.note.todo{color:var(--warn);font-weight:700}
+.repbtn{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.repbtn b{font-family:var(--display);font-size:1.25rem}
+.st{display:inline-block;font-size:.75rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.st.ok{background:var(--done);color:var(--green)}
+.st.warn{background:var(--warn-bg);color:var(--warn)}
+.st.crit{background:var(--crit-bg);color:var(--red)}
+.ncard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ncard.off{opacity:.55}
+.nhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.nhead b{font-family:var(--display);font-size:1.15rem}
+.nhead span{font-size:.85rem;color:var(--muted)}
+.ngrid{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 12px;align-items:center;font-size:.92rem}
+.ngrid .v{text-align:right;color:var(--muted);font-size:.85rem}
+.nsug{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+.nsug b{font-family:var(--display)}
+</style>
+
+<!-- BANDEAU QUI SUIT LE DÉFILEMENT -->
+<div class="mini" id="mini" hidden aria-hidden="true"><div class="mini-in">
+  <b id="miniTotal">–</b><span class="nxt" id="miniNext">–</span><span class="prog" id="miniProg">–</span>
+</div></div>
+
+<!-- ÉCRAN PRINCIPAL -->
+<div class="wrap view" id="v-main">
+  <div class="top">
+    <div>
+      <div class="eyebrow" id="today">Chargement du jour</div>
+      <h1>Mélangeuse KEENAN</h1>
+    </div>
+    <div class="topbtns">
+      <button class="btn btn-sober" id="openMenu">Réglages</button>
+      <button class="btn btn-sober" data-go="refus">Refus</button>
+    </div>
+  </div>
+
+  <section class="hero" aria-label="Total à charger">
+    <div class="eyebrow">Total mélange</div>
+    <div class="total" id="total">–</div>
+    <button class="lotline" id="lotline">–</button>
+    <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+    <div class="progress-row"><span id="progressTxt">–</span><button class="lotline" id="reset">Recommencer</button></div>
+    <div id="resetConfirm" hidden class="danger">
+      <span class="note">Effacer les coches et les écarts + / − saisis aujourd'hui ?</span>
+      <div class="actions"><button class="btn btn-rust" id="resetNo">Garder</button><button class="btn btn-red" id="resetYes">Effacer</button></div>
+    </div>
+  </section>
+  <div class="alert" id="capAlert" hidden></div>
+
+  <section class="panel" aria-label="Réglages du jour">
+    <div class="row srow" id="pctRow"><div><h2>Ration du jour</h2><span class="note">de la ration de base</span></div>
+      <div class="stepper">
+        <button type="button" class="step" id="pctMinus" aria-label="Baisser la ration">−</button>
+        <b id="pctVal">–</b>
+        <button type="button" class="step" id="pctPlus" aria-label="Monter la ration">+</button>
+      </div></div>
+    <div class="sep"></div>
+    <div class="row srow" id="joursRow"><div><h2>Mélange pour</h2><span class="note" id="joursNote">ration × jours, condiments à dose pleine</span></div>
+      <div class="stepper">
+        <button type="button" class="step" id="joursMinus" aria-label="Moins de jours">−</button>
+        <b id="joursVal">–</b>
+        <button type="button" class="step" id="joursPlus" aria-label="Plus de jours">+</button>
+      </div></div>
+    <div class="sep"></div>
+    <div class="row srow"><div><h2>Humidité visée</h2><span class="note" id="humSans">–</span></div>
+      <div class="stepper">
+        <button type="button" class="step" id="humMinus" aria-label="Baisser l'humidité">−</button>
+        <b id="humVal">–</b>
+        <button type="button" class="step" id="humPlus" aria-label="Monter l'humidité">+</button>
+      </div></div>
+  </section>
+
+  <section aria-label="Ordre de chargement"><div class="list" id="list"></div></section>
+
+  <label class="switch"><input type="checkbox" id="cumulToggle">
+    <span>Afficher le cumul pour la pesée de la mélangeuse (en cas de souci de pesée au chargeur)</span></label>
+
+  <section class="panel" aria-label="Enregistrer le chargement">
+    <button class="btn btn-red" id="saveDay">Enregistrer le chargement du jour</button>
+    <div class="note" id="saveNote">–</div>
+    <div id="saveChoice" hidden class="danger">
+      <span class="note" id="saveChoiceTxt">Le chargement d'aujourd'hui est déjà enregistré. Un seul enregistrement par jour.</span>
+      <div class="actions"><button class="btn btn-sober" id="replaceDay">Modifier celui d'aujourd'hui</button><button class="btn btn-green" id="addDay">Enregistrer pour demain</button></div>
+      <button class="btn btn-line" id="cancelDay">Annuler</button>
+    </div>
+  </section>
+
+  <button class="repbtn" data-go="bilan"><span><span class="eyebrow">Bilan de saison</span><br><span id="bilanBtnTxt">Quantités chargées par aliment</span></span><b aria-hidden="true">›</b></button>
+
+  <button class="repbtn" data-go="reperes"><span><span class="eyebrow">Bilan nutritionnel</span><br>Énergie, protéines et ingestion par lot</span><span id="repBtnVal">–</span></button>
+  <div class="status" id="status"></div>
+</div>
+
+<!-- REPÈRES RATION -->
+<div class="wrap view" id="v-reperes" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Bilan nutritionnel</h1></div>
+  <p class="note">Ration de base à 100 %, par animal et par jour. Besoins et ingestion selon les références INRA (version simplifiée, non validée par l'INRAE) : à confronter au calcul de ton technicien.</p>
+  <div id="nutri" class="list"></div>
+  <p class="note" id="nutriWarn"></p>
+  <section class="panel" aria-label="Ingestion observée">
+    <h2>Ce qu'elles mangent vraiment</h2>
+    <p class="note">Matière sèche chargée (mélangeuse, sans l'aliment traite) d'après les chargements enregistrés, moins les refus à l'auge.</p>
+    <button class="repbtn" data-go="refus"><span><span class="eyebrow">Refus retirés</span><br><span id="refusLien">–</span></span><b aria-hidden="true">›</b></button>
+    <div class="seg3 seg4" role="group" aria-label="Période">
+      <button type="button" data-ingj="1">Aujourd'hui</button>
+      <button type="button" data-ingj="7">7 jours</button>
+      <button type="button" data-ingj="14">14 jours</button>
+      <button type="button" data-ingj="30">30 jours</button>
+    </div>
+    <div id="ingObs"></div>
+    <button class="btn btn-green" id="ingKeep">Garder comme référence</button>
+    <div id="ingRefs"></div>
+  </section>
+  <section class="panel" aria-label="Repères ration">
+    <h2>Ration de base (100 %)</h2>
+    <div class="row"><span>Protéines ration complète<br><span class="note">mélange + ration traite, 1 part</span></span><b id="mat">–</b></div>
+    <div class="row"><span>Matière sèche ration complète</span><b id="msBase">–</b></div>
+    <div class="row note"><span>Mélange seul : protéines</span><span id="matMix">–</span></div>
+    <div class="row note"><span>Mélange seul : matière sèche par part</span><span id="msMix">–</span></div>
+    <div class="sep"></div>
+    <div class="eyebrow">Par lot · par animal et par jour</div>
+    <div id="lotStats" class="lotstats"></div>
+  </section>
+</div>
+
+<!-- MENU RÉGLAGES -->
+<div class="wrap view" id="v-menu" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Réglages</h1></div>
+  <div class="menu">
+    <button class="mcard" data-go="lots"><b>Lots de brebis</b><span id="m-lots">Effectifs et coefficients de part</span></button>
+    <button class="mcard" data-go="alims"><b>Aliments de la ration</b><span id="m-alims">Ration sèche, taux de MS, protéines, bassines</span></button>
+    <button class="mcard" data-go="eau"><b>Mélangeuse, eau et journée</b><span id="m-eau">Capacité, débit du robinet, heure de début de journée</span></button>
+    <button class="mcard" data-go="reperes"><b>Bilan nutritionnel</b><span>Énergie (UFL), PDI, ingestion et protéines par lot, avec conseil de concentré</span></button>
+    <button class="mcard" data-go="bilan"><b>Bilan de saison</b><span id="m-bilan">Quantités chargées par aliment sur la saison</span></button>
+  </div>
+</div>
+
+<!-- BILAN DE SAISON -->
+<div class="wrap view" id="v-bilan" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Bilan de saison</h1></div>
+  <section class="panel">
+    <div class="row"><button class="arr" id="seasonPrev" aria-label="Saison précédente">◀</button>
+      <h2 id="seasonLbl">–</h2>
+      <button class="arr" id="seasonNext" aria-label="Saison suivante">▶</button></div>
+    <label class="f" for="moisSaison">Mois de bascule de saison
+      <select id="moisSaison"></select></label>
+  </section>
+  <section class="panel" id="bilanSum"></section>
+  <section class="panel"><h2>Par aliment</h2><p class="note" id="bilanNorme"></p><div id="bilanAlims" class="list"></div></section>
+  <section class="panel"><h2>Refus à l'auge</h2><div id="bilanRefus"></div></section>
+  <section class="panel"><h2>Jours enregistrés</h2><div id="bilanDays" class="list"></div></section>
+</div>
+
+<!-- LOTS -->
+<div class="wrap view" id="v-lots" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Lots de brebis</h1></div>
+  <form id="lotsForm" class="box"></form>
+  <div class="actions"><button class="btn btn-rust" data-back>Annuler</button><button class="btn btn-red" id="lotsSave">Enregistrer</button></div>
+</div>
+
+<!-- LISTE DES ALIMENTS -->
+<div class="wrap view" id="v-alims" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Aliments</h1></div>
+  <section class="panel" aria-label="Base de saisie">
+    <h2>Ration saisie en</h2>
+    <div class="seg" role="group" aria-label="Base de saisie de la ration">
+      <button type="button" id="b100" aria-pressed="true">MS 100 %</button>
+      <button type="button" id="b86" aria-pressed="false">MS 86 % (aliment sec)</button>
+    </div>
+    <div class="note" id="baseNote">–</div>
+  </section>
+  <p class="note">Dans l'ordre de chargement. Touche un aliment pour le modifier, décoche « utilisé » pour le sortir de la ration sans perdre ses réglages.</p>
+  <div class="list" id="alimList"></div>
+  <button class="btn btn-green" id="addAlim">+ Ajouter un aliment</button>
+  <div class="livebar" id="bar-alims"></div>
+</div>
+
+<!-- FICHE ALIMENT -->
+<!-- REFUS À L'AUGE -->
+<div class="wrap view" id="v-refus" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Refus à l'auge</h1></div>
+  <section class="panel">
+    <div class="row"><div><h2>Refus par jour</h2><span class="note" id="refusNote">–</span></div><b id="refusVal">–</b></div>
+    <div class="refusbox" id="refusBox"></div>
+  </section>
+  <section class="panel" aria-label="Conseil de ration">
+    <h2>Et la ration ?</h2>
+    <div id="refusConseil"></div>
+  </section>
+</div>
+
+<!-- PESÉE D'UN FOURRAGE -->
+<div class="wrap view" id="v-pesee" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1 id="pTitle">Pesée</h1></div>
+  <div class="note" id="pInfo"></div>
+  <div class="prow">
+    <button class="btn btn-rust" data-back>Annuler</button>
+    <div class="pdisp"><span id="pDisp">0</span> <small>kg</small></div>
+    <button class="btn btn-red" id="pOk">Valider</button>
+  </div>
+  <div class="pres" id="pRes"></div>
+  <div class="pad" id="pPad">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k=",">,</button><button data-k="0">0</button><button data-k="del" aria-label="Effacer un chiffre">⌫</button>
+  </div>
+  <button class="linkbtn" id="pClear">Effacer la pesée de cette ligne</button>
+</div>
+
+<div class="wrap view" id="v-alim" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1 id="alimTitle">Aliment</h1></div>
+  <form id="alimForm" class="box">
+    <label class="f" for="a-nom">Nom<input type="text" id="a-nom"></label>
+    <label class="check"><input type="checkbox" id="a-actif"> Utilisé dans la ration</label>
+    <div class="seg" role="group" aria-label="Où est distribué l'aliment">
+      <button type="button" id="a-mel" aria-pressed="true">Mélangeuse</button>
+      <button type="button" id="a-tra" aria-pressed="false">À la traite</button>
+    </div>
+    <div class="seg" role="group" aria-label="Unité de saisie de la ration">
+      <button type="button" id="u-kg" aria-pressed="true">en kg / part</button>
+      <button type="button" id="u-g" aria-pressed="false">en grammes / part</button>
+    </div>
+    <div class="grid">
+      <label class="f" for="a-sec"><span id="a-secLbl">kg sec / part</span><input type="number" inputmode="decimal" step="any" min="0" id="a-sec"></label>
+      <label class="f" for="a-ms">% matière sèche<input type="number" inputmode="decimal" step="1" min="1" max="100" id="a-ms"></label>
+      <label class="f" for="a-mat">Protéines MAT %<input type="number" inputmode="decimal" step="0.1" min="0" id="a-mat"></label>
+      <label class="f" for="a-bass">Poids bassine (kg, 0 = pas au godet)<input type="number" inputmode="decimal" step="0.5" min="0" id="a-bass"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="a-ok"> Taux de MS vérifié</label>
+    <label class="check"><input type="checkbox" id="a-cond"> Condiment : dose pleine par animal et par jour, jamais réduite par le %</label>
+    <div class="sep"></div>
+    <h2>Valeur alimentaire (par kg de MS)</h2>
+    <div class="seg3" role="group" aria-label="Type d'aliment">
+      <button type="button" id="t-four" aria-pressed="true">Fourrage</button>
+      <button type="button" id="t-conc" aria-pressed="false">Concentré</button>
+      <button type="button" id="t-min" aria-pressed="false">Minéral</button>
+    </div>
+    <div class="grid">
+      <label class="f" for="a-ufl">UFL / kg MS<input type="number" inputmode="decimal" step="0.01" min="0" id="a-ufl"></label>
+      <label class="f" for="a-uem" id="a-uemL">Encombrement UEM / kg MS<input type="number" inputmode="decimal" step="0.01" min="0" id="a-uem"></label>
+      <label class="f" for="a-pdin">PDIN g / kg MS<input type="number" inputmode="decimal" step="1" min="0" id="a-pdin"></label>
+      <label class="f" for="a-pdie">PDIE g / kg MS<input type="number" inputmode="decimal" step="1" min="0" id="a-pdie"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="a-vok"> Valeurs vérifiées (analyse ou fiche fabricant)</label>
+    <p class="note">Valeurs de départ : estimations types, à remplacer par ton analyse de fourrage ou la fiche du fabricant (sur MS, pas sur brut).</p>
+    <div class="calc" id="a-calc"></div>
+    <div class="err" id="a-err" hidden></div>
+  </form>
+  <div class="actions"><button class="btn btn-rust" data-back>Annuler</button><button class="btn btn-red" id="alimSave">Enregistrer</button></div>
+  <div class="danger" id="delZone">
+    <button class="btn btn-line" id="delAsk">Supprimer cet aliment</button>
+    <div id="delConfirm" hidden class="panel">
+      <span>Supprimer définitivement cet aliment et ses réglages ?</span>
+      <div class="actions"><button class="btn btn-rust" id="delNo">Garder</button><button class="btn btn-red" id="delYes">Supprimer</button></div>
+    </div>
+  </div>
+  <div class="livebar" id="bar-alim"></div>
+</div>
+
+<!-- EAU -->
+<div class="wrap view" id="v-eau" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Mélangeuse, eau et journée</h1></div>
+  <form id="eauForm" class="box">
+    <label class="f" for="capacite">Capacité de la KEENAN (kg de mélange, 0 = pas d'alerte)<input type="number" inputmode="numeric" step="10" min="0" id="capacite"></label>
+    <label class="f" for="debit">Débit du robinet (litres / minute)<input type="number" inputmode="decimal" step="0.5" min="0" id="debit"></label>
+    <label class="f" for="bascule">La journée commence à (heure, 0 à 12)<input type="number" inputmode="numeric" step="1" min="0" max="12" id="bascule"></label>
+    <p class="note">Un chargement fait avant cette heure compte pour la veille (coches, écarts et bilan).</p>
+    <div class="err" id="eauErr" hidden></div>
+    <p class="note">L'humidité visée et le pourcentage de ration se règlent directement sur l'écran de chargement.</p>
+  </form>
+  <div class="actions"><button class="btn btn-rust" data-back>Annuler</button><button class="btn btn-red" id="eauSave">Enregistrer</button></div>
+</div>
+
+<script>
+const DEFAULTS = {
+  debit: 13, humCible: 35, pct: 100, jours: 1, moisSaison: 9, capacite: 0, bascule: 4,
+  lots: [
+    {nom:"Béliers", effectif:0, coef:1, traite:0},
+    {nom:"Brebis pleines", effectif:35, coef:0.7, traite:0},
+    {nom:"Brebis agnelées", effectif:0, coef:1, traite:0.5},
+    {nom:"Brebis à la traite", effectif:265, coef:1, traite:1}
+  ],
+  aliments: [
+    {nom:"Enrubannée foin", sec:0, ms:0.55, msOk:false, mat:12, bassine:0, lieu:"melange", actif:true},
+    {nom:"Enrubannée regain", sec:1.3, ms:0.55, msOk:false, mat:14, bassine:0, lieu:"melange", actif:true},
+    {nom:"Luzerne", sec:1, ms:0.87, msOk:false, mat:20.3, bassine:0, lieu:"melange", actif:true},
+    {nom:"Maïs humide", sec:0, ms:0.65, msOk:true, mat:7, bassine:0, lieu:"melange", actif:true},
+    {nom:"Aliment 31 mélange", sec:0, ms:1, msOk:true, mat:31, bassine:9, lieu:"melange", actif:true},
+    {nom:"Aliment 17", sec:0.7, ms:1, msOk:true, mat:17, bassine:10, lieu:"melange", actif:true},
+    {nom:"Aliment 26", sec:0, ms:1, msOk:true, mat:26, bassine:10, lieu:"melange", actif:true},
+    {nom:"Aliment traite 26", sec:0.2, ms:1, msOk:true, mat:26, bassine:0, lieu:"traite", actif:true}
+  ]
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+/* coefficient de part du jour : celui du lot, ou la moyenne calculée par OviLink (montée sur 10 jours après agnelage) */
+const cf = l => (l && l.coefAuto!=null && (+l.effectif||0)>0) ? +l.coefAuto : (+(l&&l.coef)||0);
+const $ = id => document.getElementById(id);
+const nf = (n,d=0) => (+n||0).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = v => parseFloat(String(v).replace(",", ".")) || 0;
+const kgTxt = kg => kg < 10 ? nf(kg,2) : nf(kg);
+const partTxt = kg => kg < 0.1 ? nf(kg*1000, kg*1000<10?1:0)+" g/part" : nf(kg,2)+" kg/part";
+/* La journée commence à cfg.bascule heures : un chargement à 0 h 30 compte pour la veille */
+const workDate = () => new Date(Date.now() - (+cfg.bascule||0)*3600e3);
+const dayKey = () => workDate().toLocaleDateString("fr-CA");
+function bassTxt(kg, b){
+  if(!(b>0)) return "";
+  const n = Math.floor((kg+1e-6)/b), rest = Math.round((kg - n*b)*10)/10;
+  if(n===0) return `${nf(rest, Number.isInteger(rest)?0:1)} kg (moins d'une bassine)`;
+  const bs = `${n} bassine${n>1?"s":""}`;
+  return rest>=0.1 ? `${bs} + ${nf(rest, Number.isInteger(rest)?0:1)} kg` : bs;
+}
+function store(k,v){try{localStorage.setItem("kn_"+k,JSON.stringify(v))}catch(e){}}
+function load(k){try{const v=localStorage.getItem("kn_"+k);return v?JSON.parse(v):null}catch(e){return null}}
+/* Estimations types par kg de MS (ordres de grandeur, pas des valeurs de table officielles) */
+function valeursTypes(a){
+  const n = a.nom||"", matMS = (+a.mat||0)/0.88*10; // MAT d'étiquette supposée sur brut, ramenée en g/kg MS
+  if(a.condiment || /min[ée]ra|levure|sel|cmv|bicarb/i.test(n)) return {type:"mineral", ufl:0, pdin:0, pdie:0, uem:0};
+  if(/regain/i.test(n)) return {type:"fourrage", ufl:0.78, pdin:95, pdie:80, uem:1.05};
+  if(/luzern/i.test(n)) return {type:"fourrage", ufl:0.65, pdin:115, pdie:85, uem:1.10};
+  if(/enrub/i.test(n)) return {type:"fourrage", ufl:0.70, pdin:80, pdie:72, uem:1.15};
+  if(/foin|paille|herbe/i.test(n)) return {type:"fourrage", ufl:0.65, pdin:70, pdie:72, uem:1.20};
+  if(/ma[iï]s|orge|bl[ée]|c[ée]r[ée]ale|triticale/i.test(n)) return {type:"concentre", ufl:1.15, pdin:75, pdie:95, uem:0};
+  if(/aliment|granul|concentr|tourteau|correcteur/i.test(n) || a.bassine>0 || a.lieu==="traite")
+    return {type:"concentre", ufl:1.05, pdin:Math.round(matMS*0.65), pdie:Math.round(60+matMS*0.28), uem:0};
+  return {type:"fourrage", ufl:0.70, pdin:80, pdie:75, uem:1.15};
+}
+function fill(c){
+  if(!(c.debit>0)) c.debit = DEFAULTS.debit;
+  if(!(c.humCible>=0)) c.humCible = DEFAULTS.humCible;
+  if(!(c.pct>0)) c.pct = 100;
+  if(!(c.refusKg>=0)) c.refusKg = 50;
+  if(!(c.minuteur>=1 && c.minuteur<=60)) c.minuteur = 10;
+  c.base = +c.base===0.86 ? 0.86 : 1;
+  if(!(c.jours>=1)) c.jours = 1;
+  if(!(c.moisSaison>=1 && c.moisSaison<=12)) c.moisSaison = DEFAULTS.moisSaison;
+  if(!(c.capacite>=0)) c.capacite = 0;
+  if(!(c.bascule>=0 && c.bascule<=12)) c.bascule = DEFAULTS.bascule;
+  c.lots.forEach(l=>{ l.effectif = Math.max(0, +l.effectif||0); l.coef = Math.max(0, +l.coef||0); });
+  c.aliments.forEach(a=>{ if(a.actif===undefined) a.actif = true; });
+  c.lots.forEach(l=>{ if(l.traite===true) l.traite = 1; else if(![0,0.5,1].includes(+l.traite)) l.traite = 0; else l.traite = +l.traite; });
+  // Bilan nutritionnel : données des lots
+  c.lots.forEach(l=>{
+    if(!["lactation","entretien","gestation"].includes(l.stade))
+      l.stade = l.traite>0 ? "lactation" : (/plein|gest/i.test(l.nom) ? "gestation" : "entretien");
+    if(!(l.pv>0)) l.pv = /b[ée]lier/i.test(l.nom) ? 90 : 75;
+    if(!(l.litres>=0)) l.litres = l.traite>=1 ? 2.6 : (l.traite>0 ? 2 : 0);
+    if(!(l.tb>0)) l.tb = 70;
+    if(!(l.tp>0)) l.tp = 54;
+  });
+  // Valeurs alimentaires de départ (estimations types, à remplacer par les analyses)
+  c.aliments.forEach(a=>{ if(a.ufl===undefined) Object.assign(a, valeursTypes(a), {vOk:false}); });
+  return c;
+}
+
+const CFG_DEPART = {"aliments": [{"actif": false, "bassine": 0, "condiment": false, "lieu": "melange", "mat": 12, "ms": 0.87, "msOk": true, "nom": "Foin sec", "pdie": 72, "pdin": 70, "sec": 0.8, "type": "fourrage", "uem": 1.2, "ufl": 0.65, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 0, "condiment": false, "lieu": "melange", "mat": 14, "ms": 0.7, "msOk": false, "nom": "Enrubannée regain", "pdie": 80, "pdin": 95, "sec": 0, "type": "fourrage", "uem": 1.05, "ufl": 0.78, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 0, "condiment": false, "lieu": "melange", "mat": 12, "ms": 0.71, "msOk": true, "nom": "Enrubannée foin", "pdie": 72, "pdin": 80, "sec": 1.39, "type": "fourrage", "uem": 1.15, "ufl": 0.7, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 0, "condiment": false, "lieu": "melange", "mat": 17, "ms": 0.92, "msOk": false, "nom": "Luzerne", "pdie": 85, "pdin": 115, "sec": 0.63, "type": "fourrage", "uem": 1.1, "ufl": 0.65, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 10, "condiment": false, "lieu": "melange", "mat": 17, "ms": 1, "msOk": true, "nom": "Aliment 17", "pdie": 114, "pdin": 126, "sec": 0.5, "type": "concentre", "uem": 0, "ufl": 1.05, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 10, "condiment": false, "lieu": "melange", "mat": 26, "ms": 1, "msOk": true, "nom": "Aliment 26", "pdie": 143, "pdin": 192, "sec": 0.2, "type": "concentre", "uem": 0, "ufl": 1.05, "unite": "kg", "vOk": false}, {"actif": false, "bassine": 0, "lieu": "melange", "mat": 7, "ms": 0.65, "msOk": true, "nom": "Maïs humide", "pdie": 95, "pdin": 75, "sec": 0, "type": "concentre", "uem": 0, "ufl": 1.15, "vOk": false}, {"actif": false, "bassine": 9, "lieu": "melange", "mat": 31, "ms": 1, "msOk": true, "nom": "Aliment 31 mélange", "pdie": 159, "pdin": 229, "sec": 0, "type": "concentre", "uem": 0, "ufl": 1.05, "vOk": false}, {"actif": true, "bassine": 0, "condiment": false, "lieu": "traite", "mat": 26, "ms": 1, "msOk": true, "nom": "Aliment traite 26", "pdie": 143, "pdin": 192, "sec": 0.3, "type": "concentre", "uem": 0, "ufl": 1.05, "unite": "kg", "vOk": false}, {"actif": true, "bassine": 0, "condiment": true, "lieu": "melange", "mat": 0, "ms": 1, "msOk": true, "nom": "Minéraux", "pdie": 0, "pdin": 0, "sec": 0.02, "type": "mineral", "uem": 0, "ufl": 0, "unite": "g", "vOk": false}, {"actif": true, "bassine": 0, "condiment": true, "lieu": "melange", "mat": 0, "ms": 1, "msOk": true, "nom": "Levures", "pdie": 0, "pdin": 0, "sec": 0.007, "type": "mineral", "uem": 0, "ufl": 0, "unite": "g", "vOk": false}], "bascule": 4, "base": 0.86, "capacite": 0, "debit": 13, "humCible": 32, "jours": 1, "lots": [{"coef": 1, "effectif": 16, "litres": 0, "nom": "Béliers", "pv": 90, "stade": "entretien", "tb": 70, "tp": 54, "traite": 0}, {"coef": 0.75, "effectif": 246, "litres": 0, "nom": "Brebis pleines", "pv": 75, "stade": "gestation", "tb": 70, "tp": 54, "traite": 0}, {"coef": 1, "effectif": 10, "litres": 2, "nom": "Brebis agnelées", "pv": 75, "stade": "lactation", "tb": 70, "tp": 54, "traite": 0.5}, {"coef": 1, "effectif": 0, "litres": 2.6, "nom": "Brebis à la traite", "pv": 75, "stade": "lactation", "tb": 70, "tp": 54, "traite": 1}], "minuteur": 50, "moisSaison": 9, "pct": 105, "refsIngestion": [{"debut": "2026-11-15", "fin": "2026-11-15", "jours": 1, "lots": [{"coef": 0.8, "kg": 2.06, "nom": "Béliers", "pv": 90, "stade": "entretien"}, {"coef": 0.7, "kg": 1.8, "nom": "Brebis pleines", "pv": 75, "stade": "fin de gestation"}], "msPart": 2.55, "refusKg": 50, "titre": "Automne 2026"}], "refusDebut": "2026-11-20", "refusKg": 31, "refusPesees": [{"debut": "2026-11-15", "fin": "2026-11-20", "jours": 5, "kg": 155, "parJour": 31}]};
+const JOURNAL_DEPART = {"2026-11-02": [{"aliments": [{"cond": false, "kg": 313.06, "ms": 0.7, "nom": "Enrubannée foin", "prevu": 283.06}, {"cond": false, "kg": 59.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 95.99, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 38.4, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 6.33, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 2.21, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 70.89, "heure": "17:40", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-04": [{"aliments": [{"cond": false, "kg": 293.06, "ms": 0.7, "nom": "Enrubannée foin", "prevu": 283.06}, {"cond": false, "kg": 89.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 89.28, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 35.71, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 5.88, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 2.06, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 97.85, "heure": "10:14", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-05": [{"aliments": [{"cond": false, "kg": 301.43, "ms": 0.73, "nom": "Enrubannée foin", "prevu": 271.43}, {"cond": false, "kg": 59.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 89.28, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 35.71, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 5.88, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 2.06, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 82.52, "heure": "07:33", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-06": [{"aliments": [{"cond": false, "kg": 276.43, "ms": 0.73, "nom": "Enrubannée foin", "prevu": 271.43}, {"cond": false, "kg": 69.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 85.92, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 34.37, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 5.66, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.98, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 92.52, "heure": "16:27", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-07": [{"aliments": [{"cond": false, "kg": 271.43, "ms": 0.73, "nom": "Enrubannée foin", "prevu": 271.43}, {"cond": false, "kg": 44.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 79.2, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 31.68, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 5.22, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.83, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 97.52, "heure": "16:55", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-09": [{"aliments": [{"cond": false, "kg": 286.43, "ms": 0.73, "nom": "Enrubannée foin", "prevu": 271.43}, {"cond": false, "kg": 89.74, "ms": 0.92, "nom": "Luzerne", "prevu": 89.74}, {"cond": false, "kg": 85.92, "ms": 1, "nom": "Aliment 17", "prevu": 82.56}, {"cond": false, "kg": 34.37, "ms": 1, "nom": "Aliment 26", "prevu": 33.02}, {"cond": true, "kg": 5.66, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.98, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 92.52, "heure": "09:08", "jours": 1, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-10": [{"aliments": [{"cond": false, "kg": 483.61, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 418.61}, {"cond": false, "kg": 149.61, "ms": 0.92, "nom": "Luzerne", "prevu": 134.61}, {"cond": false, "kg": 123.84, "ms": 1, "nom": "Aliment 17", "prevu": 123.84}, {"cond": false, "kg": 49.54, "ms": 1, "nom": "Aliment 26", "prevu": 49.54}, {"cond": true, "kg": 5.44, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.9, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 125.74, "heure": "19:35", "jours": 1, "parts": 192, "pct": 150, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-12": [{"aliments": [{"cond": false, "kg": 568.15, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 558.15}, {"cond": false, "kg": 159.48, "ms": 0.92, "nom": "Luzerne", "prevu": 179.48}, {"cond": false, "kg": 158.4, "ms": 1, "nom": "Aliment 17", "prevu": 165.12}, {"cond": false, "kg": 63.36, "ms": 1, "nom": "Aliment 26", "prevu": 66.05}, {"cond": true, "kg": 10.44, "ms": 1, "nom": "Minéraux", "prevu": 10.88}, {"cond": true, "kg": 3.65, "ms": 1, "nom": "Levures", "prevu": 3.81}], "brebis": 272, "eau": 149.75, "heure": "08:29", "jours": 2, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-13": [{"aliments": [{"cond": false, "kg": 566.25, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 558.15}, {"cond": false, "kg": 196.98, "ms": 0.92, "nom": "Luzerne", "prevu": 179.48}, {"cond": false, "kg": 138.26, "ms": 1, "nom": "Aliment 17", "prevu": 165.12}, {"cond": false, "kg": 55.3, "ms": 1, "nom": "Aliment 26", "prevu": 66.05}, {"cond": true, "kg": 9.11, "ms": 1, "nom": "Minéraux", "prevu": 10.88}, {"cond": true, "kg": 3.19, "ms": 1, "nom": "Levures", "prevu": 3.81}], "brebis": 272, "eau": 144.75, "heure": "19:35", "jours": 2, "parts": 192, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-15": [{"aliments": [{"cond": false, "kg": 401.98, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 404.08}, {"cond": false, "kg": 141.34, "ms": 0.92, "nom": "Luzerne", "prevu": 141.34}, {"cond": false, "kg": 77.91, "ms": 1, "nom": "Aliment 17", "prevu": 103.2}, {"cond": false, "kg": 31.17, "ms": 1, "nom": "Aliment 26", "prevu": 41.28}, {"cond": true, "kg": 4.11, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.44, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 155.04, "heure": "12:18", "jours": 1, "parts": 192, "pct": 125, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-16": [{"aliments": [{"cond": false, "kg": 380.99, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 355.59}, {"cond": false, "kg": 113.08, "ms": 0.92, "nom": "Luzerne", "prevu": 124.38}, {"cond": false, "kg": 87.1, "ms": 1, "nom": "Aliment 17", "prevu": 90.82}, {"cond": false, "kg": 34.84, "ms": 1, "nom": "Aliment 26", "prevu": 36.33}, {"cond": true, "kg": 5.22, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.83, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 135.97, "heure": "16:21", "jours": 1, "parts": 192, "pct": 110, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-17": [{"aliments": [{"cond": false, "kg": 345.01, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 344.81}, {"cond": false, "kg": 124.01, "ms": 0.92, "nom": "Luzerne", "prevu": 120.61}, {"cond": false, "kg": 86.99, "ms": 1, "nom": "Aliment 17", "prevu": 88.06}, {"cond": false, "kg": 34.79, "ms": 1, "nom": "Aliment 26", "prevu": 35.23}, {"cond": true, "kg": 5.37, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.88, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 119.96, "heure": "12:55", "jours": 1, "parts": 204.8, "pct": 100, "traite": [{"kg": 0, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-18": [{"aliments": [{"cond": false, "kg": 357.51, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 354.41}, {"cond": false, "kg": 54.97, "ms": 0.92, "nom": "Luzerne", "prevu": 123.97}, {"cond": false, "kg": 90.52, "ms": 1, "nom": "Aliment 17", "prevu": 90.52}, {"cond": false, "kg": 36.21, "ms": 1, "nom": "Aliment 26", "prevu": 36.21}, {"cond": true, "kg": 5.44, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.9, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 122.48, "heure": "16:55", "jours": 1, "parts": 210.5, "pct": 100, "traite": [{"kg": 1.29, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-20": [{"aliments": [{"cond": false, "kg": 337.01, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 354.41}, {"cond": false, "kg": 114.97, "ms": 0.92, "nom": "Luzerne", "prevu": 123.97}, {"cond": false, "kg": 92.54, "ms": 1, "nom": "Aliment 17", "prevu": 90.52}, {"cond": false, "kg": 37.02, "ms": 1, "nom": "Aliment 26", "prevu": 36.21}, {"cond": true, "kg": 5.56, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.95, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 127.98, "heure": "12:17", "jours": 1, "parts": 210.5, "pct": 100, "traite": [{"kg": 1.29, "ms": 1, "nom": "Aliment traite 26"}]}], "2026-11-21": [{"aliments": [{"cond": false, "kg": 392.05, "ms": 0.71, "nom": "Enrubannée foin", "prevu": 389.85}, {"cond": false, "kg": 132.96, "ms": 0.92, "nom": "Luzerne", "prevu": 136.36}, {"cond": false, "kg": 101.13, "ms": 1, "nom": "Aliment 17", "prevu": 99.57}, {"cond": false, "kg": 40.45, "ms": 1, "nom": "Aliment 26", "prevu": 39.83}, {"cond": true, "kg": 5.53, "ms": 1, "nom": "Minéraux", "prevu": 5.44}, {"cond": true, "kg": 1.93, "ms": 1, "nom": "Levures", "prevu": 1.9}], "brebis": 272, "eau": 139.98, "heure": "16:32", "jours": 1, "parts": 210.5, "pct": 110, "traite": [{"kg": 1.29, "ms": 1, "nom": "Aliment traite 26"}]}]};
+let cfg = fill(clone(CFG_DEPART));
+const cached = load("cfg"); if (cached && cached.lots && cached.aliments) cfg = fill(cached);
+let dbRef = null, canSave = true, pendingTimer = null;
+let done = load("done-"+dayKey()) || {};
+let cumulOn = !!load("cumul");
+$("cumulToggle").checked = cumulOn;
+
+function duree(litres, debit){
+  if(!(debit>0)) return "";
+  const s = Math.round(litres/debit*60), m = Math.floor(s/60), r = s%60;
+  return m===0 ? r+" s" : m+" min "+String(r).padStart(2,"0")+" s";
+}
+
+/* ---------- Base de saisie de la ration ----------
+   base 1    : la ration est saisie en kg de MS (100 %)
+   base 0,86 : la ration est saisie en kg d'aliment sec type (86 % de MS)
+   En interne, tout est ramené en kg de MS. Les condiments restent tels quels (dose fabricant). */
+const baseOf = c => (+c.base===0.86 ? 0.86 : 1);
+function effCfg(c){
+  if(c._eff) return c;
+  const B = baseOf(c);
+  return {...c, _eff:true, aliments: c.aliments.map(a => (B===1 || a.condiment) ? a : {...a, sec:(+a.sec||0)*B})};
+}
+const baseTxt = c => baseOf(c)===1 ? "kg de MS (100 %)" : "kg d'aliment sec (86 % de MS)";
+
+/* ---------- Calculs ---------- */
+function compute(c){
+  c = effCfg(c);
+  const jours = Math.max(1, +c.jours||1);
+  const k = (+c.pct||100)/100 * jours;
+  const parts = c.lots.reduce((s,l)=>s+(+l.effectif||0)*cf(l),0);
+  const brebis = c.lots.reduce((s,l)=>s+(+l.effectif||0),0);
+  const used = c.aliments.map((a,i)=>({...a,i})).filter(a=>a.actif && a.sec>0);
+  const mix = used.filter(a=>a.lieu==="melange").map(a=>{
+    const brutPart = a.ms>0 ? a.sec/a.ms : 0;
+    const total = a.condiment ? brutPart*brebis*jours : brutPart*parts*k;
+    return {...a, brutPart, total, bassines: a.bassine>0 ? total/a.bassine : null};
+  });
+  const traiteN = c.lots.reduce((s,l)=>s+(+l.traite||0)*(+l.effectif||0),0);
+  const tra = used.filter(a=>a.lieu==="traite").map(a=>({...a, total:(a.ms>0?a.sec/a.ms:0)*traiteN}));
+  const secAll = used.reduce((s,a)=>s+a.sec,0);
+  const secMix = mix.reduce((s,a)=>s+a.sec,0);
+  const conc = used.filter(a=>a.ms>=0.85 && a.bassine>0).reduce((s,a)=>s+a.sec,0);
+  const mat = secAll>0 ? used.reduce((s,a)=>s+a.sec*(+a.mat||0),0)/secAll : 0;
+  const brut = mix.reduce((s,a)=>s+a.total,0);
+  const secKg = mix.reduce((s,a)=>s+a.total*(a.ms||1),0);
+  const humSans = brut>0 ? (1-secKg/brut)*100 : 0;
+  const h = Math.min(Math.max(+c.humCible||0,0),90)/100;
+  const eau = Math.max(0, (secKg>0 ? secKg/(1-h) : 0) - brut);
+  const lotsStats = c.lots.map(l=>lotStat(c,l));
+  const mixMat = lotStat(c,{coef:1,traite:0}).mat;
+  const base = lotStat(c,{coef:1,traite:1});
+  return {parts,brebis,jours,mix,tra,traiteN,secAll,secMix,mat:base.mat,secBase:base.sec,mixMat,lotsStats,humSans,eau,conc,totalMix:brut+eau};
+}
+/* Ration de base (100 %) d'un animal du lot : mélange × coef + condiments + part de ration traite */
+const TRAITE = [{v:0,t:"Pas de ration traite"},{v:0.5,t:"Demi ration traite"},{v:1,t:"Ration traite"}];
+const traiteTxt = v => (TRAITE.find(x=>x.v===+v)||TRAITE[0]).t;
+function lotStat(c,l){
+  c = effCfg(c);
+  const coef = cf(l), f = +l.traite||0;
+  let sec = 0, matg = 0;
+  c.aliments.filter(a=>a.actif && a.sec>0).forEach(a=>{
+    const q = a.lieu==="traite" ? a.sec*f : (a.condiment ? a.sec : a.sec*coef);
+    sec += q; matg += q*(+a.mat||0);
+  });
+  return {sec, mat: sec>0 ? matg/sec : 0};
+}
+
+/* ---------- Bilan nutritionnel (références INRA, version simplifiée) ----------
+   Besoins brebis laitières (INRA, repris dans INRA Productions Animales) :
+     entretien  UFL = 0,033 × PV^0,75   PDI = 2,5 × PV^0,75
+     lactation  + 0,7 UFL et + 80 g PDI par litre de lait standardisé
+     lait standardisé PLS = litres × (0,0071 × TB + 0,0043 × TP + 0,222)  (TB, TP en g/l)
+   Capacité d'ingestion en lactation (Bocquier et al., CIHEAM) : CI = 0,0255 × PV + 0,754 × PLS (UEM)
+     taux de substitution S = 0,958 − 0,374 × VEF ; encombrement du concentré = S × VEF par kg MS
+   Hors lactation : CI = 0,075 × PV^0,75 (fin de gestation : × 0,85, approximation)
+   Fin de gestation (6 dernières semaines) : UFL = 1,35 × entretien, PDI = 110 g par UFL (approximation)
+   Équilibre azoté INRA 2007 : (PDIN − PDIE) / UFL ≥ −12 (< 1 L), −6 (1 à 2 L), 0 (> 2 L) */
+const STADES = [{v:"lactation",t:"Lactation"},{v:"gestation",t:"Fin de gestation"},{v:"entretien",t:"Entretien"}];
+const stadeTxt = v => (STADES.find(s=>s.v===v)||STADES[2]).t;
+function apportsLot(c, l, coefOverride){
+  c = effCfg(c);
+  const coef = coefOverride!==undefined ? coefOverride : cf(l), f = +l.traite||0;
+  const r = {ufl:0, pdin:0, pdie:0, mat:0, ms:0, fMS:0, fUEM:0, cMS:0, mixU:0, condU:0, traU:0};
+  c.aliments.filter(a=>a.actif && a.sec>0).forEach(a=>{
+    const q = a.lieu==="traite" ? a.sec*f : (a.condiment ? a.sec : a.sec*coef);
+    r.ms += q; r.ufl += q*(+a.ufl||0); r.pdin += q*(+a.pdin||0); r.pdie += q*(+a.pdie||0); r.mat += q*(+a.mat||0);
+    if(a.type==="fourrage"){ r.fMS += q; r.fUEM += q*(+a.uem||0); }
+    else if(a.type==="concentre") r.cMS += q;
+    if(a.lieu==="traite") r.traU += a.sec*(+a.ufl||0);
+    else if(a.condiment) r.condU += q*(+a.ufl||0);
+    else r.mixU += a.sec*(+a.ufl||0);
+  });
+  const vef = r.fMS>0 ? r.fUEM/r.fMS : 1.1;
+  const S = Math.min(0.9, Math.max(0.2, 0.958 - 0.374*vef));
+  r.vef = vef; r.S = S;
+  r.fill = r.fUEM + S*vef*r.cMS;
+  r.pdi = Math.min(r.pdin, r.pdie);
+  r.matPct = r.ms>0 ? r.mat/r.ms : 0;
+  r.concPct = (r.fMS+r.cMS)>0 ? r.cMS/(r.fMS+r.cMS)*100 : 0;
+  return r;
+}
+function besoinsLot(l){
+  const pv = +l.pv||75, m = Math.pow(pv,0.75);
+  let ufl = 0.033*m, pdi = 2.5*m, ci = 0.075*m, pls = 0, seuil = -12;
+  if(l.stade==="lactation"){
+    pls = (+l.litres||0) * (0.0071*(+l.tb||70) + 0.0043*(+l.tp||54) + 0.222);
+    ufl += 0.7*pls; pdi += 80*pls;
+    ci = 0.0255*pv + 0.754*pls;
+    seuil = (+l.litres||0) < 1 ? -12 : (+l.litres||0) <= 2 ? -6 : 0;
+  } else if(l.stade==="gestation"){
+    ufl *= 1.35; pdi = 110*ufl; ci *= 0.85;
+  }
+  return {ufl, pdi, ci, pls, seuil};
+}
+function statut(pct, lo, hi){ // pct de couverture
+  if(pct>=lo && pct<=hi) return "ok";
+  if(pct>=lo-7 && pct<=hi+12) return "warn";
+  return "crit";
+}
+function bilanLot(c, l){
+  c = effCfg(c);
+  const a = apportsLot(c,l), b = besoinsLot(l);
+  const cU = b.ufl>0 ? a.ufl/b.ufl*100 : 0, cP = b.pdi>0 ? a.pdi/b.pdi*100 : 0, cI = b.ci>0 ? a.fill/b.ci*100 : 0;
+  const rmic = a.ufl>0 ? (a.pdin-a.pdie)/a.ufl : 0;
+  const st = {
+    ufl: statut(cU, 95, 110), pdi: statut(cP, 95, 115),
+    ing: cI<=100 ? "ok" : cI<=106 ? "warn" : "crit",
+    rmic: rmic>=b.seuil ? "ok" : rmic>=b.seuil-6 ? "warn" : "crit",
+    conc: a.concPct<=55 ? "ok" : a.concPct<=60 ? "warn" : "crit"
+  };
+  // Conseils
+  const sug = [];
+  const dU = b.ufl - a.ufl;
+  if(st.ufl!=="ok" && Math.abs(dU) > b.ufl*0.03){
+    const T = c.aliments.find(x=>x.actif && x.lieu==="traite" && x.sec>0 && x.ufl>0);
+    if(l.traite>0 && T){
+      const dMS = dU / T.ufl, dBrut = dMS/(T.ms||1), now = T.sec*l.traite/(T.ms||1);
+      const cible = Math.max(0, now + dBrut);
+      sug.push(`Ration traite : ${dBrut>0?"+":"−"}${nf(Math.abs(dBrut)*1000)} g brut de ${esc(T.nom)} par brebis, soit environ ${nf(cible*1000)} g au lieu de ${nf(now*1000)} g.`);
+    }
+    if(a.mixU>0){
+      const coefOk = Math.max(0, (b.ufl - a.condU - (+l.traite||0)*a.traU) / a.mixU);
+      const aOk = apportsLot(c, l, coefOk), ingOk = b.ci>0 ? aOk.fill/b.ci*100 : 0;
+      sug.push(`Ou coefficient de part ${nf(coefOk,2)} au lieu de ${nf(cf(l),2)}` + (ingOk>100 ? ` : attention, ingestion à ${nf(ingOk)} % de la capacité, la brebis ne pourra pas tout manger.` : "."));
+    }
+  }
+  if(cP>125 && st.ufl!=="crit") sug.push(`PDI couverts à ${nf(cP)} % : on peut réduire l'aliment le plus azoté et économiser du concentré.`);
+  if(st.pdi!=="ok" && cP<95 && st.ufl!=="crit") sug.push("PDI insuffisants : remplacer une partie de l'aliment le moins azoté par un aliment plus riche (ex. 26 à la place du 17).");
+  if(st.rmic!=="ok") sug.push("Azote dégradable insuffisant pour le rumen : ajouter une source d'azote (luzerne, aliment azoté).");
+  if(st.ing==="crit" && dU>0) sug.push("Ration trop encombrante : un fourrage plus riche ou plus de concentré dans la même quantité de MS.");
+  if(st.conc!=="ok") sug.push("Plus de 55 à 60 % de concentré dans la MS : risque d'acidose et de baisse du TB.");
+  const worst = Object.values(st).includes("crit") ? "crit" : Object.values(st).includes("warn") ? "warn" : "ok";
+  return {a, b, cU, cP, cI, rmic, st, sug, worst};
+}
+const ST_TXT = {ok:"OK", warn:"À surveiller", crit:"À corriger"};
+/* ---------- Ingestion observée ----------
+   kg de MS chargés ÷ (parts × jours nourris), sur les chargements enregistrés de la période.
+   Pour un lot : × coefficient de part (+ condiments par animal). Les références sont gardées dans les réglages. */
+let ingJours = 1, ingDelAsk = null;
+function ingestionObservee(nbJours){
+  const fin = dayKey(), d0 = new Date(workDate()); d0.setDate(d0.getDate() - (nbJours-1));
+  const debut = d0.toLocaleDateString("fr-CA");
+  const msDe = a => a.ms>0 ? a.ms : ((cfg.aliments.find(x=>x.nom===a.nom)||{}).ms || 1);
+  let ms = 0, msCond = 0, partJours = 0, brebisJours = 0, jours = 0, nb = 0;
+  Object.keys(journal).filter(d=>d>=debut && d<=fin).forEach(d=>journal[d].forEach(l=>{
+    const j = Math.max(1, +l.jours||1);
+    (l.aliments||[]).forEach(a=>{ const m = (+a.kg||0)*msDe(a); if(a.cond) msCond += m; else ms += m; });
+    partJours += (+l.parts||0)*j; brebisJours += (+l.brebis||0)*j; jours += j; nb++;
+  }));
+  if(!(partJours>0)) return null;
+  // Refus : kg brut par jour de grossier laissé à l'auge, au % de MS du fourrage principal
+  const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
+  const refusMs = four ? four.ms : 0.86, refusMS = (+cfg.refusKg||0)*refusMs*jours;
+  return {debut, fin, nb, jours, refusMs, refusMS, msPart: Math.max(0, ms-refusMS)/partJours, condAnimal: brebisJours>0 ? msCond/brebisJours : 0};
+}
+/* Pesée des refus : on vide l'auge (date de départ), puis au vidage suivant on pèse le tas ;
+   refus par jour = poids pesé ÷ nombre de jours. Le résultat remplace le réglage « Refus à l'auge ». */
+function joursEntre(a, b){ return Math.max(1, Math.round((new Date(b+"T12:00:00") - new Date(a+"T12:00:00"))/86400000)); }
+function renderRefusBox(){
+  const deb = cfg.refusDebut, auj = dayKey(), hist = cfg.refusPesees || [];
+  const der = hist.length ? hist[hist.length-1] : null;
+  let h = "";
+  if(deb){
+    const j = joursEntre(deb, auj);
+    h += `<span class="note">Refus sortis la dernière fois le <b>${deb.split("-").reverse().join("/")}</b>${deb===auj ? " (aujourd'hui)" : ` · ${j} jour${j>1?"s":""} depuis`}. Quand tu les sors, pèse-les et tape le poids :</span>
+      <div class="refusin"><input type="number" inputmode="decimal" min="0" step="1" id="refusPoids" placeholder="kg pesés"><button class="btn btn-red" id="refusOk">Valider</button></div>`;
+  } else {
+    h += `<span class="note">Pour mesurer les vrais refus : vide l'auge, appuie ici, puis pèse le tas au prochain vidage.</span>`;
+  }
+  h += deb ? `<button class="linkbtn" id="refusStart">Auge vidée sans peser : repartir d'aujourd'hui</button>` : `<button class="btn btn-sober" id="refusStart">J'ai vidé l'auge aujourd'hui</button>`;
+  if(der) h += `<span class="note">Dernière pesée : ${nf(der.kg)} kg sur ${der.jours} jour${der.jours>1?"s":""} (du ${der.debut.split("-").reverse().join("/")} au ${der.fin.split("-").reverse().join("/")}), soit <b>${nf(der.parJour,1)} kg par jour</b>.</span>`;
+  $("refusBox").innerHTML = h;
+}
+document.addEventListener("click",e=>{
+  if(e.target.closest("#refusStart")){
+    cfg.refusDebut = dayKey(); commit(); renderRefus(); $("status").textContent = "Auge vidée : début de la mesure des refus";
+  }
+  if(e.target.closest("#refusOk")){
+    const kg = num($("refusPoids").value), deb = cfg.refusDebut, auj = dayKey();
+    if(!(kg>=0) || !deb || $("refusPoids").value==="") return;
+    const jours = joursEntre(deb, auj), parJour = Math.round(kg/jours*10)/10;
+    cfg.refusPesees = [...(cfg.refusPesees||[]), {debut:deb, fin:auj, kg, jours, parJour}];
+    cfg.refusKg = parJour; cfg.refusDebut = auj; // nouvelle période qui démarre au vidage
+    commit(); renderRefus(); $("status").textContent = `Refus : ${nf(parJour,1)} kg par jour`;
+  }
+});
+/* Fenêtre « Refus à l'auge » : réglage, pesée entre deux vidages et conseil sur le % de ration.
+   Repère courant : 5 à 10 % de refus du mélange distribué, preuve que les brebis mangent à volonté sans trop de gaspillage. */
+function refusPct(){
+  const hist = cfg.refusPesees || [], der = hist.length ? hist[hist.length-1] : null;
+  let debut, fin;
+  if(der){ debut = der.debut; fin = der.fin; } else { const d0 = new Date(workDate()); d0.setDate(d0.getDate()-6); debut = d0.toLocaleDateString("fr-CA"); fin = dayKey(); }
+  let kg = 0, jours = 0;
+  Object.keys(journal).filter(d=>d>=debut && d<=fin).forEach(d=>journal[d].forEach(l=>{
+    kg += (l.aliments||[]).reduce((t,a)=>t+(+a.kg||0),0) + (+l.eau||0); jours += Math.max(1,+l.jours||1);
+  }));
+  return jours>0 ? {pct: (+cfg.refusKg||0)/(kg/jours)*100, parJour: kg/jours, debut, fin} : null;
+}
+function renderRefus(){
+  renderRefusBox();
+  { const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
+    $("refusVal").textContent = nf(cfg.refusKg, Number.isInteger(+cfg.refusKg)?0:1)+" kg";
+    $("refusNote").textContent = `${(cfg.refusPesees||[]).length ? "dernière pesée" : "estimation, en attendant la première pesée"} · retiré de l'ingestion${four ? ` (≈ ${nf(cfg.refusKg*four.ms,1)} kg MS à ${nf(four.ms*100)} % comme ${four.nom.toLowerCase()})` : ""}`; }
+  const R = refusPct(), c = $("refusConseil");
+  if(!R){ c.innerHTML = `<p class="note">Pas encore assez de chargements enregistrés pour comparer.</p>`; return; }
+  const p = R.pct, pctAct = +cfg.pct||100;
+  let txt, propose = null;
+  if(p > 10){ propose = Math.max(50, Math.round(pctAct*(1-(p-7)/100)/5)*5); txt = `<span class="st warn">${nf(p,1)} % de refus</span> C'est beaucoup : au-delà de 10 %, une partie de la ration est gaspillée.`; }
+  else if(p < 4){ propose = Math.round(pctAct*(1+(6-p)/100)/5)*5; txt = `<span class="st warn">${nf(p,1)} % de refus</span> C'est peu : les brebis risquent de manquer, ou de manger aussi le plus grossier.`; }
+  else txt = `<span class="st ok">${nf(p,1)} % de refus</span> Dans la plage habituelle de 5 à 10 % : elles mangent à volonté et laissent le plus grossier. Rien à changer.`;
+  c.innerHTML = `<p>${txt}</p><p class="note">${nf(cfg.refusKg,0)} kg de refus sur ${nf(R.parJour)} kg distribués par jour en moyenne (eau comprise).</p>`
+    + (propose!==null && propose!==pctAct ? `<p>Proposition : ration du jour à <b>${propose} %</b> au lieu de ${pctAct} %.</p><button class="btn btn-red" id="refusAppli" data-p="${propose}">Passer la ration à ${propose} %</button>` : "");
+}
+document.addEventListener("click",e=>{
+  const b = e.target.closest("#refusAppli"); if(!b) return;
+  cfg.pct = +b.dataset.p; commit(); renderRefus(); $("status").textContent = `Ration du jour à ${cfg.pct} %`;
+});
+function renderIngestion(){
+  $("refusLien").textContent = `${nf(cfg.refusKg, Number.isInteger(+cfg.refusKg)?0:1)} kg brut par jour · toucher pour peser les refus`;
+  document.querySelectorAll("[data-ingj]").forEach(b=>b.setAttribute("aria-pressed", +b.dataset.ingj===ingJours));
+  const o = ingestionObservee(ingJours);
+  if(!o){ $("ingObs").innerHTML = `<p class="note">Aucun chargement enregistré sur cette période.</p>`; $("ingKeep").hidden = true; }
+  else {
+    $("ingKeep").hidden = false;
+    const lots = cfg.lots.filter(l=>(+l.effectif||0)>0);
+    $("ingObs").innerHTML = `<div class="row"><span>Par part et par jour<br><span class="note">${o.nb} chargement${o.nb>1?"s":""}, ${o.jours} jour${o.jours>1?"s nourris":" nourri"}</span></span><b>${nf(o.msPart,2)} kg MS</b></div>`
+      + lots.map(l=>{
+          const kg = o.msPart*cf(l) + o.condAnimal, b = besoinsLot(l);
+          return `<div class="row"><span>${esc(l.nom)} <span class="note">· coef ${nf(cf(l),2)} · ${stadeTxt(l.stade).toLowerCase()} · ${nf(l.pv)} kg</span></span><b>${nf(kg,2)} kg MS</b></div>
+            <div class="note">soit ${nf(kg/(+l.pv||75)*100,1)} % du poids vif · capacité INRA estimée ${nf(b.ci,2)} UEM</div>`;
+        }).join("");
+  }
+  const refs = cfg.refsIngestion || [];
+  $("ingRefs").innerHTML = refs.length ? `<div class="sep"></div><h2>Références gardées</h2>` + refs.slice().reverse().map((r,k)=>{
+    const i = refs.length-1-k;
+    return `<div class="dayrow"><div class="row"><span><b>${esc(r.titre)}</b><br><span class="note">${r.debut.split("-").reverse().join("/")} au ${r.fin.split("-").reverse().join("/")} · ${r.jours} jour${r.jours>1?"s":""}${r.refusKg!==undefined?` · refus ${nf(r.refusKg)} kg/j retirés`:""}</span></span><b>${nf(r.msPart,2)} kg MS/part</b></div>
+      ${(r.lots||[]).map(l=>`<span class="note">${esc(l.nom)} (${esc(l.stade)}, coef ${nf(cf(l),2)}) : <b>${nf(l.kg,2)} kg MS</b> par animal et par jour</span>`).join("<br>")}
+      ${ingDelAsk===i ? `<div class="actions"><button class="btn btn-rust" data-refkeep="${i}">Garder</button><button class="btn btn-red" data-refdel="${i}">Supprimer</button></div>` : `<button class="linkbtn" data-refask="${i}">Supprimer cette référence</button>`}</div>`;
+  }).join("") : "";
+}
+document.addEventListener("click",e=>{
+  const t = e.target.closest("[data-ingj],[data-refask],[data-refkeep],[data-refdel],[data-refus],#ingKeep"); if(!t) return;
+  if(t.dataset.ingj){ ingJours = +t.dataset.ingj; }
+  else if(t.dataset.refus){ cfg.refusKg = Math.max(0, Math.min(500, (+cfg.refusKg||0) + (+t.dataset.refus))); store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500); renderRefus(); }
+  else if(t.id==="ingKeep"){
+    const o = ingestionObservee(ingJours); if(!o) return;
+    const m = +o.fin.slice(5,7), y = +o.fin.slice(0,4);
+    const saisonTxt = m>=9 && m<=11 ? "Automne" : (m===12 || m<=2) ? "Hiver" : m<=5 ? "Printemps" : "Été";
+    const lots = cfg.lots.filter(l=>(+l.effectif||0)>0).map(l=>({nom:l.nom, stade:stadeTxt(l.stade).toLowerCase(), coef:cf(l), pv:+l.pv||75, kg:Math.round((o.msPart*cf(l)+o.condAnimal)*100)/100}));
+    cfg.refsIngestion = [...(cfg.refsIngestion||[]), {titre:`${saisonTxt} ${y}`, debut:o.debut, fin:o.fin, jours:o.jours, refusKg:+cfg.refusKg||0, msPart:Math.round(o.msPart*100)/100, lots}];
+    commit(); $("status").textContent = "Référence d'ingestion gardée";
+  }
+  else if(t.dataset.refask!==undefined){ ingDelAsk = +t.dataset.refask; }
+  else if(t.dataset.refkeep!==undefined){ ingDelAsk = null; }
+  else if(t.dataset.refdel!==undefined){ cfg.refsIngestion.splice(+t.dataset.refdel,1); ingDelAsk = null; commit(); }
+  renderIngestion();
+});
+function renderNutri(){
+  const cards = cfg.lots.map(l=>{
+    const B = bilanLot(cfg, l), a = B.a, b = B.b, off = !((+l.effectif||0)>0);
+    const row = (lbl, val, pct, st) => `<span>${lbl}</span><span class="v">${val}</span><span class="st ${st}">${nf(pct)} %</span>`;
+    return `<div class="ncard${off?" off":""}">
+      <div class="nhead"><b>${esc(l.nom)}</b><span>${nf(l.effectif)} · ${stadeTxt(l.stade)}${l.stade==="lactation"?` · ${nf(l.litres,1)} L`:""} · ${nf(l.pv)} kg</span>${off ? `<span class="st warn">Lot vide</span>` : `<span class="st ${B.worst}">${ST_TXT[B.worst]}</span>`}</div>
+      <div class="ngrid">
+        ${row("Énergie", `${nf(a.ufl,2)} / ${nf(b.ufl,2)} UFL`, B.cU, B.st.ufl)}
+        ${row("PDI", `${nf(a.pdi)} / ${nf(b.pdi)} g`, B.cP, B.st.pdi)}
+        ${row("Ingestion", `${nf(a.fill,2)} / ${nf(b.ci,2)} UEM`, B.cI, B.st.ing)}
+        <span>Concentré dans la MS</span><span class="v">${nf(a.cMS,2)} kg</span><span class="st ${B.st.conc}">${nf(a.concPct)} %</span>
+        <span>Équilibre azoté rumen</span><span class="v">seuil ${nf(b.seuil)}</span><span class="st ${B.st.rmic}">${B.rmic>=0?"+":""}${nf(B.rmic,1)}</span>
+        <span>Protéines (MAT) · MS</span><span class="v">${nf(a.ms,2)} kg MS</span><span class="st ok">${nf(a.matPct,1)} %</span>
+      </div>
+      ${B.sug.length && !off ? `<div class="nsug"><b>Conseil</b>${B.sug.map(s=>`<span>${s}</span>`).join("")}</div>` : ""}
+    </div>`;
+  });
+  $("nutri").innerHTML = cards.join("");
+  const nv = cfg.aliments.filter(a=>a.actif && a.sec>0 && !a.vOk && a.type!=="mineral").map(a=>esc(a.nom));
+  renderIngestion();
+  $("nutriWarn").innerHTML = nv.length ? `<span class="st warn">Valeurs estimées</span> ${nv.join(", ")} : remplace les UFL, PDIN, PDIE et UEM par tes analyses dans Réglages › Aliments.` : "";
+}
+function pireStatut(){
+  const act = cfg.lots.filter(l=>(+l.effectif||0)>0).map(l=>bilanLot(cfg,l).worst);
+  return act.includes("crit") ? "crit" : act.includes("warn") ? "warn" : "ok";
+}
+
+/* ---------- Écran principal ---------- */
+function render(){
+  const r = compute(cfg);
+  $("today").textContent = "Chargement du " + workDate().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  $("lotline").textContent = nf(r.brebis)+" brebis · "+nf(r.parts,1)+" parts"+(baseOf(cfg)===1?"":" · ration base 86 % MS")+" — modifier les lots";
+  $("pctVal").textContent = nf(cfg.pct)+" %";
+  $("pctRow").classList.toggle("pct-off", +cfg.pct !== 100);
+  $("joursVal").textContent = r.jours+" j";
+  $("joursRow").classList.toggle("pct-off", r.jours !== 1);
+  $("joursNote").textContent = r.jours>1
+    ? `${nf(cfg.pct)} % × ${r.jours} jours = ${nf(cfg.pct*r.jours)} % de la ration ; condiments × ${r.jours}`
+    : "ration × jours, condiments à dose pleine";
+  $("humVal").textContent = nf(cfg.humCible)+" %";
+  $("humSans").textContent = r.eau>0 ? `sans eau : ${nf(r.humSans,1)} %` : `sans eau : ${nf(r.humSans,1)} %, pas d'eau à mettre`;
+
+  const L = loadItems(r);
+  $("total").innerHTML = nf(L.totalAct)+' <small>kg</small>';
+  let cum = 0;
+  // Minuteur de mélange : placé juste après le dernier fourrage
+  let lastFour = -1;
+  L.items.forEach((it,i)=>{ if(!it.water && !it.godet && !it.membre && it.a && it.a.type==="fourrage") lastFour = i; });
+  // Tant que le minuteur n'a pas été lancé, les aliments après le dernier fourrage restent fermés
+  const locked = lastFour>=0 && !(done.tm || timerEnd>0 || timerPause>0);
+  const html = L.items.map((it,idx)=>{
+    const h = (locked && idx>lastFour) ? lockedHtml(it) : itemHtml(it);
+    return idx===lastFour ? h + timerHtml() + (locked && lastFour<L.items.length-1 ? `<p class="note lockmsg">Aliments, minéraux et condiments s'ouvrent quand tu lances le minuteur.</p>` : "") : h;
+  }).join("");
+  function lockedHtml(it){
+    const nom = it.godet ? "Godet aliments" : esc(it.a.nom);
+    return `<div class="item locked" aria-disabled="true"><div class="lrow"><span>${nom}</span><span>${kgTxt(it.membre ? it.planned : it.act)} kg</span></div></div>`;
+  }
+  function itemHtml(it){
+    const d = !!done[it.key];
+    if(it.godet){
+      cum += it.act;
+      return `<div class="item godet${d?" done":""}">
+      <button class="itemMain" data-i="g" aria-pressed="${d}">
+        <span class="tick">${d?"✓":""}</span>
+        <span><span class="name">Godet aliments</span><span class="sub">${it.n} aliments en bassines et condiments${cumulOn?` <span class="cumul">Pesée mélangeuse : ${nf(cum)} kg</span>`:""}</span></span>
+        <span class="qty">${kgTxt(it.planned)}<span>kg au godet</span></span>
+      </button>
+      ${peseeLigne(it, L.items)}
+      ${it.adj ? `<span class="note">Écart réparti sur les ${it.n} aliments du godet</span>` : ""}</div>`;
+    }
+    if(!it.membre) cum += it.act;
+    const sub = it.water
+      ? `(${duree(it.act,cfg.debit)} de robinet)`
+      : (it.a.condiment ? partTxt(it.a.brutPart).replace("/part","/animal")+` × ${nf(r.brebis)}`+(r.jours>1?` × ${r.jours} j`:"") : partTxt(it.a.brutPart*cfg.pct/100*r.jours))
+        + (!it.a.msOk?' <span class="chip">taux MS à vérifier</span>':"");
+    const isF = !it.water && !it.membre && it.a.type==="fourrage";
+    const show = it.planned; // on affiche l'objectif ; le poids lu et le manque sont sur le bouton « Poids mélangeuse »
+    const bass = !it.water && it.a.bassine>0 ? `<span class="bass">${bassTxt(show,it.a.bassine)}</span>` : "";
+    return `<div class="item${it.water?" water":""}${d?" done":""}">
+      <button class="itemMain" data-i="${it.key}" aria-pressed="${d}">
+        <span class="tick">${d?"✓":""}</span>
+        <span><span class="name">${it.water?"Eau":esc(it.a.nom)}</span><span class="sub">${sub}${cumulOn && !it.membre?` <span class="cumul">Pesée mélangeuse : ${nf(cum)} kg</span>`:""}${it.membre?` <span class="cumul">→ godet</span>`:""}</span></span>
+        <span class="qty">${it.water?nf(show):kgTxt(show)}<span>${it.water?"litres":"kg"}</span>${bass}</span>
+      </button>
+      ${it.membre ? (it.adj ? `<span class="ecart">réel après pesée du godet : ${kgTxt(it.act)} kg (${it.adj>0?"+":"−"}${kgTxt(Math.abs(it.adj))})</span>` : "") : peseeLigne(it, L.items)}${it.water ? eauTimerHtml(it) : ""}${(!it.water && !it.membre && it.a.type==="fourrage") ? `<div class="msadj">
+        <span>Taux de MS</span>
+        <div class="stepper"><button type="button" class="step sm" data-msi="${it.a.i}" data-d="-1" aria-label="Baisser le taux de MS de ${esc(it.a.nom)}">−</button>
+        <b>${nf(it.a.ms*100)} %</b>
+        <button type="button" class="step sm" data-msi="${it.a.i}" data-d="1" aria-label="Monter le taux de MS de ${esc(it.a.nom)}">+</button></div></div>` : ""}</div>`;
+  }
+  $("list").innerHTML = html || `<p class="note">Aucun aliment dans la mélangeuse. Ouvre les réglages pour saisir la ration.</p>`;
+  tickTimer();
+  const n = L.items.length;
+  const k = L.items.filter(it=>done[it.key]).length;
+  $("bar").style.width = n ? (k/n*100)+"%" : "0";
+  const allDone = n>0 && k===n;
+  $("progressTxt").textContent = allDone ? "Mélangeuse chargée" : `${k} / ${n} chargés`;
+  // Alerte capacité
+  const cap = +cfg.capacite||0;
+  $("capAlert").hidden = !(cap>0 && L.totalAct>cap);
+  if(cap>0 && L.totalAct>cap) $("capAlert").textContent = `Attention : ${nf(L.totalAct)} kg à charger, au-dessus de la capacité de la KEENAN (${nf(cap)} kg). Vérifie la ration, le % ou le nombre de jours.`;
+  // Bandeau qui suit le défilement
+  const next = L.items.find(it=>!done[it.key]);
+  $("miniTotal").textContent = nf(L.totalAct)+" kg";
+  $("miniNext").textContent = next ? `→ ${next.water?"Eau":next.godet?"Godet aliments":next.a.nom} : ${next.water?nf(next.act)+" L":kgTxt(next.act)+" kg"}` : "Mélangeuse chargée";
+  $("miniProg").textContent = `${k}/${n}`;
+  // Enregistrement du jour
+  const saved = (journal[dayKey()]||[]).length>0;
+  $("saveDay").classList.toggle("ready", allDone && !saved);
+  $("saveDay").textContent = saved ? "Modifier ou enregistrer pour demain" : allDone ? "Tout est chargé : enregistrer le chargement" : "Enregistrer le chargement du jour";
+  refreshSaveNote(k>0);
+  { const sb = seasonBounds(0), nj = Object.keys(journal).filter(d=>d>=sb.start && d<sb.end).reduce((s,d)=>s+journal[d].reduce((t,l)=>t+Math.max(1,+l.jours||1),0),0);
+    $("bilanBtnTxt").textContent = `${sb.label} · ${nj} jour${nj>1?"s":""} nourri${nj>1?"s":""}`; }
+  const ps = pireStatut();
+  $("repBtnVal").innerHTML = `<span class="st ${ps}">${ST_TXT[ps]}</span>`;
+  if(current==="reperes") renderNutri();
+  $("mat").textContent = nf(r.mat,1)+" %";
+  $("msMix").textContent = nf(r.secMix,2)+" kg";
+  $("msBase").textContent = nf(r.secBase,2)+" kg";
+  $("matMix").textContent = nf(r.mixMat,1)+" %";
+  $("lotStats").innerHTML = lotStatsHtml(cfg, r);
+}
+
+/* ---------- Minuteur de mélange ----------
+   Lancé après le dernier fourrage ; compte à rebours, heure de fin, alarme sonore et vibration.
+   L'heure de fin est gardée sur le téléphone : le minuteur reste juste même si la page est rechargée. */
+let timerEnd = +load("timerEnd") || 0, timerPause = +load("timerPause") || 0, timerRang = false, audioCtx = null, alarmTimer = null, wakeLock = null;
+const hhmm = t => new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}).replace(":"," h ");
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms/1000)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+function timerHtml(){
+  const now = Date.now(), run = timerEnd>0 && now<timerEnd, fini = timerEnd>0 && now>=timerEnd;
+  if(timerPause>0) return `<div class="timer pause" id="timerBox">
+    <div class="tname">Minuteur en pause</div>
+    <div class="tbig">${mmss(timerPause)}</div>
+    <div class="note">Reprise maintenant : fin à ${hhmm(now+timerPause)}</div>
+    <div class="actions"><button class="btn btn-green" data-timer="resume">Reprendre</button><button class="btn btn-rust" data-timer="stop">Arrêter</button></div></div>`;
+  if(fini) return `<div class="timer fini" id="timerBox">
+    <div class="tname">Mélange terminé</div>
+    <div class="tbig">0:00</div>
+    <div class="note">Fin prévue à ${hhmm(timerEnd)}</div>
+    <button class="btn btn-red" data-timer="stop">OK, arrêter l'alarme</button></div>`;
+  if(run) return `<div class="timer run" id="timerBox">
+    <div class="tname">Minuteur de mélange</div>
+    <div class="tbig" id="tLeft">${mmss(timerEnd-now)}</div>
+    <div class="note">Fin du mélange à <b id="tEnd">${hhmm(timerEnd)}</b></div>
+    <div class="actions"><button class="btn btn-sober" data-timer="pause">Pause</button><button class="btn btn-sober" data-timer="plus">+ 1 min</button><button class="btn btn-rust" data-timer="stop">Arrêter</button></div></div>`;
+  return `<div class="timer" id="timerBox">
+    <div class="row srow"><div><h2>Minuteur</h2><span class="note">À lancer une fois le dernier fourrage posé</span></div>
+      <div class="stepper">
+        <button type="button" class="step" data-timer="moins" aria-label="Une minute de moins">−</button>
+        <b>${cfg.minuteur} min</b>
+        <button type="button" class="step" data-timer="plusreg" aria-label="Une minute de plus">+</button>
+      </div></div>
+    <button class="btn btn-green" data-timer="go">Lancer : fin à ${hhmm(Date.now()+cfg.minuteur*60000)}</button></div>`;
+}
+function bip(){
+  try{
+    if(!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    [0,0.35,0.7].forEach(dt=>{
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "square"; o.frequency.value = 1760;
+      g.gain.setValueAtTime(0.0001, t0+dt); g.gain.exponentialRampToValueAtTime(0.6, t0+dt+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+dt+0.25);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t0+dt); o.stop(t0+dt+0.3);
+    });
+  }catch(e){}
+  try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch(e){}
+}
+function startAlarm(){
+  if(alarmTimer) return;
+  bip(); let n = 0;
+  alarmTimer = setInterval(()=>{ bip(); if(++n>=40) stopAlarmSound(); }, 1500); // environ 1 minute
+}
+function stopAlarmSound(){ clearInterval(alarmTimer); alarmTimer = null; try{ navigator.vibrate && navigator.vibrate(0); }catch(e){} }
+async function lockScreen(){ try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){} }
+function unlockScreen(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+/* Pré-alerte une minute avant la fin : deux bips courts + une vibration */
+function preBip(){
+  try{
+    if(audioCtx){
+      const t0 = audioCtx.currentTime;
+      [0,0.25].forEach(dt=>{
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = 1320;
+        g.gain.setValueAtTime(0.0001, t0+dt); g.gain.exponentialRampToValueAtTime(0.5, t0+dt+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+dt+0.18);
+        o.connect(g); g.connect(audioCtx.destination); o.start(t0+dt); o.stop(t0+dt+0.2);
+      });
+    }
+  }catch(e){}
+  try{ navigator.vibrate && navigator.vibrate([250,120,250]); }catch(e){}
+}
+let timerPre = false, eauPre = false;
+/* Minuteur du robinet (ligne Eau) : durée = litres à mettre ÷ débit */
+let eauEnd = +load("eauEnd") || 0, eauPause = +load("eauPause") || 0, eauRang = false;
+if(eauEnd>0 && Date.now()>=eauEnd) eauRang = true;
+if(timerEnd>0 && timerEnd-Date.now()<=60000) timerPre = true;
+if(eauEnd>0 && eauEnd-Date.now()<=60000) eauPre = true;
+function eauTimerHtml(it){
+  const now = Date.now(), dur = cfg.debit>0 ? it.act/cfg.debit*60000 : 0;
+  if(!(dur>0)) return "";
+  if(eauPause>0) return `<div class="etimer pause"><span>Robinet en pause · <b>${mmss(eauPause)}</b></span>
+    <div class="actions"><button class="btn btn-green" data-timer="eauresume">Reprendre</button><button class="btn btn-rust" data-timer="eaustop">Arrêter</button></div></div>`;
+  if(eauEnd>0 && now>=eauEnd) return `<div class="etimer fini"><span class="tname">Fermer le robinet !</span>
+    <button class="btn btn-red" data-timer="eaudone">Robinet fermé</button></div>`;
+  if(eauEnd>0) return `<div class="etimer run"><span>Robinet ouvert · <b id="eLeft">${mmss(eauEnd-now)}</b> · fermer à <b>${hhmm(eauEnd)}</b></span>
+    <div class="actions"><button class="btn btn-sober" data-timer="eaupause">Pause</button><button class="btn btn-rust" data-timer="eaustop">Arrêter</button></div></div>`;
+  return `<button class="btn btn-green" data-timer="eaugo" data-ms="${Math.round(dur)}">Ouvrir le robinet : minuteur ${duree(it.act,cfg.debit)}</button>`;
+}
+function tickTimer(){
+  const now = Date.now();
+  if(timerEnd>0){
+    const left = timerEnd - now;
+    if(left>0){
+      const el = $("tLeft"); if(el) el.textContent = mmss(left);
+      if(left<=60000 && !timerPre){ timerPre = true; preBip(); }
+    } else if(!timerRang){
+      timerRang = true; startAlarm();
+      if(current==="main") render();
+    }
+  }
+  if(eauEnd>0){
+    const left = eauEnd - now;
+    if(left>0){
+      const el = $("eLeft"); if(el) el.textContent = mmss(left);
+      if(left<=60000 && !eauPre){ eauPre = true; preBip(); }
+    } else if(!eauRang){
+      eauRang = true; startAlarm();
+      if(current==="main") render();
+    }
+  }
+}
+setInterval(tickTimer, 1000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ tickTimer(); if((timerEnd>0 && Date.now()<timerEnd) || (eauEnd>0 && Date.now()<eauEnd)) lockScreen(); } });
+const unlockAudio = () => { try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){} };
+$("list").addEventListener("click",e=>{
+  const t = e.target.closest("[data-timer]"); if(!t) return;
+  e.stopPropagation();
+  const act = t.dataset.timer;
+  if(act==="go"){
+    try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
+    timerEnd = Date.now() + cfg.minuteur*60000; timerRang = false; timerPre = cfg.minuteur*60000<=60000; store("timerEnd", timerEnd); lockScreen();
+    done.tm = true; store("done-"+dayKey(), done);
+  } else if(act==="pause"){
+    timerPause = Math.max(1000, timerEnd - Date.now()); timerEnd = 0; store("timerPause", timerPause); store("timerEnd", 0); unlockScreen();
+  } else if(act==="resume"){
+    try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
+    timerEnd = Date.now() + timerPause; timerPre = timerPause<=60000; timerPause = 0; timerRang = false; store("timerEnd", timerEnd); store("timerPause", 0); lockScreen();
+  } else if(act==="plus"){
+    timerEnd += 60000; if(timerEnd-Date.now()>60000) timerPre = false; store("timerEnd", timerEnd);
+  } else if(act==="eaugo"){
+    unlockAudio();
+    const ms = +t.dataset.ms||0; eauEnd = Date.now() + ms; eauRang = false; eauPre = ms<=60000; store("eauEnd", eauEnd); lockScreen();
+  } else if(act==="eaupause"){
+    eauPause = Math.max(1000, eauEnd - Date.now()); eauEnd = 0; store("eauPause", eauPause); store("eauEnd", 0);
+  } else if(act==="eauresume"){
+    unlockAudio();
+    eauEnd = Date.now() + eauPause; eauPre = eauPause<=60000; eauPause = 0; eauRang = false; store("eauEnd", eauEnd); store("eauPause", 0); lockScreen();
+  } else if(act==="eaustop" || act==="eaudone"){
+    eauEnd = 0; eauPause = 0; eauRang = false; store("eauEnd", 0); store("eauPause", 0); stopAlarmSound();
+    if(act==="eaudone"){ done.w = true; store("done-"+dayKey(), done); }
+  } else if(act==="stop"){
+    timerEnd = 0; timerPause = 0; timerRang = false; store("timerEnd", 0); store("timerPause", 0); stopAlarmSound(); unlockScreen();
+  } else if(act==="moins" || act==="plusreg"){
+    cfg.minuteur = Math.min(60, Math.max(1, cfg.minuteur + (act==="moins"?-1:1)));
+    store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
+  }
+  render();
+}, true);
+// Au rechargement, si le minuteur était déjà fini, on n'affiche que l'écran « terminé » (pas d'alarme sans geste)
+if(timerEnd>0 && Date.now()>=timerEnd) timerRang = true;
+
+/* ---------- Pesée des fourrages ----------
+   On tape le poids réellement chargé (pesée du chargeur ou de la mélangeuse) ; l'appli affiche le manque.
+   Le réel est gardé comme écart au prévu dans adj[clé] (0 compris : « pesé, c'est juste »). */
+/* Poids déjà dans la mélangeuse avant cette ligne (eau, fourrages et godet déjà chargés, au réel) */
+function cumAvant(items, key){
+  let c = 0;
+  for(const it of items){ if(it.key===key) break; if(!it.membre) c += it.act; }
+  return c;
+}
+const nomItem = it => it.water ? "Eau" : it.godet ? "Godet aliments" : it.a.nom;
+function peseeLigne(it, items){
+  const avant = cumAvant(items, it.key), cible = avant + it.planned, lu = avant + it.act;
+  const pese = Object.prototype.hasOwnProperty.call(adj, it.key), diff = it.act - it.planned;
+  const etat = !pese ? `<span class="pb-s">Saisir ›</span>`
+    : diff < -0.5 ? `<span class="pb-s">Lu ${nf(lu)} kg</span><span class="st warn">manque ${nf(-diff)} kg</span>`
+    : diff > 0.5 ? `<span class="pb-s">Lu ${nf(lu)} kg</span><span class="st warn">+ ${nf(diff)} kg</span>`
+    : `<span class="pb-s">Lu ${nf(lu)} kg</span><span class="st ok">juste</span>`;
+  return `<button class="pbtn${pese?" fait":""}" data-pesee="${it.key}" aria-label="Poids lu sur la mélangeuse pour ${esc(nomItem(it))}">
+      <span class="pb-l"><span class="pb-t">Mélangeuse</span><span class="pb-c">viser <b>${nf(cible)} kg</b></span></span>
+      <span class="pb-r">${etat}</span>
+    </button>`;
+}
+let pKey = null, pStr = "", pMode = "total";
+function peseeItem(){ return loadItems(compute(cfg)).items.find(x=>x.key===pKey); }
+function openPesee(key){
+  pKey = key; pStr = "";
+  pMode = "total";
+  renderPesee(); show("pesee");
+}
+function peseeCtx(){
+  const L = loadItems(compute(cfg)), it = L.items.find(x=>x.key===pKey);
+  return it ? {it, avant: cumAvant(L.items, pKey)} : null;
+}
+function renderPesee(){
+  const c = peseeCtx(); if(!c) return;
+  const {it, avant} = c, cible = avant + it.planned;
+  const pese = Object.prototype.hasOwnProperty.call(adj, pKey);
+  $("pTitle").textContent = nomItem(it);
+  $("pInfo").innerHTML = `Après ${it.water?"l'eau":esc(nomItem(it))}, la mélangeuse doit afficher <b>${nf(cible)} kg</b><br>(déjà dedans avant : ${nf(avant)} kg · prévu : ${kgTxt(it.planned)} kg)`;
+  $("pDisp").textContent = pStr || "0";
+  const lu = num(pStr), diff = lu - cible;
+  const r = $("pRes");
+  if(!pStr){ r.className = "pres"; r.innerHTML = pese ? `Dernier poids lu : ${nf(avant + it.act)} kg` : "Tape le poids affiché par la mélangeuse."; }
+  else if(diff < -0.5){ r.className = "pres warn"; r.innerHTML = `<b>Manque ${nf(-diff)} kg</b><br>${it.water?"d'eau":"de "+esc(nomItem(it))}`; }
+  else if(diff > 0.5){ r.className = "pres"; r.innerHTML = `<b>${nf(diff)} kg de plus</b><br>que prévu`; }
+  else { r.className = "pres ok"; r.innerHTML = `<b>C'est juste</b>`; }
+  $("pOk").disabled = !pStr;
+  $("pClear").hidden = !pese;
+}
+$("pPad").addEventListener("click",e=>{
+  const k = e.target.closest("[data-k]"); if(!k) return;
+  const c = k.dataset.k;
+  if(c==="del") pStr = pStr.slice(0,-1);
+  else if(c===","){ if(!pStr.includes(",")) pStr = (pStr||"0") + ","; }
+  else if(pStr.replace(",","").length < 6) pStr = (pStr==="0" ? "" : pStr) + c;
+  renderPesee();
+});
+$("pOk").addEventListener("click",()=>{
+  const c = peseeCtx(); if(!c || !pStr) return;
+  // poids lu sur la mélangeuse − ce qu'il y avait déjà = ce fourrage réellement chargé
+  adj[pKey] = Math.round((num(pStr) - c.avant - c.it.planned)*10)/10;
+  store("adj-"+dayKey(), adj); back();
+});
+$("pClear").addEventListener("click",()=>{ delete adj[pKey]; store("adj-"+dayKey(), adj); back(); });
+
+/* Ajustements du chargé réel (par jour, sur cet appareil) */
+let adj = load("adj-"+dayKey()) || {};
+const stepFor = planned => planned < 5 ? 0.1 : planned < 50 ? 1 : 5;
+/* Godet aliments : aliments comptés en bassines et condiments pesés, versés ensemble dans un godet pesé complet.
+   L'écart +/− sur le godet se répartit sur chacun de ses aliments au prorata du prévu. */
+const enGodet = a => a.type!=="fourrage" && (a.bassine>0 || a.condiment);
+function loadItems(r){
+  const items = [];
+  if(r.eau > 0) items.push({key:"w", water:true, planned:r.eau});
+  r.mix.forEach(a=>items.push({key:String(a.i), a, planned:a.total, membre: enGodet(a)}));
+  const membres = items.filter(it=>it.membre);
+  const gPlanned = membres.reduce((s,it)=>s+it.planned,0);
+  const gAdj = membres.length ? (+adj.g||0) : 0;
+  items.forEach(it=>{
+    if(it.membre){
+      it.adj = gPlanned>0 ? gAdj*it.planned/gPlanned : 0;
+      it.act = Math.max(0, it.planned + it.adj);
+    } else {
+      it.adj = +adj[it.key] || 0;
+      it.act = Math.max(0, it.planned + it.adj);
+    }
+    it.step = stepFor(it.planned);
+  });
+  const totalAct = items.reduce((s,it)=>s+it.act,0);
+  if(membres.length){
+    const last = items.lastIndexOf(membres[membres.length-1]);
+    items.splice(last+1, 0, {key:"g", godet:true, planned:gPlanned, adj:gAdj, act:Math.max(0,gPlanned+gAdj), step:5, n:membres.length});
+  }
+  return {items, totalAct};
+}
+$("list").addEventListener("click",e=>{
+  const a = e.target.closest("[data-adj]");
+  if(a){
+    const k = a.dataset.adj, it = loadItems(compute(cfg)).items.find(x=>x.key===k); if(!it) return;
+    let v = Math.round(((+adj[k]||0) + (+a.dataset.d)*it.step)*100)/100;
+    if(it.planned + v < 0) v = -it.planned;
+    if(Math.abs(v) < 1e-9) delete adj[k]; else adj[k] = v;
+    store("adj-"+dayKey(),adj); render(); return;
+  }
+  const m = e.target.closest("[data-msi]");
+  if(m){
+    // Taux de MS modifié directement sur la ligne du fourrage : le poids à charger et l'eau se recalculent
+    const A = cfg.aliments[+m.dataset.msi]; if(!A) return;
+    A.ms = Math.min(1, Math.max(0.2, Math.round(A.ms*100 + (+m.dataset.d))/100));
+    A.msOk = true;
+    store("cfg",cfg); render();
+    clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
+    return;
+  }
+  const pz = e.target.closest("[data-pesee]");
+  if(pz){ openPesee(pz.dataset.pesee); return; }
+  const b = e.target.closest("[data-i]"); if(!b) return;
+  const i = b.dataset.i; done[i] = !done[i]; store("done-"+dayKey(),done); render();
+});
+function doReset(){ done={}; adj={}; store("done-"+dayKey(),done); store("adj-"+dayKey(),adj); $("resetConfirm").hidden = true; render(); }
+$("reset").addEventListener("click",()=>{
+  if(Object.keys(adj).length || Object.values(done).some(Boolean)) $("resetConfirm").hidden = false;
+  else doReset();
+});
+$("resetNo").addEventListener("click",()=>{ $("resetConfirm").hidden = true; });
+$("resetYes").addEventListener("click",doReset);
+/* Changement de journée pendant que la page est ouverte */
+let curDay = dayKey();
+function checkDay(){
+  if(dayKey()===curDay) return;
+  curDay = dayKey();
+  done = load("done-"+curDay) || {}; adj = load("adj-"+curDay) || {};
+  if(current==="main") render();
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkDay(); });
+setInterval(checkDay, 60000);
+/* Bandeau : visible quand le haut de l'écran de chargement n'est plus à l'écran */
+try{
+  new IntersectionObserver(es=>{ $("mini").hidden = es[0].isIntersecting || current!=="main"; }).observe(document.querySelector(".hero"));
+}catch(e){}
+$("cumulToggle").addEventListener("change",e=>{cumulOn=e.target.checked;store("cumul",cumulOn);render();});
+function bump(key,d,min,max){
+  cfg[key] = Math.min(max, Math.max(min, Math.round((+cfg[key]||0)+d)));
+  store("cfg",cfg); render();
+  clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
+}
+$("pctMinus").addEventListener("click",()=>bump("pct",-5,5,150));
+$("pctPlus").addEventListener("click",()=>bump("pct",5,5,150));
+$("joursMinus").addEventListener("click",()=>bump("jours",-1,1,4));
+$("joursPlus").addEventListener("click",()=>bump("jours",1,1,4));
+$("humMinus").addEventListener("click",()=>bump("humCible",-1,0,90));
+$("humPlus").addEventListener("click",()=>bump("humCible",1,0,90));
+
+/* ---------- Navigation : une seule fenêtre ouverte ---------- */
+const parent = {menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
+let current = "main", mainScroll = 0;
+/* Bouton retour du téléphone : chaque fenêtre ouverte ajoute une étape à l'historique,
+   pour que le geste « retour » ferme la fenêtre au lieu de quitter l'appli. */
+let navDepth = 0, navBack = false;
+function show(v){
+  if(!navBack && v!=="main" && v!==current){
+    try{ const n = history.length; history.pushState({rv:v}, ""); if(history.length>n || n>=50) navDepth++; }catch(e){}
+  }
+  if(current==="main") mainScroll = window.scrollY;
+  document.querySelectorAll(".view").forEach(el=>el.hidden = el.id !== "v-"+v);
+  current = v;
+  if(v!=="main") $("mini").hidden = true;
+  if(v==="main"){ render(); window.scrollTo(0,mainScroll); } else window.scrollTo(0,0);
+}
+function doBack(){ navBack = true; show(parent[current]||"main"); navBack = false; if(current==="menu") renderMenu(); if(current==="alims") renderAlims(); }
+function back(){
+  if(navDepth>0){ try{ history.back(); return; }catch(e){} }
+  doBack();
+}
+window.addEventListener("popstate",()=>{
+  if(navDepth>0) navDepth--;
+  if(current!=="main") doBack();
+});
+document.addEventListener("click",e=>{
+  if(e.target.closest("[data-back]")){ e.preventDefault(); back(); }
+  const g = e.target.closest("[data-go]"); if(g) open(g.dataset.go);
+});
+function open(v){
+  if(v==="lots") buildLots();
+  if(v==="alims") renderAlims();
+  if(v==="eau"){ $("debit").value = cfg.debit; $("capacite").value = cfg.capacite; $("bascule").value = cfg.bascule; $("eauErr").hidden = true; }
+  if(v==="reperes"){ parent.reperes = current==="menu" ? "menu" : "main"; render(); renderNutri(); }
+  if(v==="bilan"){ parent.bilan = current==="main" ? "main" : "menu"; seasonOffset = 0; renderBilan(); }
+  if(v==="menu") renderMenu();
+  if(v==="refus"){ parent.refus = current==="reperes" ? "reperes" : "main"; show(v); renderRefus(); return; }
+  show(v);
+}
+$("openMenu").addEventListener("click",()=>open("menu"));
+$("lotline").addEventListener("click",()=>{ open("lots"); parent.lots = "main"; });
+
+function renderMenu(){
+  const r = compute(cfg);
+  $("m-lots").textContent = `${nf(r.brebis)} brebis · ${nf(r.parts,1)} parts`;
+  const n = cfg.aliments.filter(a=>a.actif && a.sec>0).length;
+  $("m-alims").textContent = `${n} aliment${n>1?"s":""} utilisé${n>1?"s":""} · protéines ${nf(r.mat,1)} %`;
+  $("m-eau").textContent = `${+cfg.capacite>0 ? "Capacité "+nf(cfg.capacite)+" kg" : "Capacité non réglée"} · ${nf(cfg.debit,1)} L/min · journée à ${cfg.bascule} h`;
+}
+
+/* ---------- Lots ---------- */
+let draftLots = [], delLot = null;
+function buildLots(fromDraft){
+  if(!fromDraft){ parent.lots = "menu"; draftLots = clone(cfg.lots); delLot = null; }
+  $("lotsForm").innerHTML = draftLots.map((l,i)=>`<div class="card">
+    <label class="f" for="lot-${i}-nom">Lot<input type="text" id="lot-${i}-nom" value="${esc(l.nom)}"></label>
+    <div class="grid">
+      <label class="f" for="lot-${i}-eff">Effectif${KN_CAT(l)&&l.auto!==false?' (OviLink)':''}<input type="number" inputmode="numeric" step="1" min="0" id="lot-${i}-eff" value="${l.effectif}"${KN_CAT(l)&&l.auto!==false?' readonly':''}></label>
+      <label class="f" for="lot-${i}-coef">Coefficient (part)<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
+    </div>
+    <div class="seg3" role="group" aria-label="Ration traite du lot ${esc(l.nom)}">
+      ${TRAITE.map(t=>`<button type="button" data-lot="${i}" data-tr="${t.v}" aria-pressed="${+l.traite===t.v}">${t.t}</button>`).join("")}
+    </div>
+    <div class="seg3" role="group" aria-label="Stade du lot ${esc(l.nom)}">
+      ${STADES.map(t=>`<button type="button" data-lot="${i}" data-stade="${t.v}" aria-pressed="${l.stade===t.v}">${t.t}</button>`).join("")}
+    </div>
+    <div class="grid">
+      <label class="f" for="lot-${i}-pv">Poids vif moyen (kg)<input type="number" inputmode="decimal" step="1" min="0" id="lot-${i}-pv" value="${l.pv}"></label>
+      ${l.stade==="lactation" ? `<label class="f" for="lot-${i}-l">Lait par brebis (L/jour)<input type="number" inputmode="decimal" step="0.1" min="0" id="lot-${i}-l" value="${l.litres}"></label>
+      <label class="f" for="lot-${i}-tb">TB (g/l)<input type="number" inputmode="decimal" step="1" min="0" id="lot-${i}-tb" value="${l.tb}"></label>
+      <label class="f" for="lot-${i}-tp">TP (g/l)<input type="number" inputmode="decimal" step="1" min="0" id="lot-${i}-tp" value="${l.tp}"></label>` : ""}
+    </div>
+    ${KN_CAT(l)?`<label class="check"><input type="checkbox" id="lot-${i}-auto"${l.auto!==false?' checked':''}> Effectif automatique depuis OviLink (bergerie seulement)</label>`:''}
+    ${l.coefAuto!=null&&l.auto!==false&&(+l.effectif||0)>0?`<p class="note">Coefficient du jour : <b>${nf(l.coefAuto,2)}</b> (montée sur 10 jours après l'agnelage, de la part des pleines à ${nf(l.coef,2)})</p>`:''}
+    <div class="lotmat" id="lot-${i}-mat"></div>
+    ${delLot===i
+      ? `<div class="actions"><button type="button" class="btn btn-rust" data-lotkeep="${i}">Garder</button><button type="button" class="btn btn-red" data-lotdel="${i}">Supprimer ce lot</button></div>`
+      : `<button type="button" class="linkbtn" data-lotask="${i}">Supprimer ce lot</button>`}
+  </div>`).join("") + `<button type="button" class="btn btn-green" id="addLot">+ Ajouter un lot</button>`;
+  updateLotMats();
+}
+function readLots(){
+  draftLots.forEach((l,i)=>{
+    l.nom = $(`lot-${i}-nom`).value.trim() || l.nom;
+    l.effectif = Math.max(0, num($(`lot-${i}-eff`).value)); l.coef = Math.max(0, num($(`lot-${i}-coef`).value));
+    l.pv = num($(`lot-${i}-pv`).value) || l.pv;
+    if($(`lot-${i}-auto`)){ l.auto = $(`lot-${i}-auto`).checked; if(!l.auto) l.coefAuto = null; }
+    if($(`lot-${i}-l`)){ l.litres = Math.max(0, num($(`lot-${i}-l`).value)); l.tb = num($(`lot-${i}-tb`).value) || l.tb; l.tp = num($(`lot-${i}-tp`).value) || l.tp; }
+  });
+}
+function updateLotMats(){
+  readLots();
+  const c = {...cfg, lots: draftLots};
+  draftLots.forEach((l,i)=>{
+    const s = lotStat(c,l), B = bilanLot(c,l);
+    $(`lot-${i}-mat`).innerHTML = `Protéines <b>${nf(s.mat,1)} %</b> · ${nf(s.sec,2)} kg MS par animal et par jour<br>Énergie <span class="st ${B.st.ufl}">${nf(B.cU)} %</span> · PDI <span class="st ${B.st.pdi}">${nf(B.cP)} %</span> · Ingestion <span class="st ${B.st.ing}">${nf(B.cI)} %</span>`;
+  });
+}
+$("lotsForm").addEventListener("input",updateLotMats);
+$("lotsForm").addEventListener("change",e=>{ if(/-auto$/.test(e.target.id||"")){ readLots(); const c = cfg; cfg = {...cfg, lots: draftLots}; oviSync(true); cfg = c; buildLots(true); } });
+$("lotsForm").addEventListener("click",e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  readLots();
+  if(false){}
+  else if(t.dataset.tr!==undefined){ draftLots[+t.dataset.lot].traite = +t.dataset.tr; buildLots(true); }
+  else if(t.dataset.stade!==undefined){ const L = draftLots[+t.dataset.lot]; L.stade = t.dataset.stade; if(L.stade==="lactation" && !(L.litres>0)) L.litres = 2.6; buildLots(true); }
+  else if(t.id==="addLot"){ draftLots.push({nom:"Nouveau lot", effectif:0, coef:1, traite:0, stade:"entretien", pv:75, litres:0, tb:70, tp:54}); buildLots(true); }
+  else if(t.dataset.lotask!==undefined){ delLot = +t.dataset.lotask; buildLots(true); }
+  else if(t.dataset.lotkeep!==undefined){ delLot = null; buildLots(true); }
+  else if(t.dataset.lotdel!==undefined){ draftLots.splice(+t.dataset.lotdel,1); delLot = null; buildLots(true); }
+});
+$("lotsSave").addEventListener("click",()=>{
+  readLots(); cfg.lots = clone(draftLots); oviSync(true);
+  commit(); back();
+});
+
+/* ---------- Eau ---------- */
+$("eauSave").addEventListener("click",()=>{
+  const d = num($("debit").value), cap = num($("capacite").value), b = num($("bascule").value);
+  const err = !(d>0) ? "Le débit du robinet doit être supérieur à 0." :
+    cap<0 ? "La capacité ne peut pas être négative." :
+    !(b>=0 && b<=12 && Number.isInteger(b)) ? "L'heure de début de journée doit être un nombre entier entre 0 et 12." : "";
+  if(err){ $("eauErr").textContent = err; $("eauErr").hidden = false; return; }
+  cfg.debit = d; cfg.capacite = cap; cfg.bascule = b;
+  commit(); checkDay(); back();
+});
+
+/* ---------- Aliments ---------- */
+function lotStatsHtml(c, r){
+  return c.lots.map((l,i)=>{
+    const s = r.lotsStats[i];
+    return `<div class="lsrow${(+l.effectif||0)>0?"":" off"}"><div class="lsname"><b>${esc(l.nom)}</b><span>${nf(l.effectif)} · coef ${nf(cf(l),2)} · ${traiteTxt(l.traite).toLowerCase()}</span></div>
+      <div class="lsval"><b>${nf(s.mat,1)} %</b><span>${nf(s.sec,2)} kg MS</span></div></div>`;
+  }).join("");
+}
+function liveBar(el, c){
+  const r = compute(c);
+  el.innerHTML = `<div class="lbhead"><span class="lbl">Protéines ration complète (mélange + traite)</span><span class="big">${nf(r.mat,1)} %</span></div>
+    <div class="lblots">${c.lots.map((l,i)=>`<span><span class="lbl">${esc(l.nom)}</span><b>${nf(r.lotsStats[i].mat,1)} %</b></span>`).join("")}</div>`;
+}
+function renderAlims(){
+  const last = cfg.aliments.length-1;
+  $("alimList").innerHTML = cfg.aliments.map((a,i)=>`<div class="arow${a.actif?"":" off"}">
+    <div class="arrows">
+      <button class="arr" data-move="${i}" data-dir="-1" aria-label="Monter ${esc(a.nom)}" ${i===0?"disabled":""}>▲</button>
+      <button class="arr" data-move="${i}" data-dir="1" aria-label="Descendre ${esc(a.nom)}" ${i===last?"disabled":""}>▼</button>
+    </div>
+    <button class="open" data-edit="${i}"><b>${esc(a.nom)}</b>
+      <span>${a.lieu==="traite"?"À la traite · ":""}${a.unite==="g" ? nf(a.sec*1000,1)+" g" : nf(a.sec,2)+" kg"}${a.condiment?"":(baseOf(cfg)===1?" MS":" à 86 %")} · MS ${nf(a.ms*100)} % · MAT ${nf(a.mat,1)} %${a.bassine>0?` · bassine ${nf(a.bassine,1)} kg`:""}</span></button>
+    <label class="use"><input type="checkbox" data-use="${i}" ${a.actif?"checked":""}>utilisé</label></div>`).join("");
+  liveBar($("bar-alims"), cfg);
+  renderBase();
+}
+function renderBase(){
+  const B = baseOf(cfg);
+  $("b100").setAttribute("aria-pressed", B===1); $("b86").setAttribute("aria-pressed", B===0.86);
+  const t100 = compute({...cfg, base:1}).totalMix, t86 = compute({...cfg, base:0.86}).totalMix;
+  $("baseNote").innerHTML = (B===1
+    ? "Les quantités saisies sont des kg de matière sèche pure, comme dans les tables INRA et les rations de technicien."
+    : "Les quantités saisies sont des kg d'aliment sec type à 86 % de MS : pour un foin ou un granulé, ce que tu écris est à peu près ce que tu charges.")
+    + ` Avec les mêmes chiffres : <b>${nf(t100)} kg</b> à charger en base 100 %, <b>${nf(t86)} kg</b> en base 86 %. Les condiments restent tels quels.`;
+}
+function setBase(B){
+  if(baseOf(cfg)===B) return;
+  cfg.base = B; done = {}; adj = {}; store("done-"+dayKey(),done); store("adj-"+dayKey(),adj);
+  commit(); renderAlims();
+}
+$("b100").addEventListener("click",()=>setBase(1));
+$("b86").addEventListener("click",()=>setBase(0.86));
+$("alimList").addEventListener("click",e=>{
+  const m = e.target.closest("[data-move]");
+  if(m){
+    const i = +m.dataset.move, j = i + (+m.dataset.dir);
+    if(j<0 || j>=cfg.aliments.length) return;
+    [cfg.aliments[i], cfg.aliments[j]] = [cfg.aliments[j], cfg.aliments[i]];
+    done = {}; adj = {}; store("done-"+dayKey(),done); store("adj-"+dayKey(),adj);
+    store("cfg",cfg); renderAlims();
+    clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
+    return;
+  }
+  const b = e.target.closest("[data-edit]"); if(b) editAlim(+b.dataset.edit);
+});
+$("alimList").addEventListener("change",e=>{
+  const c = e.target.closest("[data-use]"); if(!c) return;
+  cfg.aliments[+c.dataset.use].actif = c.checked; commit(); renderAlims();
+});
+
+let editIdx = null, draftLieu = "melange", draftUnit = "kg", draftType = "fourrage";
+function setType(t){
+  draftType = t;
+  $("t-four").setAttribute("aria-pressed", t==="fourrage"); $("t-conc").setAttribute("aria-pressed", t==="concentre"); $("t-min").setAttribute("aria-pressed", t==="mineral");
+  $("a-uemL").hidden = t!=="fourrage";
+}
+$("t-four").addEventListener("click",()=>{ setType("fourrage"); updateAlimCalc(); });
+$("t-conc").addEventListener("click",()=>{ setType("concentre"); updateAlimCalc(); });
+$("t-min").addEventListener("click",()=>{ setType("mineral"); updateAlimCalc(); });
+function setUnit(u, convert){
+  if(convert && u !== draftUnit){
+    const v = num($("a-sec").value);
+    $("a-sec").value = u==="g" ? Math.round(v*1000*10)/10 : Math.round(v/1000*100000)/100000;
+  }
+  draftUnit = u;
+  $("u-kg").setAttribute("aria-pressed", u==="kg"); $("u-g").setAttribute("aria-pressed", u==="g");
+  $("a-secLbl").textContent = u==="g" ? "grammes sec / part" : "kg sec / part";
+  updateAlimCalc();
+}
+$("u-kg").addEventListener("click",()=>setUnit("kg",true));
+$("u-g").addEventListener("click",()=>setUnit("g",true));
+function setLieu(l){ draftLieu = l; $("a-mel").setAttribute("aria-pressed", l==="melange"); $("a-tra").setAttribute("aria-pressed", l==="traite"); updateAlimCalc(); }
+$("a-mel").addEventListener("click",()=>setLieu("melange"));
+$("a-tra").addEventListener("click",()=>setLieu("traite"));
+function editAlim(i){
+  editIdx = i;
+  const a = i===null ? {nom:"", sec:0, ms:1, msOk:true, mat:0, bassine:10, lieu:"melange", actif:true} : cfg.aliments[i];
+  $("alimTitle").textContent = i===null ? "Nouvel aliment" : a.nom;
+  $("a-nom").value = a.nom; $("a-actif").checked = a.actif;
+  draftUnit = a.unite==="g" ? "g" : "kg";
+  $("a-sec").value = draftUnit==="g" ? Math.round(a.sec*1000*10)/10 : a.sec; $("a-ms").value = Math.round(a.ms*1000)/10; $("a-mat").value = a.mat;
+  $("a-bass").value = a.bassine; $("a-ok").checked = a.msOk; $("a-cond").checked = !!a.condiment;
+  const v = a.ufl===undefined ? valeursTypes(a) : a;
+  $("a-ufl").value = v.ufl; $("a-pdin").value = v.pdin; $("a-pdie").value = v.pdie; $("a-uem").value = v.uem; $("a-vok").checked = !!a.vOk;
+  setType(v.type||"fourrage");
+  $("delZone").hidden = i===null; $("delConfirm").hidden = true; $("delAsk").hidden = false; $("a-err").hidden = true;
+  setLieu(a.lieu); setUnit(draftUnit,false);
+  show("alim");
+}
+function readAlim(){
+  return {nom: $("a-nom").value.trim() || "Aliment", actif: $("a-actif").checked, lieu: draftLieu,
+    unite: draftUnit, sec: Math.max(0, draftUnit==="g" ? num($("a-sec").value)/1000 : num($("a-sec").value)), ms: num($("a-ms").value)/100, mat: Math.max(0, num($("a-mat").value)),
+    bassine: num($("a-bass").value), msOk: $("a-ok").checked, condiment: $("a-cond").checked,
+    type: draftType, ufl: Math.max(0, num($("a-ufl").value)), pdin: Math.max(0, num($("a-pdin").value)), pdie: Math.max(0, num($("a-pdie").value)),
+    uem: draftType==="fourrage" ? Math.max(0, num($("a-uem").value)) : 0, vOk: $("a-vok").checked};
+}
+function draftCfg(){ const c = clone(cfg), a = readAlim(); if(editIdx===null) c.aliments.push(a); else c.aliments[editIdx] = a; return c; }
+function updateAlimCalc(){
+  const a = readAlim(), c = draftCfg(), r = compute(c);
+  $("a-secLbl").textContent = (draftUnit==="g" ? "grammes" : "kg") + (a.condiment ? " tels quels / animal / jour" : (baseOf(cfg)===1 ? " de MS / part" : " à 86 % MS / part"));
+  const brut = a.ms>0 ? a.sec*(a.condiment?1:baseOf(cfg))/a.ms : 0;
+  $("a-calc").textContent = !(a.ms>0) ? "Saisis le % de matière sèche." : !a.actif ? "Non utilisé : sorti de la ration." :
+    a.sec<=0 ? "Rien à distribuer." :
+    a.lieu==="traite" ? `Compté dans la ration, donné à la traite (pas dans la mélangeuse).` :
+    a.condiment ? `→ ${partTxt(brut).replace("/part","")} par animal et par jour, soit ${kgTxt(brut*r.brebis)} kg par jour pour ${nf(r.brebis)} animaux` :
+    `Saisie en MS ${baseOf(cfg)===1?"100":"86"} % → ${partTxt(brut).replace("/part","")} à charger par part (aliment à ${nf(a.ms*100)} % de MS), soit ${kgTxt(brut*r.parts)} kg pour ${nf(r.parts,1)} parts` + (a.bassine>0 ? ` (${nf(brut*r.parts/a.bassine,1)} bassines)` : "");
+  liveBar($("bar-alim"), c);
+}
+$("alimForm").addEventListener("input",updateAlimCalc);
+$("alimForm").addEventListener("submit",e=>e.preventDefault());
+$("addAlim").addEventListener("click",()=>editAlim(null));
+function alimError(a){
+  if(!(a.ms>0 && a.ms<=1)) return "Le % de matière sèche doit être entre 1 et 100. Un taux vide ou à 0 fausserait tout le chargement de cet aliment.";
+  if(a.mat>60) return "Le taux de protéines (MAT) paraît trop élevé : vérifie la saisie.";
+  if(!a.condiment && a.sec>5) return "Plus de 5 kg sec par part : vérifie la virgule (par exemple 1,0 et non 10).";
+  if(a.condiment && a.sec>0.2) return "Plus de 200 g par animal pour un condiment : vérifie l'unité (grammes ou kg).";
+  if(a.bassine<0) return "Le poids de bassine ne peut pas être négatif.";
+  if(a.ufl>1.5) return "Plus de 1,5 UFL par kg de MS : vérifie la saisie (valeurs par kg de MS).";
+  if(a.pdin>400 || a.pdie>400) return "PDIN ou PDIE au-dessus de 400 g par kg de MS : vérifie la saisie.";
+  if(a.type==="fourrage" && a.actif && a.sec>0 && !(a.uem>0)) return "Indique l'encombrement (UEM) du fourrage, par exemple 1,1.";
+  return "";
+}
+$("alimSave").addEventListener("click",()=>{
+  const a = readAlim(), err = alimError(a);
+  if(err){ $("a-err").textContent = err; $("a-err").hidden = false; return; }
+  $("a-err").hidden = true;
+  if(editIdx===null) cfg.aliments.push(a); else cfg.aliments[editIdx] = a;
+  commit(); back();
+});
+$("delAsk").addEventListener("click",()=>{ $("delAsk").hidden = true; $("delConfirm").hidden = false; });
+$("delNo").addEventListener("click",()=>{ $("delAsk").hidden = false; $("delConfirm").hidden = true; });
+$("delYes").addEventListener("click",()=>{
+  if(editIdx!==null){ cfg.aliments.splice(editIdx,1); done = {}; adj = {}; store("done-"+dayKey(),done); store("adj-"+dayKey(),adj); }
+  commit(); back();
+});
+
+/* ---------- Journal des chargements ---------- */
+const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+let journal = load("journal") || clone(JOURNAL_DEPART);   // date -> [chargements]
+let chgCol = null, seasonOffset = 0;
+const r1 = n => Math.round(n*100)/100;
+function snapshotLoad(){
+  const r = compute(cfg), now = new Date();
+  return {heure: now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),
+    pct: +cfg.pct, jours: r.jours, brebis: r.brebis, parts: r1(r.parts),
+    eau: r1((loadItems(r).items.find(it=>it.water)||{act:0}).act),
+    aliments: loadItems(r).items.filter(it=>!it.water && !it.godet).map(it=>({nom:it.a.nom, kg:r1(it.act), prevu:r1(it.planned), ms:+it.a.ms||1, cond:!!it.a.condiment})),
+    // L'aliment traite est donné chaque jour : sur un mélange pour plusieurs jours, il compte pour chacun de ces jours
+    traite: r.tra.map(a=>({nom:a.nom, kg:r1(a.total*r.jours), ms:+a.ms||1}))};
+}
+function refreshSaveNote(started){
+  const l = journal[dayKey()], waiting = Object.keys(pending).length;
+  const el = $("saveNote");
+  el.classList.remove("todo");
+  if(l && l.length){
+    el.textContent = `Enregistré à ${l[l.length-1].heure}` + (l.length>1 ? ` (${l.length} chargements)` : "")
+      + (waiting ? " · en attente d'envoi en ligne, gardé sur ce téléphone" : "");
+  } else {
+    el.textContent = started ? "Chargement commencé mais pas encore enregistré." : "Pas encore enregistré aujourd'hui.";
+    if(started) el.classList.add("todo");
+  }
+}
+/* Envois en attente : un jour enregistré sans réseau reste sur le téléphone
+   et repart tout seul dès que la connexion revient. Il n'est jamais écrasé par la liste en ligne. */
+let pending = load("journalPending") || {};   // date -> chargements, ou null pour une suppression
+async function flushPending(){
+  if(!chgCol || !canSave) return;
+  for(const key of Object.keys(pending)){
+    const loads = pending[key];
+    try{
+      if(loads && loads.length) await chgCol.doc(key).set({date:key, loads});
+      else await chgCol.doc(key).delete();
+      delete pending[key]; store("journalPending",pending);
+    }catch(e){
+      $("status").textContent = "Journal gardé sur ce téléphone ; il sera envoyé en ligne au retour du réseau.";
+      return;
+    }
+  }
+  $("status").textContent = "Journal enregistré";
+  refreshSaveNote();
+}
+async function writeDay(key, loads){
+  if(loads.length) journal[key] = loads; else delete journal[key];
+  pending[key] = loads.length ? loads : null;
+  store("journal",journal); store("journalPending",pending);
+  refreshSaveNote(); if(current==="main") render();
+  if(current==="bilan") renderBilan();
+  await flushPending();
+}
+window.addEventListener("online", flushPending);
+/* Un seul enregistrement par jour : on modifie celui du jour, ou on enregistre pour le lendemain (mélange préparé d'avance) */
+const lendemainKey = () => { const d = workDate(); d.setDate(d.getDate()+1); return d.toLocaleDateString("fr-CA"); };
+const jourTxt = k => new Date(k+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+function saveDay(mode){
+  const key = mode==="demain" ? lendemainKey() : dayKey();
+  $("saveChoice").hidden = true; $("saveDay").hidden = false;
+  writeDay(key, [snapshotLoad()]);
+  if(mode==="demain") $("status").textContent = `Chargement enregistré pour ${jourTxt(key)}`;
+}
+$("saveDay").addEventListener("click",()=>{
+  if((journal[dayKey()]||[]).length){
+    const demainPris = (journal[lendemainKey()]||[]).length>0;
+    $("addDay").textContent = demainPris ? `Modifier celui de demain (${jourTxt(lendemainKey())})` : `Enregistrer pour demain (${jourTxt(lendemainKey())})`;
+    $("saveChoice").hidden = false; $("saveDay").hidden = true;
+  }
+  else saveDay("jour");
+});
+$("replaceDay").addEventListener("click",()=>saveDay("jour"));
+$("addDay").addEventListener("click",()=>saveDay("demain"));
+$("cancelDay").addEventListener("click",()=>{ $("saveChoice").hidden = true; $("saveDay").hidden = false; });
+
+/* ---------- Bilan de saison ---------- */
+$("moisSaison").innerHTML = MOIS.map((m,i)=>`<option value="${i+1}">${m[0].toUpperCase()+m.slice(1)}</option>`).join("");
+function seasonBounds(off){
+  const m = +cfg.moisSaison, now = new Date();
+  let y = now.getMonth()+1 >= m ? now.getFullYear() : now.getFullYear()-1;
+  y += off;
+  const pad = n => String(n).padStart(2,"0");
+  const start = `${y}-${pad(m)}-01`;
+  const end = m===1 ? `${y+1}-01-01` : `${y+1}-${pad(m)}-01`;
+  const label = m===1 ? `Saison ${y}` : `Saison ${y}-${y+1}`;
+  return {start, end, label};
+}
+/* Refus d'une saison : pesées dont la sortie tombe dans la saison ; % du mélange distribué sur les mêmes périodes */
+function refusSaison(off){
+  const {start, end, label} = seasonBounds(off);
+  const P = (cfg.refusPesees||[]).filter(r=>r.fin>=start && r.fin<end);
+  if(!P.length) return {label, n:0};
+  let kg = 0, jours = 0, distrib = 0;
+  P.forEach(r=>{
+    kg += +r.kg||0; jours += +r.jours||0;
+    Object.keys(journal).filter(d=>d>=r.debut && d<r.fin).forEach(d=>journal[d].forEach(l=>{
+      distrib += (l.aliments||[]).reduce((t,a)=>t+(+a.kg||0),0) + (+l.eau||0);
+    }));
+  });
+  const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
+  return {label, n:P.length, kg, jours, parJour: jours>0 ? kg/jours : 0, pct: distrib>0 ? kg/distrib*100 : null, ms: kg*(four ? four.ms : 0.86)};
+}
+function refusSaisonHtml(off){
+  const R = refusSaison(off), Rp = refusSaison(off-1);
+  if(!R.n) return `<p class="note">Aucune pesée de refus sur cette saison. Pèse les refus quand tu les sors de la bergerie (bouton « Refus » en haut de l'écran de chargement).</p>`;
+  const kgT = kg => kg>=1000 ? nf(kg/1000,2)+" t" : nf(kg)+" kg";
+  let comp = "";
+  if(Rp.n){
+    const d = R.parJour - Rp.parJour;
+    comp = `<p class="note">${Rp.label} : ${nf(Rp.parJour,1)} kg par jour${Rp.pct!==null?` (${nf(Rp.pct,1)} % du distribué)`:""}. <b>${d<=0 ? `${nf(-d,1)} kg de refus en moins par jour` : `${nf(d,1)} kg de refus en plus par jour`}</b> cette saison.</p>`;
+  }
+  return `<div class="stat">
+      <div><b>${kgT(R.kg)}</b><span>refus pesés</span></div>
+      <div><b>${nf(R.parJour,1)}</b><span>kg par jour</span></div>
+      <div><b>${R.pct!==null ? nf(R.pct,1)+" %" : "–"}</b><span>du distribué</span></div></div>
+    <p class="note">${R.n} pesée${R.n>1?"s":""} sur ${R.jours} jours · environ ${kgT(R.ms)} de matière sèche non mangée.</p>${comp}`;
+}
+function renderBilan(){
+  $("moisSaison").value = cfg.moisSaison;
+  const {start,end,label} = seasonBounds(seasonOffset);
+  $("seasonLbl").textContent = label;
+  $("seasonNext").disabled = seasonOffset >= 0;
+  const days = Object.keys(journal).filter(d=>d>=start && d<end).sort().reverse();
+  // Quantités ramenées à la norme choisie (MS 100 % ou 86 %) ; le brut chargé reste affiché en petit
+  const B = baseOf(cfg);
+  const msDe = a => a.ms>0 ? a.ms : ((cfg.aliments.find(x=>x.nom===a.nom)||{}).ms || 1);
+  const condDe = a => a.cond!==undefined ? a.cond : !!(cfg.aliments.find(x=>x.nom===a.nom)||{}).condiment;
+  const tot = {}; let eau = 0, nLoads = 0, nJours = 0;
+  days.forEach(d=>journal[d].forEach(l=>{
+    nLoads++; eau += +l.eau||0; nJours += Math.max(1, +l.jours||1);
+    [...(l.aliments||[]), ...(l.traite||[]).map(t=>({...t, traite:true}))].forEach(a=>{
+      const k = a.nom + (a.traite?" (traite)":"");
+      const brut = +a.kg||0, norme = condDe(a) ? brut : brut*msDe(a)/B;
+      tot[k] = tot[k] || {brut:0, norme:0};
+      tot[k].brut += brut; tot[k].norme += norme;
+    });
+  }));
+  $("bilanSum").innerHTML = `<div class="stat">
+    <div><b>${nJours}</b><span>jours nourris</span></div>
+    <div><b>${nLoads}</b><span>chargements</span></div>
+    <div><b>${nf(eau/1000,1)}</b><span>m³ d'eau</span></div></div>`;
+  const rows = Object.entries(tot).sort((a,b)=>b[1].norme-a[1].norme);
+  const max = rows.length ? rows[0][1].norme : 1;
+  const kgT = kg => kg>=1000 ? nf(kg/1000,2)+" t" : kgTxt(kg)+" kg";
+  $("bilanNorme").textContent = `Quantités ramenées en ${B===1 ? "matière sèche (MS 100 %)" : "aliment sec type (MS 86 %)"}, la norme choisie dans Réglages › Aliments. Les condiments restent tels quels.`;
+  $("bilanAlims").innerHTML = rows.length ? rows.map(([nom,v])=>`<div class="brow">
+      <div class="row"><span>${esc(nom)}</span><b>${kgT(v.norme)}</b></div>
+      <div class="track"><span style="width:${(v.norme/max*100).toFixed(1)}%"></span></div>
+      <span class="note">moyenne ${kgTxt(v.norme/Math.max(1,nJours))} kg par jour · chargé brut ${kgT(v.brut)}</span></div>`).join("")
+    : `<p class="note">Aucun chargement enregistré sur cette saison. Le bouton « Enregistrer le chargement du jour » se trouve sous la liste de chargement.</p>`;
+  $("bilanRefus").innerHTML = refusSaisonHtml(seasonOffset);
+  $("bilanDays").innerHTML = days.length ? days.map(d=>{
+    const loads = journal[d];
+    const kg = loads.reduce((s,l)=>s+(l.aliments||[]).reduce((t,a)=>t+(+a.kg||0),0)+(+l.eau||0),0);
+    const dt = new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+    return `<div class="dayrow"><div class="row"><span>${dt}${loads.length>1?` · ${loads.length} chargements`:""}${(loads[0].jours||1)>1?` · pour ${loads[0].jours} jours`:""}${loads[0].pct!==100?` · ${loads[0].pct} %`:""}</span><b>${nf(kg)} kg</b></div>
+      <button class="linkbtn" data-delask="${d}">Supprimer ce jour</button>
+      <div class="actions" data-delbox="${d}" hidden><button class="btn btn-rust" data-delno="${d}">Garder</button><button class="btn btn-red" data-delyes="${d}">Supprimer</button></div></div>`;
+  }).join("") : `<p class="note">Rien pour l'instant.</p>`;
+}
+$("bilanDays").addEventListener("click",e=>{
+  const t = e.target;
+  if(t.dataset.delask){ t.hidden = true; document.querySelector(`[data-delbox="${t.dataset.delask}"]`).hidden = false; }
+  if(t.dataset.delno){ renderBilan(); }
+  if(t.dataset.delyes){ writeDay(t.dataset.delyes, []); }
+});
+$("seasonPrev").addEventListener("click",()=>{ seasonOffset--; renderBilan(); });
+$("seasonNext").addEventListener("click",()=>{ if(seasonOffset<0){ seasonOffset++; renderBilan(); } });
+$("moisSaison").addEventListener("change",e=>{ cfg.moisSaison = +e.target.value; seasonOffset = 0; commit(); renderBilan(); });
+
+/* ---------- Enregistrement ---------- */
+function commit(){ store("cfg",cfg); saveRemote(); }
+async function saveRemote(){
+  clearTimeout(pendingTimer); pendingTimer = null;
+  if (dbRef && canSave){
+    $("status").textContent = "Enregistrement…";
+    try{ await dbRef.set(cfg); $("status").textContent = "Réglages enregistrés"; }
+    catch(err){
+      if(err && err.code==="invalid_argument"){ canSave = false; $("status").textContent = "Réglages gardés sur cet appareil seulement (lecture seule)."; }
+      else $("status").textContent = "Réglages gardés sur cet appareil ; l'enregistrement en ligne a échoué.";
+    }
+  } else $("status").textContent = "Réglages enregistrés sur cet appareil";
+}
+
+/* ---------- Lien avec OviLink (même site) ----------
+   OviLink écrit chaque jour les effectifs de la bergerie dans « cb_keenan » ; KEENAN les reprend tout seul.
+   Agnelées : chaque brebis passe de la part des pleines à la part des agnelées en 10 jours après la mise bas. */
+function KN_CAT(l){ const n = (l&&l.nom)||""; return /b[ée]lier/i.test(n)?"beliers":/antenai/i.test(n)?"antenaises":/agnel/i.test(n)?"agnelees":/traite/i.test(n)?"traite":/plein/i.test(n)?"pleines":""; }
+let oviT = 0;
+function oviSync(noStore){
+  let o = null; try{ o = JSON.parse(localStorage.getItem("cb_keenan")||"null"); }catch(e){}
+  if(!o) return false; oviT = +o.t||0; let ch = false;
+  if(!cfg.lots.some(l=>KN_CAT(l)==="antenaises")){
+    const p = cfg.lots.find(l=>KN_CAT(l)==="pleines"), i = p ? cfg.lots.indexOf(p) : cfg.lots.length-1;
+    cfg.lots.splice(i+1, 0, Object.assign(clone(p||{coef:0.75,traite:0,stade:"gestation",tb:70,tp:54,litres:0}), {nom:"Antenaises pleines", effectif:0, pv:65, coefAuto:null, auto:true}));
+    ch = true;
+  }
+  const cp = +((cfg.lots.find(l=>KN_CAT(l)==="pleines")||{}).coef ?? 0.75);
+  cfg.lots.forEach(l=>{
+    const k = KN_CAT(l); if(!k) return;
+    if(l.auto===false){ if(l.coefAuto!=null){ l.coefAuto = null; ch = true; } return; }
+    const n = Math.max(0, +o[k]||0); if(l.effectif!==n){ l.effectif = n; ch = true; }
+    if(k==="agnelees"){
+      const J = Array.isArray(o.jours) ? o.jours : [], ca = +l.coef||0;
+      const v = J.length ? Math.round(J.reduce((s,d)=>s + cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/10), 0)/J.length*1000)/1000 : null;
+      if(l.coefAuto!==v){ l.coefAuto = v; ch = true; }
+    }
+  });
+  if(ch && !noStore) store("cfg",cfg);
+  return ch;
+}
+function oviNote(){ if(!oviT) return; const d = new Date(oviT); $("status").textContent = "Effectifs repris d'OviLink (bergerie) le " + d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function oviRefresh(){ if(oviSync()){ if(current==="main") render(); else if(current==="menu") renderMenu(); else if(current==="reperes" && typeof renderReperes==="function") renderReperes(); } oviNote(); }
+oviSync(); 
+window.addEventListener("storage", e=>{ if(e.key==="cb_keenan") oviRefresh(); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) oviRefresh(); });
+
+render(); oviNote();
+
+(async()=>{
+  try{
+    const db = window.claude && await window.claude.use("db");
+    if(!db) return;
+    dbRef = db.doc("reglages/ration");
+    chgCol = db.collection("chargements");
+    chgCol.limit(1000).onSnapshot(s=>{
+      const j = {};
+      s.docs.forEach(d=>{ const x = d.data(); if(x && Array.isArray(x.loads) && x.loads.length) j[d.id] = x.loads; });
+      // Les jours en attente d'envoi gardent la version du téléphone
+      Object.keys(pending).forEach(key=>{ if(pending[key] && pending[key].length) j[key] = pending[key]; else delete j[key]; });
+      journal = j; store("journal",journal);
+      if(current==="main") render();
+      if(current==="bilan") renderBilan();
+      if(Object.keys(pending).length) flushPending();
+    },()=>{});
+    dbRef.onSnapshot(snap=>{
+      if(!snap.exists || pendingTimer) return;
+      const d = snap.data();
+      if(d && d.lots && d.aliments){
+        cfg = fill(clone(d)); store("cfg",cfg);
+        if(current==="main") render();
+        else if(current==="menu") renderMenu();
+        else if(current==="alims") renderAlims();
+      }
+    },()=>{});
+  }catch(e){}
+})();
+</script>
+
+
+</body></html>

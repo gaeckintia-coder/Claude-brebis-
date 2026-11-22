@@ -220,6 +220,7 @@ tr.sel td{background:var(--okbg)}
     <button type="button" role="tab" data-t="mort" aria-selected="false" class="t-mouv">Mortalité</button>
     <button type="button" role="tab" data-t="mb" aria-selected="false">Mises bas</button>
     <button type="button" role="tab" data-t="cl" aria-selected="false">Contrôle laitier</button>
+    <button type="button" role="tab" data-t="keenan" aria-selected="false">KEENAN</button>
     <button type="button" role="tab" data-t="tests" aria-selected="false">Tests</button>
   </div>
 
@@ -774,7 +775,7 @@ $('#file').addEventListener('change',e=>{
 
 // ---- onglets
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
-function setTab(t){tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
+function setTab(t){ if(t==='keenan'){knOpen(); return} tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
   if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
   if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
@@ -1129,7 +1130,22 @@ $('#t-no').onclick=()=>$('#t-confirm').hidden=true;
 $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(NOMS).forEach(v=>v.s=1);Object.values(NOUR).forEach(v=>v.s=1);LS.set('cb_nour',NOUR);Object.values(MORT).forEach(v=>v.s=1);LS.set('cb_mort',MORT);LS.set('cb_noms',NOMS);GM.forEach(m=>m.s=1);saveG();Object.values(MP).forEach(v=>v.sent=1);LS.set('cb_mpis',MP);Object.values(MT).forEach(v=>v.sent=1);LS.set('cb_mam',MT);$('#t-confirm').hidden=true;render()};
 
 // ---- affichage
-function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
+// ===== KEENAN (rationneur de la mélangeuse), ouvert dans OviLink =====
+// Effectifs de la Bergerie pour KEENAN : béliers, pleines (+ vides, taries), antenaises, agnelées (jours depuis la mise bas), à la traite
+function keenanMaj(){ if(!DB) return; const o={beliers:0,pleines:0,antenaises:0,agnelees:0,traite:0,jours:[]}, a=auj();
+  Object.entries(A()).forEach(([k,x])=>{ if(!pres(x)||jeuneCat(x)) return; if(batOf(lotOf(k)||'')!=='Bergerie') return;
+    if(!femelle(x)){o.beliers++; return}
+    if(traiteFaite(k)&&!tarie(k)){o.traite++; return}
+    const m=typeof mbDe==='function'?mbDe(k):null; if(m&&!tarie(k)){o.agnelees++; o.jours.push(Math.max(0,Math.round((new Date(a+'T12:00:00')-new Date(m.d+'T12:00:00'))/864e5))); return}
+    if(/Antenaise/i.test(x.cat||'')) o.antenaises++; else o.pleines++});
+  o.jours.sort((x,y)=>x-y); const nv=JSON.stringify(o); if(nv===keenanMaj.der) return; keenanMaj.der=nv; o.t=Date.now(); LS.set('cb_keenan',o)}
+function knOpen(){ keenanMaj(); let w=$('#kn-wrap');
+  if(!w){ w=document.createElement('div'); w.id='kn-wrap'; w.style.cssText='position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column';
+    w.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)"><button type="button" class="btn2 b-retour" id="kn-back">← OviLink</button><b style="font-size:18px">KEENAN</b><span class="hint" style="margin-left:auto">les minuteurs continuent</span></div><iframe id="kn-if" src="rationneur.html" title="KEENAN" style="flex:1;width:100%;border:0"></iframe>';
+    document.body.appendChild(w); $('#kn-back').onclick=knClose}
+  w.hidden=false; document.body.style.overflow='hidden'}
+function knClose(){ const w=$('#kn-wrap'); if(w) w.hidden=true; document.body.style.overflow='' }
+function render(){ try{keenanMaj()}catch(e){} if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
   if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB(); if(tab==='cl'&&typeof renderCL==='function') renderCL();
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
@@ -1686,7 +1702,7 @@ function campMaj(){const sel=$('#camp-sel'); sel.innerHTML=campListe().map(c=>`<
   const b=$('#camp-ban'); b.hidden=enCours(); b.textContent='Vous regardez la campagne '+CV+'. Les lots montrent toujours les bêtes d’aujourd’hui.'}
 $('#camp-sel').addEventListener('change',e=>{CV=e.target.value; LS.set('cb_cv',CV); ['lots','groupes'].forEach(k=>{LG[k].sel=null;LG[k].ck.clear()}); E_VOIR=null; campMaj(); render()});
 // ---- sauvegarde / restauration
-function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith('cb_')&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'OviLink',quand:new Date().toISOString(),cles:o}}
+function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&(k.startsWith('cb_')||k.startsWith('kn_'))&&k!=='cb_bk') o[k]=localStorage.getItem(k)} return {app:'OviLink',quand:new Date().toISOString(),cles:o}}
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
 $('#inst').onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{await INSTALL.userChoice}catch(e){} INSTALL=null; $('#inst').hidden=true};
 $('#bk-save').onclick=()=>{const t=JSON.stringify(bkData()); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'application/json'})); a.download=bkNom(); document.body.appendChild(a); a.click(); a.remove();
@@ -1705,6 +1721,7 @@ bkCheck();
 let QUIT=0;
 function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;font-size:16px;max-width:90vw;text-align:center';document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,2500)}
 function retourTel(){
+  if($('#kn-wrap')&&!$('#kn-wrap').hidden){knClose(); return true}
   if(document.body.classList.contains('kfull')){consFermer(); return true}
   if(document.body.classList.contains('cfull')){coFermer(); return true}
   if(document.body.classList.contains('xfull')){ if(ED.mb){toast('Appuyez sur « Enregistrer » ou « Annuler »'); return true} if(ED.page){ED.page=null; renderEdit()} else edFermer(); return true}
