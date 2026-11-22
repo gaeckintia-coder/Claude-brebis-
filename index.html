@@ -847,11 +847,28 @@ function famille(p,x){
   return ch(plein,'Frères et sœurs (même mère et même père)')+ch(dm,'Demi-frères et sœurs par la mère')+ch(dp,'Demi-frères et sœurs par le père');
 }
 const ST={'#fiche':{pile:[],cour:null},'#sheet-body':{pile:[],cour:null}};
+/* Père : un n° de travail (5 chiffres) n'identifie pas un bélier extérieur (IA, achat) : 32058 de la ferme ≠ 32058 du centre.
+   Le père n'ouvre la fiche d'un animal de la base que si c'est un bélier ou antenais de chez nous ; sinon il ouvre la fiche
+   du bélier extérieur, identifiée par son n° national (préfixe d'élevage + n°). */
+function pereInterne(id){return male(id)}
+function prefPere(id){const L=((DB&&DB.peres)||{})[id]||[], r=((DB&&DB.ia)||[]).find(o=>o.p===id&&/^\d{11}$/.test(o.lib||'')); const P=[...new Set([...(r?[r.lib.slice(0,6)]:[]),...L])].filter(e=>e!=='450000'||!r); return P}
+function nomPere(id){const P=prefPere(id); return (P.length?'FR '+P.join(' ou ')+' ':'')+id}
+function lienPere(id){ if(!id) return 'inconnu'; if(pereInterne(id)) return lien(id);
+  return `<button type="button" class="lien" data-go="P:${esc(id)}">${esc(nomPere(id))} ›</button>`}
+function ficheExt(id,retour){ const I=DB.ixb&&DB.ixb[id], r=(DB.ia||[]).find(o=>o.p===id), P=prefPere(id);
+  const enf=Object.entries(A()).filter(([k,v])=>v.pere===id).sort((a,b)=>cmpAnim(a[0],b[0]));
+  const homo=A()[id]?`<div class="hint" style="margin:6px 0">⚠️ Ne pas confondre avec <b>${id}</b> de la ferme${A()[id].nom?' ('+esc(A()[id].nom)+')':''} : même n° de travail, autre animal.</div>`:'';
+  return retour+`<div class="tag" style="padding-right:70px"><span style="position:absolute;top:8px;right:10px;background:#3a3a3a;color:#fff;font-weight:800;font-size:16px;padding:3px 10px;border-radius:999px">${r?'IA':'EXT'}</span><small>${P.length?'FR '+P.join(' ou '):'n° national inconnu'}</small><b>${esc(id)}</b><span class="tag-lot">${r?"Bélier d'IA":'Bélier extérieur'} · pas de la maison</span></div>
+   <div class="row" style="flex-wrap:wrap;gap:6px;margin:8px 0">${r?`<span class="chip">IA du ${frJA(r.d)}</span>`:''}${I&&I.code?`<span class="chip">code centre ${esc(I.code)}</span>`:''}</div>
+   ${I?`<dl><dt>iProd</dt><dd><b>${I.iprod}</b></dd><dt>iSol</dt><dd><b>${I.isol}</b></dd></dl><div class="hint">${esc((DB.ixb._src)||'')}</div>`:''}
+   ${P.length>1?`<div class="hint">Deux élevages possibles pour ce n° : le fichier ne dit pas lequel est le père de chaque animal.</div>`:''}${homo}
+   <h2>Descendants dans la base (${enf.length})</h2><div class="nums">${enf.map(([k])=>lien(k)).join(' ')||'<span class="hint">aucun</span>'}</div>`}
 function lien(id){ if(!id) return 'inconnu'; return A()[id]?`<button type="button" class="lien${pres(A()[id])?'':' off'}" data-go="${id}">${id} ›</button>`:`${esc(id)} <span class="hint">(hors base)</span>`; }
 function fiche(p,nav,el='#fiche'){
   const S=ST[el]; if(nav!=='nav'){S.pile=[]} S.cour=p; const pile=S.pile;
   const x=A()[p];
-  const retour=pile.length?`<button type="button" class="btn2 retour" data-back="1">← Retour à ${pile[pile.length-1]}</button>`:'';
+  const retour=pile.length?`<button type="button" class="btn2 retour" data-back="1">← Retour à ${String(pile[pile.length-1]).replace(/^P:/,'')}</button>`:'';
+  if(/^P:/.test(p)){$(el).innerHTML=ficheExt(p.slice(2),retour);return}
   if(!x){$(el).innerHTML=retour+`<div class="big warn">${esc(p)}<small>Inconnu dans la base</small></div>`;return}
   const desc=Object.entries(A()).filter(([k,v])=>enfant(v,p)).sort((a,b)=>cmpAnim(a[0],b[0]));
   const st=/Présent/.test(x.statut)?'c-ok':'c-bad';
@@ -869,7 +886,7 @@ function fiche(p,nav,el='#fiche'){
    ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
-   <dt>Mère</dt><dd${jeuneCat(x)?' class="gros"':''}>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd class="gros">${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lien(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}${pereIA(x)}</dd></dl>
+   <dt>Mère</dt><dd${jeuneCat(x)?' class="gros"':''}>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd class="gros">${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lienPere(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}${pereIA(x)}</dd></dl>
    ${MORT[p]?`<div class="row"><span class="chip c-bad">Mort le ${frJA(MORT[p].d)}</span></div>`:''}
    ${famille(p,x)}
    ${desc.length?(()=>{const mo=moyLJ(desc),t=troupLJ();
@@ -2094,7 +2111,7 @@ function mbAppliquer(){ if(!DB) return; Object.values(MBS).forEach(v=>v.ag.forEa
 // père d'IA d'un agneau : code du centre, date de l'IA et index du bélier (DB.ixb)
 function pereIA(x){ if(!x||!x.pere||!DB) return ''; const v=x.mb&&MBS[x.mb]; const r=v&&v.mode==='IA'&&(DB.ia||[]).find(o=>o.b===v.m&&o.p===x.pere);
   const I=DB.ixb&&DB.ixb[x.pere]; if(!r&&!I) return '';
-  const lib=(r&&r.lib)||((DB.ia||[]).find(o=>o.p===x.pere)||{}).lib||''; return (/^\d{11}$/.test(lib)?'<br><b>FR '+lib.slice(0,6)+' '+lib.slice(6)+'</b>':'')+'<br><span class="hint">'+(r?'IA du '+frJA(r.d):'')+(I&&I.code?(r?' · ':'')+'code '+esc(I.code):'')+'</span>'+(I?'<br><b>iProd '+I.iprod+' · iSol '+I.isol+'</b> <span class="hint">(index du père)</span>':'')}
+  const lib=(r&&r.lib)||((DB.ia||[]).find(o=>o.p===x.pere)||{}).lib||''; return '<br><span class="hint">'+(r?'IA du '+frJA(r.d):'')+(I&&I.code?(r?' · ':'')+'code '+esc(I.code):'')+'</span>'+(I?'<br><b>iProd '+I.iprod+' · iSol '+I.isol+'</b> <span class="hint">(index du père)</span>':'')}
 function mbImport(){ if(!DB) return; let n=0;
   (DB.mb||[]).forEach(v=>{const id=v.m+'|'+v.d; if(MBS[id]){ const o=MBS[id]; if(o.cbi&&v.pere&&(o.pere!==v.pere||o.mode!==v.mode)){o.pere=v.pere; o.mode=v.mode||o.mode; n++} return} const loc=Object.values(MBS).find(o=>o.m===v.m&&campOf(o.d)===campOf(v.d)); if(loc&&!loc.cbi) return; if(loc) delete MBS[loc.id];
     MBS[id]={id,m:v.m,d:v.d,pere:v.pere||'',mode:v.mode||'',ag:v.ag.map(a=>({...a})),t:new Date().toISOString(),s:1,cbi:1}; n++});
@@ -2171,7 +2188,7 @@ function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
      <div class="zbar"><button type="button" class="btn2 b-retour" data-mbann="1">Annuler</button><button type="button" class="btn b-valid" data-mbok="1">Enregistrer</button></div>`;
     return h}
   const M=mbDe(p);
-  if(M) h+=`<div class="lg-act"><b>Mise bas du ${frJA(M.d)}</b> · portée ${mbPortee(M)}${M.pere?' · père '+esc(M.pere)+(M.mode?' ('+M.mode+')':''):''}
+  if(M) h+=`<div class="lg-act"><b>Mise bas du ${frJA(M.d)}</b> · portée ${mbPortee(M)}${M.pere?' · père '+esc(nomPere(M.pere))+(M.mode?' ('+M.mode+')':''):''}
      ${mbLignesH(M)}
      <div class="row" style="margin-top:6px"><button type="button" class="btn2 b-retour" data-mbedit="${esc(M.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbdel="${esc(M.id)}">${ED.ask==='mbdel'?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></div>`;
   else h+=`<button type="button" class="btn" data-mbnew="1" style="width:100%;padding:16px;font-size:20px;margin-top:8px">＋ Nouvelle mise bas</button>`;
@@ -2273,7 +2290,7 @@ $('#v-mb').addEventListener('click',e=>{const b=e.target.closest('button,[data-m
   if(b.dataset.mbposeok){const o=b.dataset.mbposeok, nv=plaqueDe($(`[data-mbpose="${o}"]`).value||'')||''; const err=mbPoser(o,nv); if(err) return st(err); document.activeElement.blur(); renderMB(); st(o+' → '+nv+' : repère définitif posé.',1); return}
   if(b.dataset.mbprint){mbImprimer(); return}
   if(b.dataset.mbsend){const L=Object.values(MBS).filter(v=>!v.s).sort((a,b)=>a.d.localeCompare(b.d)||a.m.localeCompare(b.m)), R=Object.entries(REP).filter(([k,v])=>!v.s), PA=Object.entries(PAN).filter(([k,v])=>!v.s), BI=Object.entries(BIBS).filter(([k,v])=>!v.s);
-    envoyer('OviLink – mises bas\n\n'+(L.map(v=>frJA(v.d)+' · mère '+v.m+' · portée '+mbPortee(v)+(v.pere?' · père '+v.pere+(v.mode?' ('+v.mode+')':''):'')+'\n  '+mbLignes(v)).join('\n')||'aucune')+(R.length?'\n\nRepères définitifs posés :\n'+R.map(([k,v])=>k+' → '+v.n+' ('+frJA(v.d)+')').join('\n'):'')+(PA.length?'\n\nPères confirmés par analyse :\n'+PA.map(([k,v])=>k+' : père '+v.p+' (analyse du '+frJA(v.d)+')').join('\n'):'')+(BI.length?'\n\nMises au biberon :\n'+BI.map(([k,v])=>frJA(v.d)+' · '+k+' (mère '+((A()[k]||{}).mere||'?')+')').join('\n'):''),b); return}
+    envoyer('OviLink – mises bas\n\n'+(L.map(v=>frJA(v.d)+' · mère '+v.m+' · portée '+mbPortee(v)+(v.pere?' · père '+nomPere(v.pere)+(v.mode?' ('+v.mode+')':''):'')+'\n  '+mbLignes(v)).join('\n')||'aucune')+(R.length?'\n\nRepères définitifs posés :\n'+R.map(([k,v])=>k+' → '+v.n+' ('+frJA(v.d)+')').join('\n'):'')+(PA.length?'\n\nPères confirmés par analyse :\n'+PA.map(([k,v])=>k+' : père '+v.p+' (analyse du '+frJA(v.d)+')').join('\n'):'')+(BI.length?'\n\nMises au biberon :\n'+BI.map(([k,v])=>frJA(v.d)+' · '+k+' (mère '+((A()[k]||{}).mere||'?')+')').join('\n'):''),b); return}
   if(b.dataset.mbsent){Object.values(MBS).forEach(v=>v.s=1); Object.values(REP).forEach(v=>v.s=1); Object.values(PAN).forEach(v=>v.s=1); LS.set('cb_pan',PAN); Object.values(BIBS).forEach(v=>v.s=1); saveBIB(); saveMB(); LS.set('cb_rep',REP); renderMB(); return}});
 let MB_ASK=null;
 function mbCorriger(id){const M=MBS[id]; if(!M) return; $('#sheet').hidden=true; if(document.body.classList.contains('kfull')) consFermer(); edOuvrir(M.m); ED.page='agn'; ED.mb={oid:M.id,d:M.d,ag:M.ag.map(a=>({...a})),pere:M.pere||''}; renderEdit()}
@@ -2285,7 +2302,7 @@ function mbPoser(o,nv){ if(!/^\d{5}$/.test(nv)) return 'Le numéro définitif fa
   Object.values(GRP).forEach(g=>{if(g[o]){g[nv]=g[o]; delete g[o]}}); saveG(); REP[o]={n:nv,d:auj()}; LS.set('cb_rep',REP); saveMB(); LS.set('cb_data',DB); _pis=null; return ''}
 function mbImprimer(){const L=mbFiltre(), B=mbBilan(L);
   $('#print-reg').innerHTML=`<h1>Mises bas${MBF.du||MBF.au?' du '+(MBF.du?frJA(MBF.du):'…')+' au '+(MBF.au?frJA(MBF.au):'…'):' – campagne '+CV}</h1><div>GAEC KINTIA – édité le ${fdate()} · ${B.mb} mises bas · ${B.ag} agneaux · ${B.mn} mort-nés · ${B.ad} adoptés · portées : ${B.s} simples, ${B.d} doubles, ${B.t} triples ou plus</div><br>
-   <table><thead><tr><th>Mère</th><th>Date</th><th>Lot</th><th>Portée</th><th>Agneaux</th><th>Père</th><th>Mode</th></tr></thead><tbody>${L.map(v=>`<tr><td>${v.m}</td><td>${frJA(v.d)}</td><td>${esc(lotOf(v.m)||'')}</td><td>${mbPortee(v)}</td><td>${esc(mbLignes(v))}</td><td>${esc(v.pere||'')}</td><td>${v.mode||''}</td></tr>`).join('')||'<tr><td colspan="7">Aucune mise bas.</td></tr>'}</tbody></table>`;
+   <table><thead><tr><th>Mère</th><th>Date</th><th>Lot</th><th>Portée</th><th>Agneaux</th><th>Père</th><th>Mode</th></tr></thead><tbody>${L.map(v=>`<tr><td>${v.m}</td><td>${frJA(v.d)}</td><td>${esc(lotOf(v.m)||'')}</td><td>${mbPortee(v)}</td><td>${esc(mbLignes(v))}</td><td>${esc(v.pere?nomPere(v.pere):'')}</td><td>${v.mode||''}</td></tr>`).join('')||'<tr><td colspan="7">Aucune mise bas.</td></tr>'}</tbody></table>`;
   setTimeout(()=>window.print(),100)}
 // mise au biberon : l'agneau sort de sous sa mère et va dans le lot « Biberon »
 let BIBS=LS.get('cb_bib',{}); const saveBIB=()=>LS.set('cb_bib',BIBS);   // {agneau:{d,pl (LOTS avant),pn (NOUR avant),s}}
@@ -2537,7 +2554,7 @@ function renderCons(){const p=CONS, x=A()[p]||{}; let h=`<div class="e-top"><but
   const C=(SO.C||[]).filter(c=>c.an.includes(p)).sort((a,b)=>b.d.localeCompare(a.d));
   h+=`<h3>Traitements collectifs · ${C.length}</h3>`+(C.map(c=>`<div class="lg-act"><b>${esc(pNom(c.k))}</b> ${fml(c.ml)} ml · ${frJA(c.d)}${c.motif?' · '+esc(c.motif):''}<div class="hint">avec ${c.an.length} animaux · flacon${c.fl.length>1?'s':''} ${c.fl.map(([n])=>flNom(n)).join(', ')||'—'}</div></div>`).join('')||'<div class="hint">Aucun.</div>');
   const MB=Object.values(MBS).filter(v=>v.m===p).sort((a,b)=>b.d.localeCompare(a.d));
-  if(MB.length) h+=`<h3>Mises bas · ${MB.length}</h3>`+MB.map(v=>`<div class="lg-act"><b>${frJA(v.d)}</b> · portée ${mbPortee(v)}<div>${mbLignesH(v)}</div>${v.pere?`<div class="hint">père ${numL(v.pere)}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></div>`).join('');
+  if(MB.length) h+=`<h3>Mises bas · ${MB.length}</h3>`+MB.map(v=>`<div class="lg-act"><b>${frJA(v.d)}</b> · portée ${mbPortee(v)}<div>${mbLignesH(v)}</div>${v.pere?`<div class="hint">père ${lienPere(v.pere)}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></div>`).join('');
   const H=histLots(p); h+=`<h3>Lots</h3><div class="hint">${H.slice().reverse().map(r=>`${r.du?'du '+r.du+' '+(r.au?'au '+r.au:'à aujourd’hui'):'jusqu’au '+r.au} : <b>${esc(r.lot)}</b>`).join('<br>')}</div>`;
   const Gm=GM.filter(m=>m.p===p); if(Gm.length) h+=`<h3>Groupes</h3><div class="hint">${Gm.map(m=>m.d.slice(0,10)+' · '+(m.a==='+'?'ajoutée à':'retirée de')+' « '+esc(m.g)+' »').join('<br>')}</div>`;
   const Ev=[]; Object.entries(EC).forEach(([d,j])=>{if(j[p]) Ev.push(frJA(d)+' · écho : '+(j[p].st?j[p].st+' j, '+j[p].nb+' agn.':'vide'))}); if(TRA[p]) Ev.push(frJA(TRA[p].d)+' · mise à la traite ('+esc(TRA[p].lot)+')'); if(tarie(p)) Ev.push('tarie ('+grpTar()+')'); if(VEN[p]) Ev.push(frJA(VEN[p].d)+' · vendue'); if(MORT[p]) Ev.push(frJA(MORT[p].d)+' · morte');
