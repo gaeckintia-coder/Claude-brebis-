@@ -530,7 +530,7 @@ tr.sel td{background:var(--okbg)}
   <section id="v-repro" class="card" hidden>
     <button type="button" class="lg-card avenir" disabled aria-disabled="true"><span>💞 Luttes</span><span class="hint">à venir</span></button>
     <button type="button" class="lg-card" data-mvgo="echo"><span>🩻 Écho</span><span class="hint">séances d'échographie, résultats</span></button>
-    <button type="button" class="lg-card" data-mvgo="mb"><span>🐣 Mises bas</span><span class="hint">agnelages, adoptions, consultation</span></button>
+    <button type="button" class="lg-card" data-mvgo="mb"><span>🐑 Mises bas</span><span class="hint">agnelages, adoptions, consultation</span></button>
   </section>
 
   <!-- MISES BAS -->
@@ -2040,11 +2040,11 @@ $('#v-edit').addEventListener('input',e=>{const t=e.target; if(!ED.mb) return; i
 $('#v-edit').addEventListener('change',e=>{const t=e.target; if(ED.mb&&t.dataset.mbadsx!=null){ED.mb.ad[+t.dataset.mbadsx].sx=t.value; return} if(ED.mb&&t.dataset.mbad!=null){ED.mb.ad[+t.dataset.mbad].n=t.value.trim(); renderEdit(); return} if(ED.mb&&(t.id==='mb-d'||t.id==='mb-pere')){if(t.id==='mb-d') ED.mb.d=t.value||auj(); else ED.mb.pere=t.value; return} if(t.id==='ed-lot'){const nb=$('#ed-lot-nb'); nb.hidden=t.value!=='__new'; if(!nb.hidden) $('#ed-lot-n').focus()}});
 $('#v-edit').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const p=ED.p, msg=(t,ok)=>{const s=$('#ed-st'); s.textContent=t; s.className='state '+(ok?'ok':'err')};
   const ask=k=>{if(ED.ask===k){ED.ask=null; return true} ED.ask=k; clearTimeout(window._edT); window._edT=setTimeout(()=>{ED.ask=null; renderEdit()},5000); renderEdit(); return false};
-  if(b.dataset.edback){ if(ED.mb||ED.adc){ED.mb=null; ED.adc=null; ED.adq=null; ED.mvq=null; renderEdit(); return} if(ED.page){ED.page=null; ED.ask=null; renderEdit()} else edFermer(); return}
+  if(b.dataset.edback){ if(ED.mb||ED.adc){ED.mb=null; ED.adc=null; ED.adq=null; ED.mvq=null; if(ED.page==='agn'&&!mbDe(p)){ if(ED.depuisMB){edFermer(); return} ED.page=null} renderEdit(); return} if(ED.page){ED.page=null; ED.ask=null; renderEdit()} else edFermer(); return}
   if(b.dataset.edpg){const k=b.dataset.edpg;
     if(k==='soins'){edFermer(); setTab('soins'); setMode('soins','saisie'); soinsBip(p); return}
     if(k==='mort'){edFermer(); setTab('mort'); setMode('mort','saisie'); moBip(p); return}
-    ED.page=k; ED.ask=null; renderEdit(); const i=$('#v-edit input'); if(i&&k!=='lot') i.focus(); return}
+    ED.page=k; ED.ask=null; if(k==='agn'&&!mbDe(p)) ED.mb={oid:null,d:auj(),ag:[],pere:''}; renderEdit(); const i=$('#v-edit input'); if(i&&k!=='lot'&&k!=='agn') i.focus(); return}
   if(b.dataset.ednom){NOMS[p]={nom:$('#ed-nom').value.trim()}; LS.set('cb_noms',NOMS); ED.page=null; renderEdit(); msg('Nom enregistré.',1); return}
   if(b.dataset.edmp){setMP(p,!mpis(p)); renderEdit(); msg(mpis(p)?'Marquée mauvais pis.':'Mauvais pis retiré.',1); return}
   if(b.dataset.edgdel){const g=b.dataset.edgdel; if(!ask('g:'+g)) return; grpDel(p,g); saveG(); renderEdit(); msg('Retirée de « '+g+' ».',1); return}
@@ -2159,15 +2159,6 @@ function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
      ${mbLignesH(M)}
      <div class="row" style="margin-top:6px"><button type="button" class="btn2 b-retour" data-mbedit="${esc(M.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbdel="${esc(M.id)}">${ED.ask==='mbdel'?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></div>`;
   else h+=`<button type="button" class="btn" data-mbnew="1" style="width:100%;padding:16px;font-size:20px;margin-top:8px">＋ Nouvelle mise bas</button>`;
-  const E=tri(Object.keys(A()).filter(k=>k!==p&&agneauSousMere(k)&&nourrice(k)===p));
-  h+=`<h3>Agneaux qu’elle élève · ${E.length}</h3>${E.map(k=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><span style="flex:1">${agL(k)}${A()[k].mere!==p?' <span class="hint">adopté, né de</span> '+numL(A()[k].mere):''}</span>${NOUR[k]&&NOUR[k].n===p?`<button type="button" class="btn2 b-retour" data-edadno="${k}">${ED.ask==='a:'+k?'Confirmer : annuler l’adoption':'Annuler l’adoption (erreur)'}</button>`:''}</div>`).join('')||'<div class="hint">Aucun.</div>'}
-    <h3 style="margin-top:12px">Adoption</h3>`;
-  if(ED.adc){const k=ED.adc.k, a=A()[k]||{};
-    h+=`<div class="big warn" style="font-size:20px">Confirmez-vous qu’il s’agit bien de l’agneau ${numL(k)}<small>de la brebis ${numL(a.mere)}${a.ne?', né le '+esc(a.ne):''}${nourrice(k)&&nourrice(k)!==a.mere?' · aujourd’hui sous '+numL(nourrice(k)):''}${BIBS[k]?' · aujourd’hui au biberon':''} ?</small></div>
-     <div class="row"><button type="button" class="btn b-valid" data-adoui="1" style="flex:1;padding:14px">✔ Oui</button><button type="button" class="btn2 b-retour" data-adnon="1" style="flex:1;padding:14px">Non</button></div>`}
-  else h+=`<div class="hint">Bipez ou tapez le numéro de l’agneau qu’elle adopte : il quitte sa mère et passe sous ${esc(p)}.</div>
-    <div class="row"><input id="ed-adin" inputmode="numeric" placeholder="N° de l’agneau" style="font:inherit;font-size:20px;padding:10px;flex:1"><select id="ed-adsx"><option value="">Sexe si nouveau</option><option value="Agneau">Mâle</option><option value="Agnelle">Femelle</option></select></div>
-    <button type="button" class="btn b-valid" data-edadok="1" style="width:100%;margin-top:8px;padding:14px">${esc(p)} adopte cet agneau</button>`;
   return h}
 function mbSerForm(pre){return `<div class="lg-act"><label><input type="radio" name="${pre}-t" value="2"${SER.deux&&!SER.prov?' checked':''}> 2 séries (mâles / femelles)</label><br><label><input type="radio" name="${pre}-t" value="1"${!SER.deux&&!SER.prov?' checked':''}> 1 série commune</label>${SER.prov?'<br><label><input type="radio" name="'+pre+'-t" value="p" checked> repères provisoires</label>':''}
   <div class="row" style="margin-top:6px"><label class="hint">Prochain mâle <input id="${pre}-m" inputmode="numeric" value="${esc(SER.m)}" style="width:6em;font:inherit;padding:6px"></label><label class="hint">Prochaine femelle <input id="${pre}-f" inputmode="numeric" value="${esc(SER.f)}" style="width:6em;font:inherit;padding:6px"></label></div>
@@ -2194,7 +2185,7 @@ function mbClic(b,p,msg,ask){const F=ED.mb;
   if(b.dataset.mbmvnon){ED.mvq=null; renderEdit(); msg('Changez le numéro de l’agneau, ou laissez-le chez sa mère.'); return true}
   if(b.dataset.mbrm!=null){F.ag.splice(+b.dataset.mbrm,1); ED.mvq=null; renderEdit(); return true}
   if(b.dataset.mbart!=null){const a=F.ag[+b.dataset.mbart]; a.art=a.art?0:1; renderEdit(); return true}
-  if(b.dataset.mbann){ED.mb=null; ED.mvq=null; ED.adq=null; renderEdit(); toast('Mise bas annulée : rien n’a été enregistré'); return true}
+  if(b.dataset.mbann){ED.mb=null; ED.mvq=null; ED.adq=null; if(ED.page==='agn'&&!mbDe(p)){ if(ED.depuisMB) edFermer(); else {ED.page=null; renderEdit()} } else renderEdit(); toast('Mise bas annulée : rien n’a été enregistré'); return true}
   if(b.dataset.mbok){ const d=F.d||auj(), id=mbId(p,d), vus=[], AD=F.ad||[];
     if(!F.ag.length&&!AD.length){msg('Ajoutez au moins un agneau, un mort-né ou une adoption.'); return true}
     if(!F.ag.length&&F.oid){msg('Pour effacer toute la mise bas, utilisez « 🗑 Supprimer ».'); return true}
@@ -2227,7 +2218,7 @@ function mbClic(b,p,msg,ask){const F=ED.mb;
 // tuile « Mises bas » : biper la mère (saisie) · toutes les mises bas (consultation, bilan, impression)
 function mbMere(p){const x=A()[p], st=$('#mb-msg');
   if(!x||!femelle(x)||jeuneCat(x)||!pres(x)){alerte(); sonHors(); if(st){st.textContent=p+(x?' : pas une brebis adulte présente.':' : inconnue dans la base.'); st.className='state err'} return}
-  bip(); edOuvrir(p); ED.page='agn'; if(!mbDe(p)) ED.mb={oid:null,d:auj(),ag:[],pere:''}; renderEdit()}
+  bip(); edOuvrir(p); ED.page='agn'; ED.depuisMB=1; if(!mbDe(p)) ED.mb={oid:null,d:auj(),ag:[],pere:''}; renderEdit()}
 let MBF={du:'',au:'',mmin:'',mmax:'',lot:'',mode:'',tri:'d',sens:-1,open:null};
 function mbFiltre(){const L=Object.values(MBS).filter(v=>(!MBF.du||v.d>=MBF.du)&&(!MBF.au||v.d<=MBF.au)&&(MBF.du||MBF.au||campOf(v.d)===CV)&&(!MBF.lot||(lotOf(v.m)||'Sans lot')===MBF.lot)&&(!MBF.mode||(v.mode||'?')===MBF.mode));
   const o=milOrdre(L.map(v=>v.m)), r=x=>o(coMil(x)); return L.filter(v=>(!MBF.mmin||r(v.m)>=o(MBF.mmin))&&(!MBF.mmax||r(v.m)<=o(MBF.mmax)))
