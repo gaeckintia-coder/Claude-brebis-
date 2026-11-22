@@ -247,7 +247,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
     </div>
-    <div class="row"><b id="t-n">0</b><span class="hint">animaux</span><button id="t-all" class="btn2" type="button">Tout cocher</button><button id="t-none" class="btn2" type="button">Rien</button></div>
+    <button id="t-rech" class="btn" type="button" style="width:100%;margin:6px 0">📡 Rechercher ces animaux en bipant</button><div class="row"><b id="t-n">0</b><span class="hint">animaux</span><button id="t-all" class="btn2" type="button">Tout cocher</button><button id="t-none" class="btn2" type="button">Rien</button></div>
     <div class="tbl"><table><thead><tr><th></th><th>N°</th><th>Lot</th><th>Écho / agnelage</th><th>Index</th></tr></thead><tbody id="t-body"></tbody></table></div>
     <div class="move" hidden>
       <b><span id="t-sel">0</span> coché(s) : déplacer vers</b>
@@ -1016,6 +1016,10 @@ function lotsList(){const c={};Object.entries(A()).forEach(([k,x])=>{if(!pres(x)
   let neuf=false; Object.keys(c).forEach(l=>{if(l!=='Sans lot'&&!LREG[l]){LREG[l]={};neuf=true}}); if(neuf) LS.set('cb_lreg',LREG);
   Object.keys(LREG).forEach(l=>{if(!(l in c)) c[l]=0}); return Object.entries(c).sort(triLots)}
 function fillSel(id,vals,first){const s=$(id),cur=s.value;s.length=1;vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=first?first(v):v;s.append(o)});s.value=cur}
+// rechercher avec le lecteur les animaux qui répondent aux critères choisis (onglet Troupeau)
+document.addEventListener('click',e=>{ if(!e.target.closest('#t-rech')) return; const r=filtre(); if(!r.length){toast('Aucun animal avec ces critères.'); return}
+  const crit=['lot','grp','cat','sexe','etat','suivi','agn'].map(k=>{const el=$('#f-'+k); return el&&el.value?el.options[el.selectedIndex].text:''}).filter(Boolean);
+  rech={titre:(crit.join(' · ')||'Tout le troupeau')+' ('+r.length+')',debut:new Date().toISOString(),cible:tri(r.map(x=>x[0])),trouvees:[],trop:[]}; LS.set('cb_rech',rech); R_ORIG='troupeau'; setTab('recherche')});
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(tab!=='troupeau'||tvOk(k,x))&&(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||(f('cat')==='adultes'?!jeuneCat(x):f('cat')==='jeunes'?jeuneCat(x):catAff(x)===f('cat')))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
