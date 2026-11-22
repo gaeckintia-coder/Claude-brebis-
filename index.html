@@ -302,9 +302,11 @@ tr.sel td{background:var(--okbg)}
       <option value="agnelage|Agneau mort dedans">Nouveaux traitements : Agneau mort dedans</option>
       <option value="coli">Nouveaux traitements : Diarrhée agneau (n° de la mère)</option>
     </select>
+    <div id="s-tour"><h3 style="margin:10px 0 2px">À traiter aujourd'hui · <span id="s-n1b">0</span></h3><div class="hint">Connecte le lecteur et bipe-les : la fiche du jour s'ouvre, il n'y a plus qu'à appuyer sur ✔ Fait.</div><div class="nums" id="s-l1b"></div></div>
     <div id="s-card"></div>
     </div>
     <div class="s-consult">
+    <button type="button" class="btn" data-stour="1" style="width:100%;margin:6px 0">📡 Tournée : biper les brebis à traiter</button>
     <h3>À traiter aujourd'hui · <span id="s-n1">0</span></h3><div class="nums" id="s-l1"></div>
     <h3>Faits aujourd'hui · <span id="s-n2">0</span></h3><div class="nums" id="s-l2"></div>
     <h3 class="c-bad">Traitement fini · attente lait (marque rouge) · <span id="s-n3">0</span></h3><div class="nums" id="s-l3"></div>
@@ -1158,6 +1160,7 @@ function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(document.body.classList.contains('ttfull')){ttBip(p);return}
   if(tab==='mb'&&MD.mb==='saisie'){mbMere(p); return}
   if(tab==='cl'&&MD.cl==='saisie'){clBip(p); return}
+  if(tab==='soins'&&MD.soins!=='saisie'){setMode('soins','saisie'); $('#s-mode').value=''; soinsBip(p); return}
   if(THEMES.includes(tab)&&MD[tab]!=='saisie'&&!(tab==='echo'&&eOuverte())){ouvrirFiche(p); bip(); return}
   if(tab==='lots'||tab==='groupes'||tab==='traite'){ouvrirFiche(p); bip(); return}
   if(tab==='sevrage') sevBip(p); else if(tab==='vente') venBip(p); else if(tab==='mort') moBip(p); else if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
@@ -1265,6 +1268,7 @@ function carteSoin(a){const x=A()[a]; const L=actifsT(a); const pr=PH().proto;
   const st=[['mammite','','Mammite'],['agnelage','Non-délivrance','Non-délivrance'],['agnelage','Césarienne','Césarienne'],['agnelage','Agnelage difficile','Agnelage difficile'],['agnelage','Agneau mort dedans','Agneau mort dedans'],['coli','','Diarrhée agneau']];
   h+=`<div class="hint" style="margin-top:10px">Démarrer un traitement :</div><div class="row" style="flex-wrap:wrap">${st.map(([p,m,l])=>`<button type="button" class="btn2" data-sstart="${p}|${m}">${l}</button>`).join('')}</div>`;
   return h}
+document.addEventListener('click',e=>{if(e.target.closest('[data-stour]')){setMode('soins','saisie'); $('#s-mode').value=''; S_CUR=null; renderSoins()}});
 function soinsBip(p){S_CUR=p; const md=$('#s-mode').value;
   if(md){const [pp,m]=md.split('|'); if(!actifsT(p).some(t=>t.p===pp)) demarrer(p,pp,m)}
   const L=actifsT(p).map(etatT); if(L.some(e=>e.cat==='afaire')){bip();sonTrouve()} else if(L.length){bip();sonDeja()} else {alerte();sonHors()}
@@ -1277,6 +1281,7 @@ function renderSoins(){ if(!$('#v-soins')) return; const a=auj();
   const chip=([t,e],txt)=>`<button type="button" class="lien" data-sb="${t.a}">${t.a} · ${txt} ›</button>`;
   const ab=t=>({mammite:'Mam.',agnelage:'Agn.',coli:'Coli'})[t.p]||t.p;
   $('#s-n1').textContent=G.afaire.length; $('#s-l1').innerHTML=G.afaire.map(x=>chip(x,ab(x[0])+' J'+x[1].jour+'/'+x[1].tot)).join('')||'<span class="hint">Rien à faire</span>';
+  if($('#s-l1b')){$('#s-n1b').textContent=G.afaire.length; $('#s-l1b').innerHTML=$('#s-l1').innerHTML; $('#s-tour').hidden=!!$('#s-mode').value}
   $('#s-n2').textContent=G.fait.length; $('#s-l2').innerHTML=G.fait.map(x=>chip(x,ab(x[0])+' J'+x[1].n+'/'+x[1].tot)).join('');
   $('#s-n3').textContent=G.attlait.length; $('#s-l3').innerHTML=G.attlait.map(x=>chip(x,'lait '+frJ(x[1].lait))).join('');
   $('#s-n4').textContent=G.traite.length; $('#s-l4').innerHTML=G.traite.map(x=>chip(x,'traite')).join('');
@@ -1340,7 +1345,7 @@ $('#s-print').addEventListener('click',()=>{const du=$('#s-du').value||'0000', a
   $('#print-reg').innerHTML=`<h1>Registre sanitaire – traitements médicamenteux</h1><div>GAEC KINTIA – 360 chemin Arrozpidea, 64130 Chéraute – EDE 64188013 – ovins lait · Vétérinaire : ${esc(P.ordo.veto)} · Période du ${frJA(du)} au ${frJA(au)} · édité le ${fdate()}</div><br>
    <table><thead><tr><th>Début</th><th>Fin</th><th>Animal</th><th>Motif</th><th>Médicament</th><th>Dose × durée</th><th>Voie</th><th>Flacon / ordonnance</th><th>Attente lait → fin</th><th>Attente viande → fin</th><th>Remise à la traite</th><th>Fait par</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="12">Aucun traitement sur la période.</td></tr>'}</tbody></table>`;
   setTimeout(()=>window.print(),100)});
-$('#s-mode').addEventListener('change',()=>{LS.set('cb_smode',$('#s-mode').value)});
+$('#s-mode').addEventListener('change',()=>{LS.set('cb_smode',$('#s-mode').value); renderSoins()});
 try{$('#s-mode').value=LS.get('cb_smode','')}catch(e){}
 
 // ---- échographie : séances (saisie) et consultation
