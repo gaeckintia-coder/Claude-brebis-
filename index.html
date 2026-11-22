@@ -145,6 +145,9 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .count b{display:block;font-family:var(--display);font-size:30px}
 .nums{display:flex;flex-wrap:wrap;gap:6px}
 .nums span{font-variant-numeric:tabular-nums;font-weight:700;padding:4px 8px;border-radius:8px;background:var(--bg)}
+.cl-quai{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0} .cl-quai>div{border:1px solid var(--line);border-radius:10px;padding:4px 6px;text-align:center;min-height:52px} .cl-quai small{display:block;font-size:12px;opacity:.7} .cl-quai b{font-size:16px} .cl-quai .lien{padding:2px 3px!important;font-size:15px!important;display:inline-block;max-width:100%;box-sizing:border-box}
+.cl-quai .cl-next{border:3px solid var(--accent)} .cl-cases{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:17px} .cl-cases input{transform:scale(1.4);margin-right:6px}
+.cl-al,tr.cl-al td{background:#ffe0b2!important} @media (prefers-color-scheme: dark){.cl-al,tr.cl-al td{background:#5a3a10!important}}
 .agrow{margin:3px 0 3px 26px;padding:3px 8px;border-radius:8px;background:#e3effa;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
 @media (prefers-color-scheme: dark){.agrow{background:#1d3347}}
 .nums .lblk{flex-basis:100%} .nums .lblk>span{display:inline-block} .nums .agrow span{background:none;padding:0}
@@ -216,6 +219,7 @@ tr.sel td{background:var(--okbg)}
     <button type="button" role="tab" data-t="traite" aria-selected="false" class="t-mouv">Traite</button>
     <button type="button" role="tab" data-t="mort" aria-selected="false" class="t-mouv">Mortalité</button>
     <button type="button" role="tab" data-t="mb" aria-selected="false">Mises bas</button>
+    <button type="button" role="tab" data-t="cl" aria-selected="false">Contrôle laitier</button>
     <button type="button" role="tab" data-t="tests" aria-selected="false">Tests</button>
   </div>
 
@@ -516,6 +520,7 @@ tr.sel td{background:var(--okbg)}
 
   <!-- MISES BAS -->
   <section id="v-mb" class="card" hidden><div class="choix" data-ch="mb"></div><h2>Mises bas</h2><div class="s-saisie" id="mb-sai"></div><div class="s-consult" id="mb-con"></div></section>
+  <section id="v-cl" class="card" hidden><div class="choix" data-ch="cl"></div><h2>Contrôle laitier</h2><div class="s-saisie" id="cl-sai"></div><div class="s-consult" id="cl-con"></div></section>
 
   <!-- LOTS -->
   <section id="v-lots" class="card" hidden><div class="choix" data-ch="lots"></div><div id="lg-lots"></div></section>
@@ -636,8 +641,8 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='accueil';
 // chaque thème : un choix « Saisie » ou « Consultation » ; les thèmes de Mouvements reviennent à Mouvements
-const THEMES=['lots','groupes','soins','echo','sevrage','vente','traite','mort','mb'], MOUV=['lots','traite','sevrage','vente','mort'], ZFULL=['sevrage','vente','mort'];
-const CHTXT={mb:['Biper la mère : mise bas, agneaux, adoption · numéros des agneaux','Toutes les mises bas, bilan, impression'],lots:['Déplacer des bêtes, créer, regrouper, renommer, couleurs, brebis mélangées','Les lots, leurs bêtes'],groupes:['Créer, ajouter, retirer, vider, couleurs','Les groupes et leurs bêtes'],
+const THEMES=['lots','groupes','soins','echo','sevrage','vente','traite','mort','mb','cl'], MOUV=['lots','traite','sevrage','vente','mort'], ZFULL=['sevrage','vente','mort'];
+const CHTXT={cl:['Tank, puis quai par quai : biper la rangée, peser le lait derrière chaque brebis','Lait calculé par jour à chaque contrôle, cumul de campagne, chutes, contrôles manquants'],mb:['Biper la mère : mise bas, agneaux, adoption · numéros des agneaux','Toutes les mises bas, bilan, impression'],lots:['Déplacer des bêtes, créer, regrouper, renommer, couleurs, brebis mélangées','Les lots, leurs bêtes'],groupes:['Créer, ajouter, retirer, vider, couleurs','Les groupes et leurs bêtes'],
   soins:['Biper une brebis à soigner, nouveaux traitements, traitement collectif','À traiter, attentes lait et viande, stock, registre, impression'],echo:['Nouvelle séance d’écho','Séances enregistrées'],
   sevrage:['Biper les jeunes qui passent en renouvellement','Jeunes en renouvellement cette saison'],vente:['Biper les animaux vendus','Ventes enregistrées'],
   traite:['Mise à la traite, tarissement','À mettre à la traite, mises à la traite, taries'],mort:['Enregistrer des morts','Morts de la campagne, orphelins']};
@@ -769,7 +774,7 @@ $('#file').addEventListener('change',e=>{
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
   if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
-  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -832,7 +837,7 @@ function fiche(p,nav,el='#fiche'){
   const orTxt=x.or&&!reforme(p)&&!mpis(p)?`<span class="chip c-or">★ Brebis d'or – garder ses agnelles${/^ARR\/ARR$/i.test(x.prp||'')?' et son mâle':' · mâle : génotype à vérifier'}</span>`:'';
   const niv=orTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
   $(el).innerHTML=retour+`<div class="tag${lisere(p)}" style="padding-right:70px">${pres(x)?`<button type="button" data-rbr="${p}" aria-label="Chercher en bipant" title="Chercher en bipant" style="position:absolute;top:6px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">📡</button>`:''}<button type="button" data-cons="${p}" aria-label="Consulter" title="Consulter" style="position:absolute;top:${pres(x)?44:6}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">🔍</button><button type="button" data-edit="${p}" aria-label="Saisir" title="Saisir" style="position:absolute;top:${pres(x)?82:44}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">✏️</button><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}<span class="tag-lot">${coulLot(lotOf(p))?`<span class="pb" style="background:${coulLot(lotOf(p))};vertical-align:middle;margin-right:6px"></span>`:''}${esc(lotAff(lotOf(p))||'Sans lot')}</span></div>
-   <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${jeuneCat(x)&&agCode(p)?`<span class="chip c-mute">état : ${agCode(p)}</span>`:''}${niv}</div>${ficheAgneaux(p,x)}${famTxt}
+   <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${jeuneCat(x)&&agCode(p)?`<span class="chip c-mute">état : ${agCode(p)}</span>`:''}${niv}</div>${ficheAgneaux(p,x)}${typeof ficheCL==='function'?ficheCL(p):''}${famTxt}
    ${(()=>{const H=histLots(p); return H.length>1?`<details class="hint"><summary>Historique des lots (${H.length})</summary>${H.slice().reverse().map(h=>`<div>${h.du?'du '+h.du+' '+(h.au?'au '+h.au:'à aujourd’hui'):'jusqu’au '+h.au} : <b>${esc(h.lot)}</b>${h.ren?' (renommé ensuite)':''}</div>`).join('')}</details>`:''})()}
    <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsOf(p).length+grpsAutoOf(p).length?'':'<span class="hint">aucun</span>'}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
@@ -1108,7 +1113,7 @@ $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(NOMS).forEach
 
 // ---- affichage
 function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
-  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB();
+  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB(); if(tab==='cl'&&typeof renderCL==='function') renderCL();
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
@@ -1137,6 +1142,7 @@ function lu(raw){ const p=plaqueDe(raw); if(!p) return;
   if(document.body.classList.contains('qfull')){trBip(p);return}
   if(document.body.classList.contains('ttfull')){ttBip(p);return}
   if(tab==='mb'&&MD.mb==='saisie'){mbMere(p); return}
+  if(tab==='cl'&&MD.cl==='saisie'){clBip(p); return}
   if(THEMES.includes(tab)&&MD[tab]!=='saisie'&&!(tab==='echo'&&eOuverte())){ouvrirFiche(p); bip(); return}
   if(tab==='lots'||tab==='groupes'||tab==='traite'){ouvrirFiche(p); bip(); return}
   if(tab==='sevrage') sevBip(p); else if(tab==='vente') venBip(p); else if(tab==='mort') moBip(p); else if(tab==='soins') soinsBip(p); else if(tab==='echo') echoBip(p); else if(tab==='liste') addListe(p); else if(tab==='recherche'&&rech) addRech(p); else { if(tab!=='fiche') setTab('fiche'); fiche(p); bip(); } }
@@ -2219,6 +2225,133 @@ mbAppliquer(); bibAppliquer(); panAppliquer(); mortAppliquer();
 // animaux qui ne sont plus à la ferme (morts, vendus, sortis) : numéros en grisé partout
 let _griseT=0; function griser(){_griseT=0; document.querySelectorAll('[data-fiche],[data-go]').forEach(e=>{const k=e.dataset.fiche||e.dataset.go, x=A()[k]; e.classList.toggle('off',!!x&&!pres(x))})}
 new MutationObserver(()=>{if(!_griseT) _griseT=requestAnimationFrame(griser)}).observe(document.body,{childList:true,subtree:true});
+// ===== CONTRÔLE LAITIER =====
+// CL.c[id]={d,tank,ntk,tpj,q:[[n° place 1..16],...],l:{n°:{ml,t1}},val,s} ; CL.cur = contrôle en cours ; CL.est[n°][date]=L/j estimé (contrôle manquant)
+let CL=LS.get('cb_cl',{c:{},cur:null,est:{}}); if(!CL.est) CL.est={}; const saveCL=()=>LS.set('cb_cl',CL);
+const CLQ=16; let CLV={st:'quai',i:0,ask:null,open:null,camp:null};
+const clCur=()=>CL.cur&&CL.c[CL.cur]?CL.c[CL.cur]:null;
+const clNb=v=>(Math.round(v*100)/100).toFixed(2).replace('.',',');
+const clDj=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
+const clMil=(a,b)=>plusJ(a,Math.round(clDj(a,b)/2));
+const clIso=s=>!s?'':/^\d{4}-\d\d-\d\d/.test(s)?s.slice(0,10):/^\d\d\/\d\d\/\d{4}$/.test(s)?isoDe(s):'';
+// lait par jour de chaque brebis d'un contrôle : part du tank du jour au prorata de sa pesée (lait réel) ; 1 tétine → estimation ×2
+function clCalc(c){const N=Object.keys(c.l).filter(k=>c.l[k].ml>0), S=N.reduce((s,k)=>s+c.l[k].ml,0), tj=(+c.tank||0)/(+c.ntk||1)*(+c.tpj||1), L={};
+  N.forEach(k=>{const r=S?tj*c.l[k].ml/S:0; L[k]={reel:r,v:c.l[k].t1?r*2:r,t1:!!c.l[k].t1}}); return {S,tj,L,n:N.length}}
+const clCamp=()=>CLV.camp||campOf(auj());
+const clVal=()=>Object.entries(CL.c).filter(([,c])=>c.val&&campOf(c.d)===clCamp()).sort((a,b)=>a[1].d<b[1].d?-1:1);
+// tous les points (contrôles validés + estimés) d'une brebis dans la campagne
+function clPts(k){const P=[]; clVal().forEach(([id,c])=>{const r=clCalc(c).L[k]; if(r) P.push({d:c.d,v:r.v,t1:r.t1,id})});
+  Object.entries(CL.est[k]||{}).forEach(([d,v])=>{if(campOf(d)===clCamp()&&!P.some(p=>p.d===d)) P.push({d,v:+v,est:1})}); return P.sort((a,b)=>a.d<b.d?-1:1)}
+function clTar(k){const g=GRP[grpTar()]; const v=g&&g[k]; return typeof v==='string'?clIso(v):''}
+// cumul de la campagne : chaque contrôle couvre jusqu'au milieu avec ses voisins ; début = mise à la traite (sinon −15 j), fin = tarissement (sinon +15 j)
+function clCumul(k){const P=clPts(k); if(!P.length) return null; const f=P[0].d, l=P[P.length-1].d;
+  let deb=TRA[k]&&clIso(TRA[k].d)||plusJ(f,-15); if(deb>f) deb=f; let fin=clTar(k)||plusJ(l,15); if(fin<l) fin=l;
+  let tot=0,j=0; P.forEach((p,i)=>{const a=i?clMil(P[i-1].d,p.d):deb, b=i<P.length-1?clMil(p.d,P[i+1].d):fin, n=clDj(a,b); tot+=p.v*n; j+=n}); return {tot,j,deb,fin,n:P.length,last:P[P.length-1],P}}
+// chute depuis le contrôle précédent, et chute moyenne du troupeau à ce contrôle
+function clChutes(id){const c=CL.c[id], R=clCalc(c).L, D={}; Object.keys(R).forEach(k=>{const P=clPts(k), i=P.findIndex(p=>p.d===c.d); if(i>0) D[k]=P[i-1].v-P[i].v});
+  const v=Object.values(D), moy=v.length?v.reduce((s,x)=>s+x,0)/v.length:0; return {D,moy}}
+const clAlerte=(ch,k)=>ch.D[k]!=null&&ch.D[k]>0&&ch.D[k]>ch.moy;
+// contrôles manquants : date de contrôle du troupeau entre le 1er et le dernier contrôle de la brebis, sans valeur
+function clManq(){const D=clVal().map(([,c])=>c.d), M=[]; const tous=new Set(); clVal().forEach(([,c])=>Object.keys(clCalc(c).L).forEach(k=>tous.add(k)));
+  tri([...tous]).forEach(k=>{const P=clPts(k); if(P.length<2) return; D.forEach(d=>{if(d>P[0].d&&d<P[P.length-1].d&&!P.some(p=>p.d===d)){const av=P.filter(p=>p.d<d).pop(), ap=P.find(p=>p.d>d); M.push({k,d,v:(av.v+ap.v)/2})}})}); return M}
+// lecteur : place suivante du quai
+function clBip(p){const c=clCur(); if(!c) return; if(CLV.st!=='quai'){toast('Lecture ignorée : on est à la saisie du lait'); return}
+  const q=c.q[c.q.length-1]; if(!A()[p]){clMsg(p+' : inconnue dans la base.'); return}
+  for(let i=0;i<c.q.length;i++){const j=c.q[i].indexOf(p); if(j>=0){clMsg(p+' est déjà passée (quai '+(i+1)+', place '+(j+1)+').'); return}}
+  if(q.length>=CLQ){clMsg('Quai complet ('+CLQ+' places) : passe au lait.'); return} q.push(p); saveCL(); bip(); renderCL()}
+function clMsg(t,ok){const s=$('#cl-st'); if(s){s.textContent=t; s.className='state '+(ok?'ok':'err')} else toast(t)}
+function clMed(p){return `<span class="tag${lisere(p)}" style="display:inline-block;padding:14px 30px 8px"><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</span>`}
+function renderCLsai(){const el=$('#cl-sai'), c=clCur(); if(!el) return;
+  if(!c){el.innerHTML=`<h3>Nouveau contrôle</h3>
+    <label class="hint">Date du contrôle</label><input type="date" id="cl-d" value="${auj()}" style="font:inherit;font-size:20px;padding:8px;width:100%;box-sizing:border-box">
+    <label class="hint" style="display:block;margin-top:8px">Lait du tank (litres)</label><input id="cl-tank" type="number" inputmode="decimal" step="any" min="0" placeholder="ex. 900" style="font:inherit;font-size:20px;padding:8px;width:100%;box-sizing:border-box">
+    <label class="hint" style="display:block;margin-top:8px">Nombre de traites dans ce tank</label><input id="cl-ntk" type="number" inputmode="numeric" min="1" step="1" placeholder="ex. 3" style="font:inherit;font-size:20px;padding:8px;width:100%;box-sizing:border-box">
+    <label class="hint" style="display:block;margin-top:8px">Traites par jour</label><div class="row" id="cl-tpj">${[1,2].map(n=>`<button type="button" class="btn2" data-cltpj="${n}" style="flex:1">${n} traite${n>1?'s':''} / jour</button>`).join('')}</div>
+    <div class="hint" style="margin-top:6px">Lait du jour du troupeau = tank ÷ traites dans le tank × traites par jour. Chaque brebis reçoit sa part selon sa pesée.</div>
+    <div class="hint" style="margin-top:6px">Les 4 renseignements sont obligatoires avant de commencer.</div><button type="button" class="btn b-valid" data-clgo="1" style="width:100%;margin-top:10px">Commencer : biper le 1er quai</button><span id="cl-st" class="state"></span>`; return}
+  const q=c.q[c.q.length-1]||[], nq=c.q.length, tot=c.q.reduce((s,x)=>s+x.length,0), fait=Object.keys(c.l).length;
+  let h=`<div class="hint">Contrôle du <b>${frJA(c.d)}</b> · tank ${String(c.tank).replace('.',',')} L sur ${c.ntk} traite${c.ntk>1?'s':''} · ${c.tpj} traite${c.tpj>1?'s':''}/jour · ${tot} brebis bipée${tot>1?'s':''}, ${fait} pesée${fait>1?'s':''}</div>`;
+  if(CLV.st==='quai'){
+    h+=`<h3>Quai n° ${nq} · biper les brebis dans l'ordre</h3><div class="cl-quai">${Array.from({length:CLQ},(_,i)=>`<div class="${i===q.length?'cl-next':''}"><small>${i+1}</small>${q[i]?`<b class="lien${lisere(q[i])}" data-fiche="${q[i]}">${q[i]}</b>`:'—'}</div>`).join('')}</div>
+     <div class="row" style="margin-top:6px"><input id="cl-man" inputmode="numeric" placeholder="N° tapé (boucle qui ne passe pas)" style="font:inherit;padding:10px;flex:1;min-width:8em"><button type="button" class="btn2" data-clman="1">Ajouter</button></div>
+     ${q.length?`<button type="button" class="btn2 b-retour" data-clrm="1" style="margin-top:6px">Retirer la dernière (${q[q.length-1]})</button>`:''}
+     <button type="button" class="btn b-valid" data-cllait="1" style="width:100%;margin-top:10px"${q.length?'':' disabled'}>Passer au lait derrière les brebis (${q.length}) →</button>`}
+  else if(CLV.st==='lait'){const i=Math.min(CLV.i,q.length-1), p=q[i], r=c.l[p]||{};
+    h+=`<h3>Quai n° ${nq} · place ${i+1} / ${q.length}</h3><div style="text-align:center">${clMed(p)}</div>
+     <label class="hint">Lait pesé (ml)</label><input id="cl-ml" type="number" inputmode="numeric" min="0" step="1" value="${r.ml!=null?r.ml:''}" style="font:inherit;font-size:30px;padding:10px;width:100%;box-sizing:border-box;text-align:center">
+     <div class="cl-cases"><label><input type="checkbox" id="cl-t1"${r.t1?' checked':''}> 1 tétine</label><label><input type="checkbox" id="cl-mp"${mpis(p)?' checked':''}> Mauvais pis</label><label><input type="checkbox" id="cl-mt"${mam(p)?' checked':''}> Mammite</label></div>
+     <button type="button" class="btn b-valid" data-clok="1" style="width:100%;margin-top:8px;font-size:20px">✔ ${i<q.length-1?'Suivante':'Fin du quai'}</button>
+     <div class="cl-quai" style="margin-top:10px">${q.map((x,j)=>`<div class="${j===i?'cl-next':''}" data-clgoto="${j}"><small>${j+1}</small><b>${x}</b><small>${c.l[x]&&c.l[x].ml!=null?c.l[x].ml+' ml':''}</small></div>`).join('')}</div>
+     <button type="button" class="btn2 b-retour" data-clbackq="1" style="margin-top:6px">← Revenir au bipage du quai</button>`}
+  else if(CLV.st==='finq'){h+=`<h3>Quai n° ${nq} terminé</h3><div class="row"><button type="button" class="btn" data-clnext="1" style="flex:1">Quai suivant →</button><button type="button" class="btn b-valid" data-clfin="1" style="flex:1">Terminer le contrôle</button></div>
+     <button type="button" class="btn2 b-retour" data-clgoto="0" style="margin-top:6px">← Corriger ce quai</button>`}
+  else if(CLV.st==='fin'){const R=clCalc(c), sans=c.q.flat().filter(p=>!(c.l[p]&&c.l[p].ml>0));
+    h+=`<h3>Fin du contrôle</h3><div class="lg-act"><div>Brebis pesées : <b>${R.n}</b></div><div>Total des pesées : <b>${(R.S/1000).toFixed(1).replace('.',',')} L</b></div><div>Lait du jour du troupeau (tank) : <b>${clNb(R.tj)} L</b></div><div>Moyenne : <b>${R.n?clNb(R.tj/R.n):'0'} L/jour</b> par brebis</div>${sans.length?`<div class="c-warn">Sans lait saisi (non comptées) : ${sans.join(' ')}</div>`:''}</div>
+     <button type="button" class="btn b-valid" data-clval="1" style="width:100%;margin-top:8px"${R.n&&R.tj?'':' disabled'}>Valider le contrôle</button>${R.tj?'':'<div class="hint c-bad">Il manque le lait du tank.</div>'}
+     <button type="button" class="btn2 b-retour" data-clgoto="0" style="margin-top:6px">← Reprendre la saisie</button>`}
+  h+=`<button type="button" class="btn2 b-retour" data-cldel="1" style="width:100%;margin-top:14px">${CLV.ask==='del'?'Confirmer : effacer tout ce contrôle':'Annuler : effacer ce contrôle sans l’enregistrer'}</button><span id="cl-st" class="state"></span>`;
+  el.innerHTML=h; if(CLV.st==='lait') setTimeout(()=>{const i=$('#cl-ml'); if(i&&!i.value) try{i.focus()}catch(e){}},30)}
+function renderCLcon(){const el=$('#cl-con'); if(!el) return; const V=clVal(), camp=clCamp(), camps=[...new Set(Object.values(CL.c).filter(c=>c.val).map(c=>campOf(c.d)).concat([campOf(auj())]))].sort().reverse();
+  let h=`<div class="row"><span class="hint">Campagne</span><select id="cl-camp">${camps.map(x=>`<option${x===camp?' selected':''}>${x}</option>`).join('')}</select></div>`;
+  if(!V.length){el.innerHTML=h+'<div class="hint" style="margin-top:10px">Aucun contrôle validé pour cette campagne.</div>'; return}
+  if(CLV.open&&CL.c[CLV.open]){const id=CLV.open, c=CL.c[id], R=clCalc(c), ch=clChutes(id), K=Object.keys(R.L).sort((a,b)=>R.L[b].v-R.L[a].v);
+    el.innerHTML=h+`<button type="button" class="btn2 b-retour" data-clopen="" style="margin-top:8px">← Tous les contrôles</button><h3>Contrôle du ${frJA(c.d)} · ${R.n} brebis</h3>
+     <div class="hint">Lait du jour du troupeau ${clNb(R.tj)} L · moyenne ${clNb(R.tj/R.n)} L/jour · chute moyenne depuis le contrôle précédent : ${clNb(ch.moy)} L/jour. <span class="cl-al">orange</span> = chute plus forte que la moyenne.</div>
+     <div class="tbl"><table><thead><tr><th>N°</th><th>L/jour</th><th>Évolution</th><th></th></tr></thead><tbody>${K.map(k=>{const r=R.L[k], d=ch.D[k];
+       return `<tr class="${clAlerte(ch,k)?'cl-al':''}"><td><b class="lien${lisere(k)}" data-fiche="${k}">${k}</b></td><td><b>${clNb(r.v)}</b>${r.t1?' <span class="hint">(1 tétine, estimé)</span>':''}</td><td>${d==null?'':(d>0?'−':'+')+clNb(Math.abs(d))}</td><td>${mpis(k)?'<span class="c-bad">pis</span> ':''}${mam(k)?'<span class="c-bad">mammite</span> ':''}<button type="button" class="btn2" data-cled="${k}" style="padding:2px 8px">✏️</button></td></tr>${CLV.ed===k?`<tr><td colspan="4"><div class="lg-act" style="margin:0">Pesée de <b>${k}</b> (ml) <input id="cl-edml" type="number" inputmode="numeric" min="0" value="${c.l[k].ml}" style="font:inherit;font-size:20px;width:6em;padding:6px"> <label><input type="checkbox" id="cl-edt1"${c.l[k].t1?' checked':''}> 1 tétine</label>
+       <div class="row" style="margin-top:6px"><button type="button" class="btn2 b-retour" data-cledx="1" style="flex:1">Annuler</button><button type="button" class="btn b-valid" data-cledok="${k}" style="flex:1">Enregistrer</button></div>
+       <button type="button" class="btn2 b-retour" data-cledrm="${k}" style="width:100%;margin-top:6px">${CLV.ask==='rm'+k?'Confirmer : retirer '+k+' de ce contrôle':'Retirer '+k+' de ce contrôle'}</button><div class="hint">Les autres brebis sont recalculées (le tank est partagé entre les pesées).</div></div></td></tr>`:''}`}).join('')}</tbody></table></div>
+     <div class="lg-act"><b>＋ Ajouter une brebis oubliée</b><div class="row"><input id="cl-adn" inputmode="numeric" placeholder="N°" style="font:inherit;padding:8px;width:6em"><input id="cl-adml" type="number" inputmode="numeric" placeholder="ml" style="font:inherit;padding:8px;width:6em"><label><input type="checkbox" id="cl-adt1"> 1 tétine</label><button type="button" class="btn" data-cladd="${id}">Ajouter</button></div><span id="cl-st2" class="state"></span></div>
+     <button type="button" class="btn2 b-retour" data-cldelv="${id}" style="width:100%;margin-top:10px">${CLV.ask==='delv'+id?'Confirmer : supprimer ce contrôle':'🗑 Supprimer ce contrôle'}</button>`; return}
+  const C=new Set(); V.forEach(([,c])=>Object.keys(clCalc(c).L).forEach(k=>C.add(k))); const CU=[...C].map(k=>[k,clCumul(k)]).filter(x=>x[1]).sort((a,b)=>b[1].tot-a[1].tot), M=clManq();
+  h+=`<h3>Contrôles · ${V.length}</h3><div class="tbl"><table><thead><tr><th>Date</th><th>Brebis</th><th>Troupeau L/j</th><th>Moy. L/j</th><th>Alertes</th></tr></thead><tbody>${V.slice().reverse().map(([id,c])=>{const R=clCalc(c), ch=clChutes(id), na=Object.keys(R.L).filter(k=>clAlerte(ch,k)).length;
+    return `<tr data-clopen="${id}" style="cursor:pointer"><td><b>${frJA(c.d)}</b></td><td>${R.n}</td><td>${clNb(R.tj)}</td><td>${clNb(R.tj/R.n)}</td><td>${na?`<span class="cl-al" style="padding:0 6px;border-radius:6px">${na}</span>`:''}</td></tr>`}).join('')}</tbody></table></div>`;
+  h+=`<h3>Cumul de la campagne · classement</h3><div class="hint">Lait calculé par jour × jours couverts (de la mise à la traite ou 15 j avant le 1er contrôle, au tarissement ou 15 j après le dernier ; coupure au milieu entre deux contrôles). 1 tétine : c'est l'estimation qui compte.</div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>N°</th><th>Cumul</th><th>Jours</th><th>Dernier</th><th>Contr.</th></tr></thead><tbody>${CU.map(([k,u],i)=>`<tr><td>${i+1}</td><td><b class="lien${lisere(k)}" data-fiche="${k}">${k}</b></td><td><b>${Math.round(u.tot)} L</b></td><td>${u.j}</td><td>${clNb(u.last.v)}${u.last.est?' (est.)':''}</td><td>${u.n}</td></tr>`).join('')}</tbody></table></div>`;
+  h+=`<h3>Contrôles manquants · ${M.length}</h3>${M.length?'<div class="hint">Brebis sans contrôle entre deux (malade…). Proposé : moyenne du contrôle d’avant et d’après, modifiable. Marqué « estimé ».</div>':'<div class="hint">Aucun.</div>'}${M.map((m,i)=>`<div class="lg-row"><b class="lien${lisere(m.k)}" data-fiche="${m.k}">${m.k}</b><span class="hint">${frJA(m.d)}</span><input data-clestv="${i}" type="number" step="0.01" inputmode="decimal" value="${(Math.round(m.v*100)/100)}" style="font:inherit;width:5em;padding:6px"> L/j<button type="button" class="btn2" data-clest="${i}">Compléter</button></div>`).join('')}`;
+  const E=Object.entries(CL.est).flatMap(([k,o])=>Object.entries(o).filter(([d])=>campOf(d)===camp).map(([d,v])=>[k,d,v]));
+  if(E.length) h+=`<div class="hint" style="margin-top:8px">Estimés : ${E.map(([k,d,v])=>`${k} le ${frJA(d)} : ${clNb(+v)} L/j <button type="button" class="btn2 b-retour" data-clestx="${k}|${d}" style="padding:2px 8px">retirer</button>`).join(' · ')}</div>`;
+  h+=`<button type="button" class="btn" data-clsend="1" style="margin-top:12px">Envoyer à Claude</button>`;
+  el.innerHTML=h}
+function renderCL(){ if(!$('#v-cl')) return; renderCLsai(); renderCLcon()}
+// bloc de la fiche
+function ficheCL(p){const u=clCumul(p); if(!u) return ''; const L=u.last, id=L.id, ch=id?clChutes(id):null, al=ch&&clAlerte(ch,p);
+  return `<div class="lg-act${al?' cl-al':''}" style="margin:4px 0"><b>🥛 Contrôle laitier</b><div>Dernier contrôle ${frJA(L.d)} : <b>${clNb(L.v)} L/jour</b>${L.t1?' (1 tétine, estimé 2 tétines)':''}${L.est?' (estimé)':''}${al?` · <b>chute de ${clNb(ch.D[p])} L/j</b> (moyenne ${clNb(ch.moy)})`:''}</div><div>Cumul campagne : <b>${Math.round(u.tot)} L</b> en ${u.j} jours (${u.n} contrôle${u.n>1?'s':''})</div></div>`}
+$('#v-cl').addEventListener('change',e=>{if(e.target.id==='cl-camp'){CLV.camp=e.target.value; CLV.open=null; renderCL()}});
+$('#v-cl').addEventListener('click',e=>{const b=e.target.closest('[data-cltpj],[data-clgo],[data-clman],[data-clrm],[data-cllait],[data-clok],[data-clgoto],[data-clbackq],[data-clnext],[data-clfin],[data-clval],[data-cldel],[data-clopen],[data-cldelv],[data-clest],[data-clestx],[data-clsend],[data-cled],[data-cledx],[data-cledok],[data-cledrm],[data-cladd]'); if(!b) return; const c=clCur(), D=b.dataset;
+  if(D.cltpj){b.parentElement.querySelectorAll('button').forEach(x=>x.className=x===b?'btn':'btn2'); return}
+  if(D.clgo){const d=$('#cl-d').value, tank=parseFloat(String($('#cl-tank').value).replace(',','.')), ntk=parseInt($('#cl-ntk').value,10), tpj=+((($('#cl-tpj .btn')||{}).dataset||{}).cltpj||0);
+    if(!d) return clMsg('Choisis la date du contrôle.'); if(!(tank>0)) return clMsg('Indique le lait du tank (litres).'); if(!(ntk>0)) return clMsg('Indique le nombre de traites dans le tank.'); if(!tpj) return clMsg('Choisis 1 ou 2 traites par jour.');
+    const id='cl'+Date.now(); CL.c[id]={d,tank,ntk,tpj,q:[[]],l:{},val:0,s:0}; CL.cur=id; CLV.st='quai'; CLV.i=0; saveCL(); renderCL(); return}
+  if(!c&&(D.clman||D.clrm||D.cllait||D.clok||D.clgoto||D.clbackq||D.clnext||D.clfin||D.clval||D.cldel)) return;
+  const q=c?c.q[c.q.length-1]:null;
+  if(D.clman){const p=plaqueDe($('#cl-man').value); if(!p) return clMsg('Tape un numéro.'); $('#cl-man').value=''; clBip(p); return}
+  if(D.clrm){q.pop(); saveCL(); renderCL(); return}
+  if(D.cllait){if(!q.length) return; CLV.st='lait'; CLV.i=q.findIndex(p=>!(c.l[p]&&c.l[p].ml!=null)); if(CLV.i<0) CLV.i=0; renderCL(); window.scrollTo(0,0); return}
+  if(D.clgoto!=null){CLV.st='lait'; CLV.i=+D.clgoto; renderCL(); return}
+  if(D.clbackq){CLV.st='quai'; renderCL(); return}
+  if(D.clok){const p=q[CLV.i], v=$('#cl-ml').value; if(v===''||!(+v>=0)) return clMsg('Tape le lait pesé en ml.');
+    c.l[p]={ml:Math.round(+v),t1:$('#cl-t1').checked}; if($('#cl-mp').checked!==mpis(p)) setMP(p,$('#cl-mp').checked);
+    if($('#cl-mt').checked&&!mam(p)){MT[p]={d:c.d,delai:0}; LS.set('cb_mam',MT)} else if(!$('#cl-mt').checked&&MT[p]&&!MT[p].off&&MT[p].d===c.d){delete MT[p]; LS.set('cb_mam',MT)}
+    saveCL(); bip(); if(CLV.i<q.length-1){CLV.i++} else CLV.st='finq'; renderCL(); return}
+  if(D.clnext){c.q.push([]); CLV.st='quai'; CLV.i=0; saveCL(); renderCL(); window.scrollTo(0,0); return}
+  if(D.clfin){if(!c.q[c.q.length-1].length) c.q.pop(); CLV.st='fin'; saveCL(); renderCL(); return}
+  if(D.clval){c.val=1; c.s=0; CL.cur=null; CLV.st='quai'; saveCL(); setMode('cl','consult'); toast('Contrôle du '+frJA(c.d)+' validé'); return}
+  if(D.cldel){if(CLV.ask!=='del'){CLV.ask='del'; renderCL(); setTimeout(()=>{if(CLV.ask==='del'){CLV.ask=null; renderCL()}},5000); return} CLV.ask=null; delete CL.c[CL.cur]; CL.cur=null; CLV.st='quai'; saveCL(); renderCL(); return}
+  if(D.cled){CLV.ed=CLV.ed===D.cled?null:D.cled; renderCL(); return}
+  if(D.cledx){CLV.ed=null; renderCL(); return}
+  if(D.cledok){const cc=CL.c[CLV.open], k=D.cledok, v=$('#cl-edml').value; if(!cc||v===''||!(+v>=0)) return; cc.l[k]={ml:Math.round(+v),t1:$('#cl-edt1').checked}; cc.s=0; CLV.ed=null; saveCL(); renderCL(); toast(k+' corrigée'); return}
+  if(D.cledrm){const cc=CL.c[CLV.open], k=D.cledrm, a='rm'+k; if(CLV.ask!==a){CLV.ask=a; renderCL(); setTimeout(()=>{if(CLV.ask===a){CLV.ask=null; renderCL()}},5000); return} CLV.ask=null; delete cc.l[k]; cc.q=cc.q.map(x=>x.filter(y=>y!==k)); cc.s=0; CLV.ed=null; saveCL(); renderCL(); toast(k+' retirée du contrôle'); return}
+  if(D.cladd){const cc=CL.c[D.cladd], k=plaqueDe($('#cl-adn').value), v=$('#cl-adml').value, st=$('#cl-st2'); const er=t=>{st.textContent=t; st.className='state err'};
+    if(!k) return er('Tape le numéro.'); if(!A()[k]) return er(k+' : inconnue dans la base.'); if(cc.l[k]) return er(k+' est déjà dans ce contrôle : utilise ✏️.'); if(v===''||!(+v>=0)) return er('Tape le lait pesé en ml.');
+    cc.l[k]={ml:Math.round(+v),t1:$('#cl-adt1').checked}; cc.q.push([k]); cc.s=0; saveCL(); renderCL(); toast(k+' ajoutée au contrôle'); return}
+  if(D.clopen!=null){CLV.ed=null; CLV.open=D.clopen||null; renderCL(); window.scrollTo(0,0); return}
+  if(D.cldelv){const k='delv'+D.cldelv; if(CLV.ask!==k){CLV.ask=k; renderCL(); setTimeout(()=>{if(CLV.ask===k){CLV.ask=null; renderCL()}},5000); return} CLV.ask=null; delete CL.c[D.cldelv]; CLV.open=null; saveCL(); renderCL(); return}
+  if(D.clest!=null){const m=clManq()[+D.clest], v=parseFloat(String(document.querySelector(`[data-clestv="${D.clest}"]`).value).replace(',','.')); if(!m||!(v>=0)) return; (CL.est[m.k]=CL.est[m.k]||{})[m.d]=v; saveCL(); renderCL(); toast(m.k+' : contrôle du '+frJA(m.d)+' estimé à '+clNb(v)+' L/j'); return}
+  if(D.clestx){const [k,d]=D.clestx.split('|'); if(CL.est[k]){delete CL.est[k][d]; if(!Object.keys(CL.est[k]).length) delete CL.est[k]} saveCL(); renderCL(); return}
+  if(D.clsend){const V=clVal(); const t='OviLink – contrôle laitier, campagne '+clCamp()+'\n\n'+V.map(([id,c])=>{const R=clCalc(c); return 'Contrôle du '+frJA(c.d)+' · tank '+c.tank+' L / '+c.ntk+' traites · '+c.tpj+' traite(s)/jour · '+R.n+' brebis\n'+Object.keys(R.L).sort((a,b)=>R.L[b].v-R.L[a].v).map(k=>k+' '+clNb(R.L[k].v)+' L/j ('+c.l[k].ml+' ml'+(R.L[k].t1?', 1 tétine':'')+')').join('\n')}).join('\n\n');
+    envoyer(t,b); return}});
+
 // recherche par nom dans la fiche
 const sansAcc=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 function chercheNom(v){const q=sansAcc(v), M=tri(Object.keys(A()).filter(k=>nomOf(k)&&sansAcc(nomOf(k)).includes(q)));
