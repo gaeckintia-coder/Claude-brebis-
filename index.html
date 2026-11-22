@@ -869,7 +869,7 @@ function fiche(p,nav,el='#fiche'){
    ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
-   <dt>Mère</dt><dd${jeuneCat(x)?' class="gros"':''}>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd class="gros">${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lien(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}</dd></dl>
+   <dt>Mère</dt><dd${jeuneCat(x)?' class="gros"':''}>${lien(x.mere)}${jeuneCat(x)&&x.mere&&nourrice(p)===x.mere&&tarie(x.mere)?' <span class="c-bad">(tarie)</span>':''}</dd>${jeuneCat(x)&&nourrice(p)&&nourrice(p)!==x.mere?`<dt><b>Mère adoptive</b></dt><dd class="gros">${lien(nourrice(p))}${A()[nourrice(p)]&&!pres(A()[nourrice(p)])?' <span class="c-bad">(morte)</span>':tarie(nourrice(p))?' <span class="c-bad">(tarie)</span>':''}</dd>`:''}${jeuneCat(x)&&(BIBS[p]||x.art)?`<dt>Allaitement</dt><dd>au biberon${BIBS[p]?' depuis le '+frJA(BIBS[p].d):''}</dd>`:''}<dt>Père</dt><dd>${lien(x.pere)}${x.pereAn?' <span class="hint">(analyse du '+frJA(x.pereAn)+')</span>':''}${pereIA(x)}</dd></dl>
    ${MORT[p]?`<div class="row"><span class="chip c-bad">Mort le ${frJA(MORT[p].d)}</span></div>`:''}
    ${famille(p,x)}
    ${desc.length?(()=>{const mo=moyLJ(desc),t=troupLJ();
@@ -2091,8 +2091,12 @@ function mbAppliquer(){ if(!DB) return; Object.values(MBS).forEach(v=>v.ag.forEa
     else if(x.mb===v.id){x.mere=v.m; x.pere=v.pere||''; x.ne=frJA(v.d); x.cat=a.sx==='M'?'Agneau':'Agnelle'}
     if(a.art) x.art=1; else delete x.art})); if(typeof BIBS!=='undefined') Object.keys(BIBS).forEach(k=>{const y=DB.animaux[k]; if(y) y.art=1}); LS.set('cb_data',DB)}
 // mises bas venues du fichier de données (carnet d'agnelage du CBI) : la saisie du téléphone reste prioritaire
+// père d'IA d'un agneau : code du centre, date de l'IA et index du bélier (DB.ixb)
+function pereIA(x){ if(!x||!x.pere||!DB) return ''; const v=x.mb&&MBS[x.mb]; const r=v&&v.mode==='IA'&&(DB.ia||[]).find(o=>o.b===v.m&&o.p===x.pere);
+  const I=DB.ixb&&DB.ixb[x.pere]; if(!r&&!I) return '';
+  const lib=(r&&r.lib)||((DB.ia||[]).find(o=>o.p===x.pere)||{}).lib||''; return (/^\d{11}$/.test(lib)?'<br><b>FR '+lib.slice(0,6)+' '+lib.slice(6)+'</b>':'')+'<br><span class="hint">'+(r?'IA du '+frJA(r.d):'')+(I&&I.code?(r?' · ':'')+'code '+esc(I.code):'')+'</span>'+(I?'<br><b>iProd '+I.iprod+' · iSol '+I.isol+'</b> <span class="hint">(index du père)</span>':'')}
 function mbImport(){ if(!DB) return; let n=0;
-  (DB.mb||[]).forEach(v=>{const id=v.m+'|'+v.d; if(MBS[id]) return; const loc=Object.values(MBS).find(o=>o.m===v.m&&campOf(o.d)===campOf(v.d)); if(loc&&!loc.cbi) return; if(loc) delete MBS[loc.id];
+  (DB.mb||[]).forEach(v=>{const id=v.m+'|'+v.d; if(MBS[id]){ const o=MBS[id]; if(o.cbi&&v.pere&&(o.pere!==v.pere||o.mode!==v.mode)){o.pere=v.pere; o.mode=v.mode||o.mode; n++} return} const loc=Object.values(MBS).find(o=>o.m===v.m&&campOf(o.d)===campOf(v.d)); if(loc&&!loc.cbi) return; if(loc) delete MBS[loc.id];
     MBS[id]={id,m:v.m,d:v.d,pere:v.pere||'',mode:v.mode||'',ag:v.ag.map(a=>({...a})),t:new Date().toISOString(),s:1,cbi:1}; n++});
   (DB.adop||[]).forEach(([k,m,d])=>{if(!NOUR[k]){NOUR[k]={n:m,d:frJA(d),prev:'',cbi:1}}});
   (DB.morts||[]).forEach(([k,d])=>{if(!MORT[k]) MORT[k]={d,prev:'Présent',s:1,cbi:1}});
