@@ -170,6 +170,15 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .lots button b{font-family:var(--display);font-size:22px}
 .lots button[aria-pressed="true"]{border-color:var(--accent);background:var(--okbg)}
 .filt{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.filt select[hidden]{display:none}
+.tdrop{margin:6px 0;border:2px solid var(--line);border-radius:14px;background:var(--card)}
+.tdrop>summary{list-style:none;cursor:pointer;padding:14px 38px 14px 16px;font-size:19px;font-weight:700;display:block;position:relative;line-height:1.25}
+.tdrop>summary::-webkit-details-marker{display:none}
+.tdrop>summary::after{content:"▾";position:absolute;right:14px;top:14px;color:var(--mute)}
+.tdrop[open]>summary::after{content:"▴"}
+.tdrop>summary b{font-weight:800;color:var(--accent)}
+.tdrop[open]{padding:0 10px 10px}
+.tdrop[open]>summary{padding-left:6px;padding-right:6px}
 .filt select{padding:8px}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
@@ -232,18 +241,18 @@ tr.sel td{background:var(--okbg)}
   <section id="v-troupeau" class="card" hidden>
     <div id="t-tv" class="row" style="gap:6px"></div>
     <div id="t-alert"></div>
-    <h2>Lots</h2>
+    <details id="t-dlot" class="tdrop"><summary>📍 Lot : <b id="t-slot">Tous</b></summary>
     <div id="t-lots" class="lots"></div>
     <details id="t-lman" hidden><summary class="hint">Gérer les lots (regrouper, renommer)</summary><div id="t-llist"></div>
-      <div class="hint">Regrouper : toutes les bêtes du lot passent dans l'autre lot, et ce lot disparaît. Renommer : les bêtes ne bougent pas, seul le nom change. Le total du troupeau ne change pas.</div></details>
-    <h2>Groupes</h2>
+      <div class="hint">Regrouper : toutes les bêtes du lot passent dans l'autre lot, et ce lot disparaît. Renommer : les bêtes ne bougent pas, seul le nom change. Le total du troupeau ne change pas.</div></details></details>
+    <details id="t-dgrp" class="tdrop"><summary>🏷 Groupe : <b id="t-sgrp">Tous</b></summary>
     <div id="t-grps" class="lots"></div>
     <details id="t-gman" hidden><summary class="hint">Gérer les groupes (vider, supprimer)</summary><div id="t-glist"></div>
-      <div class="hint">Vider : le groupe reste, sans brebis (pour le refaire). Supprimer : le groupe disparaît. Les lots ne bougent pas.</div></details>
-    <h2>Trier et filtrer</h2>
+      <div class="hint">Vider : le groupe reste, sans brebis (pour le refaire). Supprimer : le groupe disparaît. Les lots ne bougent pas.</div></details></details>
+    <details id="t-dcrit" class="tdrop"><summary>⚙️ Critères de tri : <b id="t-scrit">aucun</b></summary>
     <div class="filt">
-      <select id="f-lot" aria-label="Lot"><option value="">Tous les lots</option></select>
-      <select id="f-grp" aria-label="Groupe"><option value="">Tous les groupes</option></select>
+      <select id="f-lot" aria-label="Lot" hidden><option value="">Tous les lots</option></select>
+      <select id="f-grp" aria-label="Groupe" hidden><option value="">Tous les groupes</option></select>
       <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option value="adultes">Adultes</option><option>Brebis</option><option>Bélier</option><option value="jeunes">Jeunes (de l’année)</option><option>Agnelle</option><option>Agneau</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
@@ -251,7 +260,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-agn" aria-label="Lot d'agnelage"><option value="">Tous lots d'agnelage</option></select>
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
-    </div>
+    </div></details>
     <button id="t-rech" class="btn" type="button" style="width:100%;margin:6px 0">📡 Rechercher ces animaux en bipant</button><div class="row"><b id="t-n">0</b><span class="hint">animaux</span><button id="t-all" class="btn2" type="button">Tout cocher</button><button id="t-none" class="btn2" type="button">Rien</button></div>
     <div class="tbl"><table><thead><tr><th></th><th>N°</th><th>Lot</th><th>Écho / agnelage</th><th>Index</th></tr></thead><tbody id="t-body"></tbody></table></div>
     <div class="move" hidden>
@@ -1080,6 +1089,9 @@ function renderTroupeau(){
   const GU=grpsUser(), GA=grpsAuto(), cg=$('#f-grp').value, nbG=g=>Object.keys(A()).filter(k=>pres(A()[k])&&membreDe(g,k)).length;
   fillSel('#f-grp',[...GU,...GA]); fillSel('#t-gsel',GU); renderGman(); renderLman();
   $('#t-grps').innerHTML=GU.map(g=>`<button type="button" data-gf="${esc(g)}" aria-pressed="${cg===g}"><span>${esc(g)}</span><b>${nbG(g)}</b></button>`).join('')+GA.map(g=>`<button type="button" data-gf="${esc(g)}" aria-pressed="${cg===g}" class="c-mute"><span>${esc(g)}</span><b>${nbG(g)}</b></button>`).join('')||'<span class="hint">Aucun groupe.</span>';
+  { const lv=$('#f-lot').value, nl=lv?(L.find(x=>x[0]===lv)||[,0])[1]:tot; $('#t-slot').textContent=($('#f-suivi').value==='mpis'?MPLOT:(lv?lotAff(lv):'Tous'))+' ('+nl+')';
+    $('#t-sgrp').textContent=cg?cg+' ('+nbG(cg)+')':'Tous';
+    const C=['f-cat','f-sexe','f-etat','f-suivi','f-agn','f-stat','f-tri'].map(id=>{const el=$('#'+id); return el&&el.selectedIndex>0?el.options[el.selectedIndex].text:''}).filter(Boolean); $('#t-scrit').textContent=C.length?C.join(' · '):'aucun' }
   fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
   renderPeres(); const r=filtre(); $('#t-n').textContent=r.length;
   $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
@@ -1124,12 +1136,12 @@ $('#t-glist').addEventListener('click',e=>{const b=e.target.closest('button'); i
   Object.keys(GRP[g]).forEach(k=>grpDel(k,g)); if(act==='sup'){delete GRP[g]; GM.push({d:fdate(),p:'—',g,a:'x'}); if($('#f-grp').value===g) $('#f-grp').value=''}
   G_ASK={}; saveG(); $('#t-mst').textContent='Groupe « '+g+' » '+(act==='sup'?'supprimé':'vidé')+'.'; $('#t-mst').className='state ok'; render()});
 $('#t-tv').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; if(b.dataset.tv){TV=b.dataset.tv; TJ=''; LS.set('cb_tv',TV); $('#f-lot').value=''; sel.clear()} if(b.dataset.tj!=null) TJ=b.dataset.tj; render()});
-$('#t-grps').addEventListener('click',e=>{const b=e.target.closest('[data-gf]'); if(!b) return; $('#f-grp').value=$('#f-grp').value===b.dataset.gf?'':b.dataset.gf; $('#f-lot').value=''; render()});
+$('#t-grps').addEventListener('click',e=>{const b=e.target.closest('[data-gf]'); if(!b) return; $('#f-grp').value=$('#f-grp').value===b.dataset.gf?'':b.dataset.gf; $('#f-lot').value=''; $('#t-dgrp').open=false; render()});
 $('#t-gadd').onclick=()=>{const g=$('#t-gnew').value.trim()||$('#t-gsel').value, st=$('#t-mst'); if(!sel.size){st.textContent='Coche d’abord des animaux.';st.className='state err';return} if(!g){st.textContent='Choisis un groupe ou tape un nouveau nom.';st.className='state err';return}
   let n=0; sel.forEach(k=>n+=grpAdd(k,g)); saveG(); sel.clear(); $('#t-gnew').value=''; st.textContent=n+' animal(aux) ajouté(s) au groupe « '+g+' »';st.className='state ok';render()};
 $('#t-gdel').onclick=()=>{const g=$('#t-gsel').value||$('#f-grp').value, st=$('#t-mst'); if(!sel.size||!GRP[g]){st.textContent='Coche des animaux et choisis le groupe.';st.className='state err';return}
   let n=0; sel.forEach(k=>n+=grpDel(k,g)); saveG(); sel.clear(); st.textContent=n+' animal(aux) retiré(s) du groupe « '+g+' »';st.className='state ok';render()};
-$('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.mpl){$('#f-lot').value='';$('#f-suivi').value='mpis';render();return}$('#f-lot').value=b.dataset.l;if($('#f-suivi').value==='mpis')$('#f-suivi').value='';render()});
+$('#t-lots').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$('#t-dlot').open=false;if(b.dataset.mpl){$('#f-lot').value='';$('#f-suivi').value='mpis';render();return}$('#f-lot').value=b.dataset.l;if($('#f-suivi').value==='mpis')$('#f-suivi').value='';render()});
 document.querySelectorAll('.filt select').forEach(s=>s.addEventListener('change',render));
 $('#t-body').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;e.target.checked?sel.add(k):sel.delete(k);render()});
 $('#t-all').onclick=()=>{filtre().forEach(([k])=>sel.add(k));render()};
