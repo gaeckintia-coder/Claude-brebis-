@@ -145,6 +145,9 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .count b{display:block;font-family:var(--display);font-size:30px}
 .nums{display:flex;flex-wrap:wrap;gap:6px}
 .nums span{font-variant-numeric:tabular-nums;font-weight:700;padding:4px 8px;border-radius:8px;background:var(--bg)}
+.agrow{margin:3px 0 3px 26px;padding:3px 8px;border-radius:8px;background:#e3effa;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
+@media (prefers-color-scheme: dark){.agrow{background:#1d3347}}
+.nums .lblk{flex-basis:100%} .nums .lblk>span{display:inline-block} .nums .agrow span{background:none;padding:0}
 .nums span.agn-s{font-weight:400;font-size:.85em;margin-left:-4px;background:none;border:1px dashed var(--line)}
 .nums span.ok{background:var(--okbg);color:var(--ok)} .nums span.warn{background:var(--warnbg);color:var(--warn)}
 .hint{font-size:13px;color:var(--mute)}
@@ -1109,7 +1112,7 @@ function render(){ if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(t
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
-  $('#l-nums').innerHTML=tri(liste.items).map(p=>`<span data-fiche="${p}" class="${A()[p]?'':'warn'}">${p}</span>${A()[p]?agNourris(p):''}`).join('');
+  $('#l-nums').innerHTML=tri(liste.items).map(p=>{const ag=A()[p]?tri(sousPis(p)):[]; const ch=`<span data-fiche="${p}" class="${A()[p]?'':'warn'}">${p}</span>`; return ag.length?`<div class="lblk">${ch}${agNourris(p)}</div>`:ch}).join('');
   $('#r-setup').hidden=!!rech; $('#r-run').hidden=!rech; $('#v-recherche').classList.toggle('solo',!!(rech&&rech.solo));
   if(rech){
     const m=tri(rech.cible.filter(p=>!rech.trouvees.includes(p)));
@@ -1507,8 +1510,10 @@ const membresLot=l=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&(lotOf(p)||'San
 const membresGrp=g=>tri(Object.keys(A()).filter(p=>pres(A()[p])&&membreDe(g,p)));
 const lotsNoms=()=>lotsList().map(x=>x[0]);
 function lgInfo(p){const x=A()[p]||{}; return [nomOf(p),x.cat?catAff(x):'',x.agn?'agn. '+x.agn.slice(0,5):(/Vide/.test(x.echo||'')?'vide':'')].filter(Boolean).join(' · ')}
+// range une liste : chaque brebis suivie de ses agneaux (décalés, bleu clair) ; agneaux sans leur mère dans la liste à la fin
+function ordreMeres(M){const S=new Set(M), vu=new Set(), R=[]; tri(M).forEach(p=>{const x=A()[p]; if(x&&jeuneCat(x)) return; R.push([p,0]); vu.add(p); tri(sousPis(p)).forEach(k=>{if(S.has(k)&&!vu.has(k)){R.push([k,1]); vu.add(k)}})}); tri(M).forEach(p=>{if(!vu.has(p)) R.push([p,A()[p]&&jeuneCat(A()[p])?1:0])}); return R}
 function lgListe(kind,M){const S=LG[kind]; return `<div class="row"><button type="button" class="btn2" data-lgall="${kind}">Tout cocher</button><button type="button" class="btn2" data-lgnone="${kind}">Rien</button><span class="hint">${S.ck.size} cochée(s)</span></div>`+
-  M.map(p=>`<label class="lg-row"><input type="checkbox" data-lgck="${kind}|${p}"${S.ck.has(p)?' checked':''}><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b><span class="hint">${esc(lgInfo(p))}</span></label>`).join('')}
+  ordreMeres(M).map(([p,ag])=>`<label class="lg-row${ag?' agrow':''}"><input type="checkbox" data-lgck="${kind}|${p}"${S.ck.has(p)?' checked':''}><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b>${ag?agBadge(p):''}<span class="hint">${esc(lgInfo(p))}</span></label>`).join('')}
 function destSel(id,kind,excl){const L=kind==='lots'?lotsNoms().filter(x=>x!==excl&&x!=='Sans lot'):grpsUser().filter(x=>x!==excl);
   return `<select id="${id}"><option value="">— Choisir —</option>${L.map(x=>`<option value="${esc(x)}">${esc(kind==='lots'?lotAff(x):x)}</option>`).join('')}<option value="__new">＋ Nouveau ${kind==='lots'?'lot':'groupe'}…</option></select><input id="${id}-n" type="text" hidden placeholder="Nom" style="font:inherit;padding:8px;width:100%;box-sizing:border-box;margin-top:4px">`}
 function lgConsult(kind){const el=$('#lg-'+kind), S=LG[kind], isL=kind==='lots';
@@ -1521,7 +1526,7 @@ function lgConsult(kind){const el=$('#lg-'+kind), S=LG[kind], isL=kind==='lots';
   const n=S.sel, M=isL?membresLot(n):membresGrp(n), c=isL?coulLot(n):coulGrp(n), X=(!isL&&GRP[n])?tri(Object.keys(GRP[n]).filter(p=>!A()[p]||!pres(A()[p]))):[];
   el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="${kind}">← Tous les ${isL?'lots':'groupes'}</button><h2 style="margin-top:8px">${c?`<span class="pt" style="background:${c}"></span>`:''}${esc(isL?lotAff(n):n)} · ${M.length}</h2>${isL?`<div class="hint">${lotDet(n)}</div><div class="hint">Bâtiment : ${esc(batOf(n)||'à choisir')}</div>`:''}
     <button type="button" class="btn" data-lgrech="${kind}" style="margin:6px 0">📡 Rechercher en bipant</button>
-    ${M.map(p=>`<div class="lg-row"><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b><span class="hint">${esc(lgInfo(p))}</span></div>`).join('')||'<div class="hint">Aucune bête.</div>'}
+    ${ordreMeres(M).map(([p,ag])=>`<div class="lg-row${ag?' agrow':''}"><b class="lien${lisere(p)}" data-fiche="${p}">${p}</b>${ag?agBadge(p):''}<span class="hint">${esc(lgInfo(p))}</span></div>`).join('')||'<div class="hint">Aucune bête.</div>'}
     ${X.length?`<div style="opacity:.55;margin-top:8px">${X.map(p=>`<div class="lg-row"><s>${p}</s> <span class="hint">${esc(A()[p]?A()[p].statut:'inconnue')} · plus comptée</span></div>`).join('')}</div>`:''}`}
 function renderLots(){ if(MD.lots==='consult') return lgConsult('lots'); const el=$('#lg-lots'), S=LG.lots;
   if(!S.sel||!lotsNoms().includes(S.sel)){S.sel=null; const L=lotsList(), tot=L.reduce((s,[,n])=>s+n,0);
@@ -1797,8 +1802,8 @@ function pisMap(){ if(_pis&&Date.now()-_pisT<300) return _pis; const M={}, AG={}
 const sousPis=m=>pisMap().M[m]||[];
 // agneaux nourris par une brebis (les siens sous elle + adoptés), pour l'affichage
 function agNourris(m,gros){const L=tri(sousPis(m)); if(!L.length) return ''; const sx=k=>/Agneau|Bélier|Antenais/.test((A()[k]||{}).cat||'')?'♂':'♀';
-  return gros?`<div style="font-size:18px;font-weight:400;margin:6px 0">${L.map(k=>`${sx(k)} ${agL(k)}${A()[k].mere!==m?' <span class="hint">(adopté)</span>':''}`).join(' &nbsp;·&nbsp; ')}</div>`
-   :L.map(k=>`<span data-fiche="${k}" class="agn-s">${sx(k)}${k}</span>`).join('')}
+  return gros?`<div style="font-size:18px;font-weight:400;margin:6px 0;text-align:left">${L.map(k=>`<div class="agrow">${agL(k)} <span class="hint">${sx(k)}${A()[k].mere!==m?' adopté':''}</span></div>`).join('')}</div>`
+   :L.map(k=>`<div class="agrow"><span class="lien" data-fiche="${k}">${k}</span>${agBadge(k)}<span class="hint">${sx(k)}${A()[k].mere!==m?' adopté':''}</span></div>`).join('')}
 const aAgnele=m=>!!pisMap().AG[m];
 const COUL_TAR='#ef6c00';
 const grpTar=()=>'Tarissement '+CV;
@@ -2034,7 +2039,7 @@ const numL=(k,go)=>k?`<b class="lien${horsFerme(k)?' off':''}" ${go?'data-go':'d
 const agL=(k,go)=>numL(k,go)+agBadge(k);
 // ligne sous la mère dans la liste des mises bas (comme le carnet du CBI)
 function mbSous(v){const L=v.ag.map(a=>{if(a.mn) return '<span class="c-bad">✝ mort-né</span>'; const n=nourrice(a.n); return `${a.sx==='M'?'♂':'♀'} ${agL(a.n)}${n&&n!==v.m?` <span class="hint">(adopté par ${numL(n)})</span>`:''}`});
-  mbAdoptes(v.m).forEach(k=>L.push(`✚ adopte ${agL(k)}`)); return `<div class="hint" style="font-size:14px;line-height:1.9">${L.join(' &nbsp;·&nbsp; ')}</div>`}
+  mbAdoptes(v.m).forEach(k=>L.push(`✚ adopte ${agL(k)}`)); return L.map(x=>`<div class="agrow">${x}</div>`).join('')}
 const stH=(a,m,go)=>esc(mbStatut(a,m)).replace(/\b(\d{5})\b/g,(m0,k)=>A()[k]?numL(k,go):k);
 function mbLignes(v){const A2=mbAdoptes(v.m); return v.ag.map(a=>a.mn?'✝ agneau mort':a.n+' '+(agCode(a.n)||'')+' '+a.sx+' ('+mbStatut(a,v.m)+')').join(', ')+(A2.length?' · adopte le n° '+A2.map(k=>k+' '+agCode(k)).join(', '):'')}
 function mbLignesH(v,go){const A2=mbAdoptes(v.m); return v.ag.map(a=>a.mn?'<div class="c-bad">✝ agneau mort</div>':`<div>${agL(a.n,go)} ${a.sx==='M'?'♂':'♀'} <span class="hint">· ${stH(a,v.m,go)}</span></div>`).join('')+A2.map(k=>`<div><b>Adopte le n° ${agL(k,go)}</b> <span class="hint">· né de ${numL(A()[k].mere,go)}</span></div>`).join('')}
