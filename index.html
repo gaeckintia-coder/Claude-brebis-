@@ -769,7 +769,7 @@ function showBase(){
 }
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbImport==='function') mbImport(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof bibAppliquer==='function') bibAppliquer(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
+  const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!j.animaux) throw new Error('fichier inattendu'); DB=j; _troupLJ=null; _rang=null; _gen=null; if(typeof eAppliquer==='function') eAppliquer(); if(typeof sevAppliquer==='function') sevAppliquer(); if(typeof venAppliquer==='function') venAppliquer(); if(typeof mbImport==='function') mbImport(); if(typeof mbAppliquer==='function') mbAppliquer(); if(typeof bibAppliquer==='function') bibAppliquer(); if(typeof grpImport==='function') grpImport(); if(typeof panAppliquer==='function') panAppliquer(); mortAppliquer(); LS.set('cb_data',DB); Object.keys(LOTS).forEach(k=>{if((DB.animaux[k]||{}).lot===LOTS[k]) delete LOTS[k]}); LS.set('cb_lots',LOTS); showBase(); $('#fst').textContent='Données chargées.'; $('#fst').className='state ok'}catch(err){$('#fst').textContent='Ce fichier ne peut pas être lu : '+err.message;$('#fst').className='state err'}};
   r.readAsText(f);
 });
 
@@ -1144,6 +1144,17 @@ function knOpen(){ keenanMaj(); let w=$('#kn-wrap');
     w.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)"><button type="button" class="btn2 b-retour" id="kn-back">← OviLink</button><b style="font-size:18px">KEENAN</b><span class="hint" style="margin-left:auto">les minuteurs continuent</span></div><iframe id="kn-if" src="rationneur.html" title="KEENAN" style="flex:1;width:100%;border:0"></iframe>';
     document.body.appendChild(w); $('#kn-back').onclick=knClose}
   w.hidden=false; document.body.style.overflow='hidden'}
+// minuteurs de KEENAN visibles dans OviLink (en haut à droite) ; toucher = ouvrir KEENAN
+function knMinut(){ let el=$('#kn-min'); const g=k=>{try{return +JSON.parse(localStorage.getItem('kn_'+k)||'0')||0}catch(e){return 0}};
+  const now=Date.now(), T=[['🥣',g('timerEnd'),g('timerPause')],['💧',g('eauEnd'),g('eauPause')]].filter(([,e,pz])=>e>0||pz>0);
+  const ouvert=$('#kn-wrap')&&!$('#kn-wrap').hidden;
+  if(!T.length||ouvert){ if(el) el.hidden=true; return}
+  if(!el){ el=document.createElement('button'); el.id='kn-min'; el.type='button'; el.title='Minuteur KEENAN'; el.onclick=knOpen;
+    el.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;z-index:55;border:2px solid var(--accent);border-radius:999px;padding:4px 10px;font:700 15px system-ui;background:var(--card);color:var(--ink);box-shadow:0 2px 6px #0003'; document.body.appendChild(el)}
+  const fmt=ms=>{const s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  let fini=false; el.innerHTML=T.map(([i,e,pz])=>{ if(pz>0) return i+' ⏸ '+fmt(pz); if(e<=now){fini=true; return i+' fini !'} return i+' '+fmt(e-now)}).join(' · ');
+  el.style.background=fini?'#c62828':'var(--card)'; el.style.color=fini?'#fff':'var(--ink)'; el.hidden=false}
+setInterval(knMinut,1000);
 function knClose(){ const w=$('#kn-wrap'); if(w) w.hidden=true; document.body.style.overflow='' }
 function render(){ try{keenanMaj()}catch(e){} if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
   if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB(); if(tab==='cl'&&typeof renderCL==='function') renderCL();
@@ -2052,6 +2063,11 @@ function mbImport(){ if(!DB) return; let n=0;
   (DB.morts||[]).forEach(([k,d])=>{if(!MORT[k]) MORT[k]={d,prev:'Présent',s:1,cbi:1}});
   if(SER.deux){['m','f'].forEach(c=>{let mx=0; Object.values(MBS).forEach(v=>v.ag.forEach(a=>{if(a.n&&/^\d{5}$/.test(a.n)&&(c==='m'?a.sx==='M':a.sx==='F')&&a.n.slice(0,2)===SER[c].slice(0,2)) mx=Math.max(mx,+a.n)})); if(mx&&+SER[c]<=mx) SER[c]=pad5(mx+1)}); saveSER()}
   saveMB(); LS.set('cb_nour',NOUR); LS.set('cb_mort',MORT); _pis=null; return n}
+/* Groupes préparés par Claude dans le fichier de données (DB.grp = {nom:[n°…]}) : chaque animal n'est ajouté qu'une fois,
+   pour qu'un animal retiré du groupe à la main ne revienne pas au rechargement du fichier. */
+function grpImport(){ if(!DB||!DB.grp) return 0; const F=LS.get('cb_grpimp',{}); let n=0;
+  Object.entries(DB.grp).forEach(([g,L])=>(L||[]).forEach(k=>{const c=g+'|'+k; if(F[c]) return; if(grpAdd(k,g)) n++; if(A()[k]) F[c]=1}));
+  LS.set('cb_grpimp',F); saveG(); return n}
 let MB_RET=[];   // agneaux retirés d'une mise bas (pour remettre le compteur des numéros)
 function mbReculer(){ MB_RET.sort((a,b)=>b.n.localeCompare(a.n)).forEach(({n,sx})=>{ if(A()[n]) return;
     if(/^P/.test(n)){const i=parseInt(n.split('-')[1],10); if(+SER.pn===i+1) SER.pn=i; return}
