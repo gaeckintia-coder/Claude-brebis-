@@ -51,7 +51,7 @@ body.ttfull .wrap>*:not(#v-ttb){display:none!important}
 body.ttfull #v-ttb{display:flex!important;flex-direction:column;gap:6px;position:fixed;inset:0;z-index:16;margin:0;border-radius:0;padding:8px 10px;overflow:hidden}
 #v-recherche.solo #r-run>*:not(:first-child):not(#r-last){display:none!important}
 @media print{body>*:not(#print-reg){display:none!important}#print-reg{display:block!important;color:#000;background:#fff;font:11px Arial,sans-serif}
- #print-reg table{border-collapse:collapse;width:100%}#print-reg th,#print-reg td{border:1px solid #444;padding:3px;text-align:left;vertical-align:top}#print-reg h1{font-size:16px;margin:0 0 4px}@page{size:A4 landscape;margin:10mm}}
+ #print-reg *{print-color-adjust:exact;-webkit-print-color-adjust:exact} #print-reg .lien,#print-reg [data-fiche]{background:none!important;color:#000!important;padding:0 2px!important;font-size:12px!important} #print-reg .agrow{background:#e3effa!important} #print-reg .lg-row{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid #ccc} #print-reg h2,#print-reg h3{font-size:14px;margin:8px 0 2px} #print-reg table{border-collapse:collapse;width:100%}#print-reg th,#print-reg td{border:1px solid #444;padding:3px;text-align:left;vertical-align:top}#print-reg h1{font-size:16px;margin:0 0 4px}@page{size:A4 landscape;margin:10mm}}
 .e-grid{display:flex;flex-direction:column;gap:6px}
 .e-col{display:grid;gap:6px} #e-st{grid-template-columns:repeat(5,1fr)} #e-nb{grid-template-columns:repeat(4,1fr)}
 .e-col button{font-size:22px;padding:12px 0;background:var(--card);border:2px solid var(--line);color:var(--ink);border-radius:12px}
@@ -203,7 +203,7 @@ tr.sel td{background:var(--okbg)}
     </details>
   </div>
 
-  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
+  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><button id="p-print" type="button" class="lect-b" title="Imprimer / PDF" aria-label="Imprimer ou PDF" style="font-size:18px;padding:3px 9px">🖨</button><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
   <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
@@ -925,6 +925,17 @@ $('#r-go').addEventListener('click',()=>{
 });
 function majSon(){$('#r-son').textContent=SON?'🔊 Son activé':'🔇 Son coupé'}
 $('#r-son').onclick=()=>{SON=!SON;LS.set('cb_son',SON);majSon();if(SON)sonTrouve()};majSon();
+// 🖨 partout pareil : imprime ce qui est affiché (même ordre qu'à l'écran), sans boutons ni champs
+function printVue(){ if(tab==='mb'&&MD.mb==='consult'&&typeof mbImprimer==='function') return mbImprimer();
+  const sec=$('#v-'+tab); if(!sec) return; const part=THEMES.includes(tab)&&MD[tab]&&MD[tab]!=='choix'?sec.querySelector('.s-'+(MD[tab]==='consult'?'consult':'saisie'))||sec:sec;
+  const C=part.cloneNode(true); C.querySelectorAll('[hidden]').forEach(e=>e.remove());
+  C.querySelectorAll('details').forEach(d=>{if(d.querySelector('input:not([type=checkbox]),select,textarea')||/🖍|🎨|Modifier|couleur/i.test((d.querySelector('summary')||{}).textContent||'')) d.remove(); else d.open=true});
+  C.querySelectorAll('.lg-act').forEach(d=>{if(d.querySelector('select,input:not([type=checkbox]),textarea')) d.remove()});
+  C.querySelectorAll('button:not([data-fiche]):not([data-go]),input,select,textarea,.choix,.state,.b-retour').forEach(e=>e.remove()); C.querySelectorAll('.row,.hint,span').forEach(e=>{if(/^\s*(Bâtiment\s*:|\d+ cochée\(s\)|Campagne)?\s*$/.test(e.textContent)&&!e.querySelector('[data-fiche],b,table')) e.remove()});
+  const t=$('#p-titre').textContent||''; $('#print-reg').innerHTML=`<h1>${esc(t)}</h1><div style="margin-bottom:6px">GAEC KINTIA – édité le ${fdate()}</div>`; $('#print-reg').appendChild(C);
+  let st=$('#pagesz'); if(!st){st=document.createElement('style'); st.id='pagesz'; document.head.appendChild(st)} st.textContent='@page{size:A4 portrait;margin:10mm}';
+  const fin=()=>{st.textContent=''; window.removeEventListener('afterprint',fin)}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),100)}
+$('#p-print').onclick=printVue;
 $('#p-back').onclick=()=>{ if(!retourTel()) setTab('accueil') };
 $('#r-back').onclick=()=>setTab(R_ORIG||'lots');
 $('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
