@@ -1659,7 +1659,7 @@ function refreshSaveNote(started){
   el.classList.remove("todo");
   if(l && l.length){
     el.textContent = `Enregistré à ${l[l.length-1].heure}` + (l.length>1 ? ` (${l.length} chargements)` : "")
-      + (waiting ? " · en attente d'envoi en ligne, gardé sur ce téléphone" : "");
+      + ((waiting && chgCol) ? " · en attente d'envoi en ligne, gardé sur ce téléphone" : "");
   } else {
     el.textContent = started ? "Chargement commencé mais pas encore enregistré." : "Pas encore enregistré aujourd'hui.";
     if(started) el.classList.add("todo");

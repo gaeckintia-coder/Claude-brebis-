@@ -38,6 +38,8 @@ textarea{min-height:90px}
 .state{font-size:14px;color:var(--mute)} .state.err{color:var(--bad)} .state.ok{color:var(--ok)}
 #print-reg{display:none}
 body:not(.page) .tabs .t-mouv{display:none}
+.tabs [hidden]{display:none!important}
+.lg-card.avenir{opacity:.5;cursor:default}
 .choix{display:none} [data-md="choix"]>.choix{display:block}
 [data-md="choix"]>*:not(.choix){display:none!important}
 [data-md="saisie"] .s-consult{display:none!important} [data-md="consult"] .s-saisie{display:none!important}
@@ -99,7 +101,8 @@ body.sfull #v-sai{display:flex!important;flex-direction:column;gap:4px;position:
 body.page #p-camp{display:block;margin:-6px 0 8px} #camp-ban{margin:0 0 8px;padding:8px;border-radius:10px;background:var(--warnbg);color:var(--warn);font-weight:700}
 body.page header, body.page #c-lect, body.page .tabs, body.page #v-donnees, body.page #bk-alert{display:none!important}
 body.page #pbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px}
-#pbar b{flex:1;font-size:20px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#pbar{flex-wrap:wrap;row-gap:4px} #pbar b{order:9;flex:1 1 100%;font-size:21px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #pbar #p-print{margin-left:auto}
+#pbar .b-retour{padding-left:10px;padding-right:10px}
 .lect-b{flex-shrink:0;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--mute);white-space:nowrap}
 .lect-b.on{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
 .lect-b.off{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
@@ -203,25 +206,26 @@ tr.sel td{background:var(--okbg)}
     </details>
   </div>
 
-  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><b id="p-titre"></b><button id="p-print" type="button" class="lect-b" title="Imprimer / PDF" aria-label="Imprimer ou PDF" style="font-size:18px;padding:3px 9px">🖨</button><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
+  <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><button id="p-home" class="btn2" type="button" title="Accueil" aria-label="Retour à l'accueil" style="font-size:19px;padding:4px 8px">🏠</button><b id="p-titre"></b><button id="p-print" type="button" class="lect-b" title="Imprimer / PDF" aria-label="Imprimer ou PDF" style="font-size:18px;padding:3px 9px">🖨</button><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
   <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
     <button type="button" role="tab" data-t="liste" aria-selected="false">Liste</button>
     <button type="button" role="tab" data-t="mouv" aria-selected="false">Mouvements</button>
     <button type="button" role="tab" data-t="lots" aria-selected="false" class="t-mouv">Lots</button>
-    <button type="button" role="tab" data-t="groupes" aria-selected="false">Groupes</button>
+    <button type="button" role="tab" data-t="groupes" aria-selected="false" class="t-mouv">Groupes</button>
     <button type="button" role="tab" data-t="troupeau" aria-selected="false">Troupeau</button>
     <button type="button" role="tab" data-t="soins" aria-selected="false">Soins</button>
-    <button type="button" role="tab" data-t="echo" aria-selected="false">Écho</button>
+    <button type="button" role="tab" data-t="repro" aria-selected="false">Reproduction</button>
+    <button type="button" role="tab" data-t="echo" aria-selected="false" class="t-mouv">Écho</button>
     <button type="button" role="tab" data-t="sevrage" aria-selected="false" class="t-mouv">Sevrage</button>
     <button type="button" role="tab" data-t="vente" aria-selected="false" class="t-mouv">Vente</button>
     <button type="button" role="tab" data-t="traite" aria-selected="false" class="t-mouv">Traite</button>
     <button type="button" role="tab" data-t="mort" aria-selected="false" class="t-mouv">Mortalité</button>
-    <button type="button" role="tab" data-t="mb" aria-selected="false">Mises bas</button>
+    <button type="button" role="tab" data-t="mb" aria-selected="false" class="t-mouv">Mises bas</button>
     <button type="button" role="tab" data-t="cl" aria-selected="false">Contrôle laitier</button>
     <button type="button" role="tab" data-t="keenan" aria-selected="false">KEENAN</button>
-    <button type="button" role="tab" data-t="tests" aria-selected="false">Tests</button>
+    <button type="button" role="tab" data-t="tests" aria-selected="false" class="t-mouv" hidden>Tests</button>
   </div>
 
   <!-- TROUPEAU -->
@@ -519,6 +523,14 @@ tr.sel td{background:var(--okbg)}
     <button type="button" class="lg-card" data-mvgo="sevrage"><span>🐑 Sevrage</span><span class="hint">passage en renouvellement</span></button>
     <button type="button" class="lg-card" data-mvgo="vente"><span>🚚 Vente</span><span class="hint">agneaux, reproducteurs, réformes</span></button>
     <button type="button" class="lg-card" data-mvgo="mort"><span>✝ Mortalité</span><span class="hint">agneaux, brebis, béliers</span></button>
+    <button type="button" class="lg-card" data-mvgo="groupes"><span>🏷 Groupes</span><span class="hint">créer, ranger, consulter</span></button>
+  </section>
+
+  <!-- REPRODUCTION -->
+  <section id="v-repro" class="card" hidden>
+    <button type="button" class="lg-card avenir" disabled aria-disabled="true"><span>💞 Luttes</span><span class="hint">à venir</span></button>
+    <button type="button" class="lg-card" data-mvgo="echo"><span>🩻 Écho</span><span class="hint">séances d'échographie, résultats</span></button>
+    <button type="button" class="lg-card" data-mvgo="mb"><span>🐣 Mises bas</span><span class="hint">agnelages, adoptions, consultation</span></button>
   </section>
 
   <!-- MISES BAS -->
@@ -644,7 +656,7 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='accueil';
 // chaque thème : un choix « Saisie » ou « Consultation » ; les thèmes de Mouvements reviennent à Mouvements
-const THEMES=['lots','groupes','soins','echo','sevrage','vente','traite','mort','mb','cl'], MOUV=['lots','traite','sevrage','vente','mort'], ZFULL=['sevrage','vente','mort'];
+const THEMES=['lots','groupes','soins','echo','sevrage','vente','traite','mort','mb','cl'], MOUV=['lots','traite','sevrage','vente','mort','groupes'], REPRO=['echo','mb'], ZFULL=['sevrage','vente','mort'];
 const CHTXT={cl:['Tank, puis quai par quai : biper la rangée, peser le lait derrière chaque brebis','Lait calculé par jour à chaque contrôle, cumul de campagne, chutes, contrôles manquants'],mb:['Biper la mère : mise bas, agneaux, adoption · numéros des agneaux','Toutes les mises bas, bilan, impression'],lots:['Déplacer des bêtes, créer, regrouper, renommer, couleurs, brebis mélangées','Les lots, leurs bêtes'],groupes:['Créer, ajouter, retirer, vider, couleurs','Les groupes et leurs bêtes'],
   soins:['Biper une brebis à soigner, nouveaux traitements, traitement collectif','À traiter, attentes lait et viande, stock, registre, impression'],echo:['Nouvelle séance d’écho','Séances enregistrées'],
   sevrage:['Biper les jeunes qui passent en renouvellement','Jeunes en renouvellement cette saison'],vente:['Biper les animaux vendus','Ventes enregistrées'],
@@ -777,7 +789,7 @@ $('#file').addEventListener('change',e=>{
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){ if(t==='keenan'){knOpen(); return} tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
   if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
-  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','repro','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -940,6 +952,16 @@ function printVue(){ if(tab==='mb'&&MD.mb==='consult'&&typeof mbImprimer==='func
   const fin=()=>{st.textContent=''; window.removeEventListener('afterprint',fin)}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),100)}
 $('#p-print').onclick=printVue;
 $('#p-back').onclick=()=>{ if(!retourTel()) setTab('accueil') };
+// 🏠 : retour direct à l'accueil, sauf saisie en plein écran pas finie (même protection que Retour)
+$('#p-home').onclick=()=>{ const B=document.body.classList;
+  if(B.contains('tfull')) triFermer();
+  if(B.contains('qfull')||B.contains('ttfull')||B.contains('zfull')){ toast('Appuyez sur « Enregistrer » ou « Annuler »'); return}
+  if(B.contains('efull')&&EV!=='liste'){ toast('Appuyez sur « Enregistrer la séance » ou « Annuler »'); return}
+  if(!$('#sheet').hidden) $('#sheet').hidden=true;
+  if(B.contains('efull')) eFull(false);
+  ['lots','groupes'].forEach(k=>{ if(LG[k]){LG[k].sel=null; LG[k].ck.clear()} });
+  if(ST['#fiche']) ST['#fiche'].pile.length=0;
+  setTab('accueil'); window.scrollTo(0,0) };
 $('#r-back').onclick=()=>setTab(R_ORIG||'lots');
 $('#r-stop').onclick=()=>{$('#r-confirm').hidden=false; $('#r-confirm').scrollIntoView({behavior:'smooth',block:'center'})};
 $('#r-no').onclick=()=>$('#r-confirm').hidden=true;
@@ -1746,6 +1768,7 @@ function retourTel(){
   if(tab==='fiche'&&ST['#fiche'].pile.length){ fiche(ST['#fiche'].pile.pop(),'nav','#fiche'); return true}
   if(THEMES.includes(tab)&&MD[tab]&&MD[tab]!=='choix'){ setMode(tab,'choix'); return true}
   if(MOUV.includes(tab)){ setTab('mouv'); return true}
+  if(REPRO.includes(tab)){ setTab('repro'); return true}
   if(tab!=='accueil'){ setTab('accueil'); return true}
   return false}
 try{ history.replaceState({cb:0},''); history.pushState({cb:1},'') }catch(e){}
@@ -2083,7 +2106,8 @@ function mbAvancer(ag){ ag.forEach(a=>{ if(a.mn||!a.n) return;
     const c=serCle(a.sx), i=parseInt(a.n,10), cur=parseInt(SER[c],10)||0; if(i>=cur&&i-cur<50) SER[c]=pad5(i+1)}); saveSER()}
 const serTexte=()=>SER.prov?'repère provisoire P'+SER.pm+'-'+String(SER.pn).padStart(4,'0'):SER.deux?'♂ '+(SER.m||'?')+' · ♀ '+(SER.f||'?'):'n° '+(SER.c||'?');
 // pères : béliers d'IA dont la date colle avec la mise bas (liste du centre ovin, à venir), puis béliers de lutte
-function mbPeres(m,d){const O=[]; ((DB&&DB.ia)||[]).filter(r=>r.b===m).forEach(r=>{const j=Math.round((new Date(d+'T12:00:00')-new Date(r.d+'T12:00:00'))/86400000); if(j>=140&&j<=160) O.push({v:r.p,t:'IA '+(r.lib||r.p)+' (IA du '+frJA(r.d)+')',mode:'IA'})});
+const IA_TERME=150, IA_MARGE=7; // père d'IA proposé seulement si la mise bas tombe à terme ± 7 jours (Jack 22/11)
+function mbPeres(m,d){const O=[]; ((DB&&DB.ia)||[]).filter(r=>r.b===m).forEach(r=>{const j=Math.round((new Date(d+'T12:00:00')-new Date(r.d+'T12:00:00'))/86400000); if(Math.abs(j-IA_TERME)<=IA_MARGE) O.push({v:r.p,t:'IA '+(r.lib||r.p)+' (IA du '+frJA(r.d)+')',mode:'IA'})});
   return O}
 function mbStatut(a,m){ if(a.mn) return 'mort-né'; const x=A()[a.n]; if(!x) return ''; if(!pres(x)) return String(x.statut||'').toLowerCase(); if(renouv(a.n)) return 'renouvellement'; if(BIBS[a.n]) return 'au biberon depuis le '+frJ(BIBS[a.n].d); if(x.art) return 'au biberon';
   if(orphelin(a.n)) return 'orphelin, en attente d’une nouvelle mère';
