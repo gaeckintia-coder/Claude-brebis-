@@ -251,6 +251,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
       <h1>Mélangeuse KEENAN</h1>
     </div>
     <div class="topbtns">
+      <button class="btn btn-sober" data-go="jour">Du jour</button>
       <button class="btn btn-sober" id="openMenu">Réglages</button>
       <button class="btn btn-sober" data-go="refus">Refus</button>
     </div>
@@ -268,6 +269,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
     </div>
   </section>
   <div class="alert" id="capAlert" hidden></div>
+  <button class="repbtn" data-go="jour" id="jourResume" hidden><span><span class="eyebrow">Pâture aujourd'hui</span><br><span id="jourTxt">–</span></span><b aria-hidden="true">›</b></button>
 
   <section class="panel" aria-label="Réglages du jour">
     <div class="row srow" id="pctRow"><div><h2>Ration du jour</h2><span class="note">de la ration de base</span></div>
@@ -311,6 +313,34 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 
   <button class="repbtn" data-go="reperes"><span><span class="eyebrow">Bilan nutritionnel</span><br>Énergie, protéines et ingestion par lot</span><span id="repBtnVal">–</span></button>
   <div class="status" id="status"></div>
+</div>
+
+<!-- RÉGLAGES DU JOUR : pâture, ration, jours, humidité -->
+<div class="wrap view" id="v-jour" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Réglages du jour</h1></div>
+  <section class="panel" aria-label="Pâture">
+    <h2>Pâture</h2>
+    <p class="note">Coche les lots qui sortent et le temps passé dehors. L'herbe broutée remplace des parts de mélange (minéraux et levures restent à dose pleine, ration de traite inchangée).</p>
+    <div id="patLots" class="list"></div>
+    <div class="sep"></div>
+    <div class="row srow"><div><h2>Herbe broutée</h2><span class="note">kg d'herbe brute par brebis et par heure</span></div>
+      <div class="stepper"><button type="button" class="step" data-pj="kgh" data-d="-0.1" aria-label="Moins">−</button><b id="patKgh">–</b><button type="button" class="step" data-pj="kgh" data-d="0.1" aria-label="Plus">+</button></div></div>
+    <div class="row srow"><div><h2>MS de l'herbe</h2><span class="note">15 à 20 % (herbe jeune : moins ; plus vieille : plus)</span></div>
+      <div class="stepper"><button type="button" class="step" data-pj="ms" data-d="-1" aria-label="Moins">−</button><b id="patMs">–</b><button type="button" class="step" data-pj="ms" data-d="1" aria-label="Plus">+</button></div></div>
+    <div class="note" id="patCalc"></div>
+  </section>
+  <section class="panel" aria-label="Ration du jour">
+    <div class="row srow"><div><h2>Ration du jour</h2><span class="note">de la ration de base (jusqu'à 200 %)</span></div>
+      <div class="stepper"><button type="button" class="step" data-pj="pct" data-d="-5" aria-label="Baisser">−</button><b id="jPct">–</b><button type="button" class="step" data-pj="pct" data-d="5" aria-label="Monter">+</button></div></div>
+    <div class="sep"></div>
+    <div class="row srow"><div><h2>Mélange pour</h2><span class="note">jours (minéraux et levures comptés pour chaque jour)</span></div>
+      <div class="stepper"><button type="button" class="step" data-pj="jours" data-d="-1" aria-label="Moins">−</button><b id="jJours">–</b><button type="button" class="step" data-pj="jours" data-d="1" aria-label="Plus">+</button></div></div>
+    <div class="sep"></div>
+    <div class="row srow"><div><h2>Humidité visée</h2><span class="note">du mélange</span></div>
+      <div class="stepper"><button type="button" class="step" data-pj="hum" data-d="-1" aria-label="Moins">−</button><b id="jHum">–</b><button type="button" class="step" data-pj="hum" data-d="1" aria-label="Plus">+</button></div></div>
+  </section>
+  <section class="hero"><div class="eyebrow">Total mélange</div><div class="total" id="jTotal">–</div><span class="note" id="jParts">–</span></section>
+  <button class="btn btn-red" data-back>Terminé</button>
 </div>
 
 <!-- REPÈRES RATION -->
@@ -608,7 +638,8 @@ function compute(c){
   c = effCfg(c);
   const jours = Math.max(1, +c.jours||1);
   const k = (+c.pct||100)/100 * jours;
-  const parts = c.lots.reduce((s,l)=>s+(+l.effectif||0)*cf(l),0);
+  const pat = patCalc(c);
+  const parts = Math.max(0, c.lots.reduce((s,l)=>s+(+l.effectif||0)*cf(l),0) - pat.parts);
   const brebis = c.lots.reduce((s,l)=>s+(+l.effectif||0),0);
   const used = c.aliments.map((a,i)=>({...a,i})).filter(a=>a.actif && a.sec>0);
   const mix = used.filter(a=>a.lieu==="melange").map(a=>{
@@ -630,7 +661,23 @@ function compute(c){
   const lotsStats = c.lots.map(l=>lotStat(c,l));
   const mixMat = lotStat(c,{coef:1,traite:0}).mat;
   const base = lotStat(c,{coef:1,traite:1});
-  return {parts,brebis,jours,mix,tra,traiteN,secAll,secMix,mat:base.mat,secBase:base.sec,mixMat,lotsStats,humSans,eau,conc,totalMix:brut+eau};
+  return {parts,pat,brebis,jours,mix,tra,traiteN,secAll,secMix,mat:base.mat,secBase:base.sec,mixMat,lotsStats,humSans,eau,conc,totalMix:brut+eau};
+}
+/* ---------- Pâture ----------
+   herbe broutée (kg MS) = brebis × heures × kg d'herbe brute par heure × % MS de l'herbe ;
+   parts en moins = herbe (kg MS) ÷ matière sèche d'une part de mélange (sans les condiments), plafonnées à la part du lot */
+function patCalc(c){
+  c = effCfg(c);
+  const kgh = +c.patKgh>0 ? +c.patKgh : 1, ms = (+c.patMs>0 ? +c.patMs : 18)/100;
+  const partMS = c.aliments.filter(a=>a.actif && a.sec>0 && a.lieu==="melange" && !a.condiment).reduce((s,a)=>s+a.sec,0);
+  let parts = 0, msTot = 0; const lots = [];
+  c.lots.forEach(l=>{
+    const h = +l.patH||0, n = +l.effectif||0;
+    if(!l.pature || !(h>0) || !(n>0) || !(partMS>0)) return;
+    const msL = n*h*kgh*ms, pL = Math.min(n*cf(l), msL/partMS);
+    parts += pL; msTot += msL; lots.push({nom:l.nom, n, h, ms:msL, parts:pL, plafond: msL/partMS > n*cf(l)});
+  });
+  return {parts, ms:msTot, lots, partMS, kgh, msPct:ms*100};
 }
 /* Ration de base (100 %) d'un animal du lot : mélange × coef + condiments + part de ration traite */
 const TRAITE = [{v:0,t:"Pas de ration traite"},{v:0.5,t:"Demi ration traite"},{v:1,t:"Ration traite"}];
@@ -887,7 +934,8 @@ function pireStatut(){
 function render(){
   const r = compute(cfg);
   $("today").textContent = "Chargement du " + workDate().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
-  $("lotline").textContent = nf(r.brebis)+" brebis · "+nf(r.parts,1)+" parts"+(baseOf(cfg)===1?"":" · ration base 86 % MS")+" — modifier les lots";
+  renderJourResume(r);
+  $("lotline").textContent = nf(r.brebis)+" brebis · "+nf(r.parts,1)+" parts"+(r.pat.parts>0?" (pâture −"+nf(r.pat.parts,1)+")":"")+(baseOf(cfg)===1?"":" · ration base 86 % MS")+" — modifier les lots";
   $("pctVal").textContent = nf(cfg.pct)+" %";
   $("pctRow").classList.toggle("pct-off", +cfg.pct !== 100);
   $("joursVal").textContent = r.jours+" j";
@@ -1197,7 +1245,8 @@ $("pClear").addEventListener("click",()=>{ delete adj[pKey]; store("adj-"+dayKey
 let adj = load("adj-"+dayKey()) || {};
 const stepFor = planned => planned < 5 ? 0.1 : planned < 50 ? 1 : 5;
 /* Godet aliments : aliments comptés en bassines et condiments pesés, versés ensemble dans un godet pesé complet.
-   L'écart +/− sur le godet se répartit sur chacun de ses aliments au prorata du prévu. */
+   L'écart +/− sur le godet se répartit sur les aliments en bassines seulement, au prorata du prévu :
+   minéraux, levures et condiments sont pesés juste à la petite balance, ils ne prennent pas d'écart. */
 const enGodet = a => a.type!=="fourrage" && (a.bassine>0 || a.condiment);
 function loadItems(r){
   const items = [];
@@ -1206,9 +1255,10 @@ function loadItems(r){
   const membres = items.filter(it=>it.membre);
   const gPlanned = membres.reduce((s,it)=>s+it.planned,0);
   const gAdj = membres.length ? (+adj.g||0) : 0;
+  const repart = membres.filter(it=>!it.a.condiment), rPlanned = repart.reduce((s,it)=>s+it.planned,0);
   items.forEach(it=>{
     if(it.membre){
-      it.adj = gPlanned>0 ? gAdj*it.planned/gPlanned : 0;
+      it.adj = (!it.a.condiment && rPlanned>0) ? gAdj*it.planned/rPlanned : 0;
       it.act = Math.max(0, it.planned + it.adj);
     } else {
       it.adj = +adj[it.key] || 0;
@@ -1219,7 +1269,7 @@ function loadItems(r){
   const totalAct = items.reduce((s,it)=>s+it.act,0);
   if(membres.length){
     const last = items.lastIndexOf(membres[membres.length-1]);
-    items.splice(last+1, 0, {key:"g", godet:true, planned:gPlanned, adj:gAdj, act:Math.max(0,gPlanned+gAdj), step:5, n:membres.length});
+    items.splice(last+1, 0, {key:"g", godet:true, planned:gPlanned, adj:gAdj, act:Math.max(0,gPlanned+gAdj), step:5, n:repart.length});
   }
   return {items, totalAct};
 }
@@ -1274,15 +1324,48 @@ function bump(key,d,min,max){
   store("cfg",cfg); render();
   clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
 }
-$("pctMinus").addEventListener("click",()=>bump("pct",-5,5,150));
-$("pctPlus").addEventListener("click",()=>bump("pct",5,5,150));
+$("pctMinus").addEventListener("click",()=>bump("pct",-5,5,200));
+$("pctPlus").addEventListener("click",()=>bump("pct",5,5,200));
 $("joursMinus").addEventListener("click",()=>bump("jours",-1,1,4));
 $("joursPlus").addEventListener("click",()=>bump("jours",1,1,4));
 $("humMinus").addEventListener("click",()=>bump("humCible",-1,0,90));
 $("humPlus").addEventListener("click",()=>bump("humCible",1,0,90));
 
+/* ---------- Réglages du jour ---------- */
+function renderJourResume(r){
+  const L = r.pat.lots; $("jourResume").hidden = !L.length;
+  if(L.length) $("jourTxt").textContent = L.map(x=>`${x.nom} ${nf(x.h,1)} h`).join(" · ") + ` → −${nf(r.pat.parts,1)} parts de mélange`;
+}
+function renderJour(){
+  const r = compute(cfg), P = r.pat;
+  $("patLots").innerHTML = cfg.lots.map((l,i)=>{
+    const x = P.lots.find(y=>y.nom===l.nom);
+    return `<div class="item${l.pature?"":" off"}" style="gap:6px">
+      <label class="check" style="color:var(--ink);font-weight:700"><input type="checkbox" data-patck="${i}"${l.pature?" checked":""}> ${esc(l.nom)} <span class="note">· ${nf(l.effectif)} brebis</span></label>
+      ${l.pature?`<div class="row srow"><div><h2 style="font-size:1rem">Temps dehors</h2><span class="note">${x?`${nf(x.ms)} kg MS d'herbe · −${nf(x.parts,1)} parts`+(x.plafond?" (toute leur part)":""):"pas sorties"}</span></div>
+        <div class="stepper"><button type="button" class="step" data-path="${i}" data-d="-0.5" aria-label="Moins">−</button><b>${nf(+l.patH||0,1)} h</b><button type="button" class="step" data-path="${i}" data-d="0.5" aria-label="Plus">+</button></div></div>`:""}
+    </div>`;}).join("");
+  $("patKgh").textContent = nf(P.kgh,1)+" kg"; $("patMs").textContent = nf(P.msPct)+" %";
+  $("patCalc").textContent = P.parts>0 ? `Herbe : ${nf(P.ms)} kg de MS → ${nf(P.parts,1)} parts de mélange en moins (une part = ${nf(P.partMS,2)} kg MS).` : "Aucun lot dehors aujourd'hui.";
+  $("jPct").textContent = nf(cfg.pct)+" %"; $("jJours").textContent = nf(cfg.jours)+" j"; $("jHum").textContent = nf(cfg.humCible)+" %";
+  $("jTotal").innerHTML = nf(r.totalMix)+" <small>kg</small>"; $("jParts").textContent = nf(r.brebis)+" brebis · "+nf(r.parts,1)+" parts de mélange";
+}
+function jourSave(){ store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500); renderJour(); }
+$("v-jour").addEventListener("change",e=>{ const t = e.target; if(t.dataset.patck!==undefined){ cfg.lots[+t.dataset.patck].pature = t.checked; jourSave(); } });
+$("v-jour").addEventListener("click",e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  if(t.dataset.path!==undefined){ const l = cfg.lots[+t.dataset.path]; l.patH = Math.min(12, Math.max(0, Math.round(((+l.patH||0)+(+t.dataset.d))*2)/2)); jourSave(); }
+  else if(t.dataset.pj){ const d = +t.dataset.d, k = t.dataset.pj;
+    if(k==="kgh") cfg.patKgh = Math.min(3, Math.max(0.1, Math.round(((+cfg.patKgh||1)+d)*10)/10));
+    if(k==="ms") cfg.patMs = Math.min(35, Math.max(10, Math.round((+cfg.patMs||18)+d)));
+    if(k==="pct") cfg.pct = Math.min(200, Math.max(5, Math.round((+cfg.pct||100)+d)));
+    if(k==="jours") cfg.jours = Math.min(4, Math.max(1, Math.round((+cfg.jours||1)+d)));
+    if(k==="hum") cfg.humCible = Math.min(90, Math.max(0, Math.round((+cfg.humCible||0)+d)));
+    jourSave(); }
+});
+
 /* ---------- Navigation : une seule fenêtre ouverte ---------- */
-const parent = {menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
+const parent = {jour:"main", menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
 let current = "main", mainScroll = 0;
 /* Bouton retour du téléphone : chaque fenêtre ouverte ajoute une étape à l'historique,
    pour que le geste « retour » ferme la fenêtre au lieu de quitter l'appli. */
@@ -1312,6 +1395,7 @@ document.addEventListener("click",e=>{
 });
 function open(v){
   if(v==="lots") buildLots();
+  if(v==="jour") renderJour();
   if(v==="alims") renderAlims();
   if(v==="eau"){ $("debit").value = cfg.debit; $("capacite").value = cfg.capacite; $("bascule").value = cfg.bascule; $("eauErr").hidden = true; }
   if(v==="reperes"){ parent.reperes = current==="menu" ? "menu" : "main"; render(); renderNutri(); }
@@ -1563,6 +1647,7 @@ function snapshotLoad(){
   const r = compute(cfg), now = new Date();
   return {heure: now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),
     pct: +cfg.pct, jours: r.jours, brebis: r.brebis, parts: r1(r.parts),
+    pature: r.pat.lots.map(x=>({nom:x.nom, n:x.n, h:x.h, msKg:r1(x.ms), parts:r1(x.parts)})),
     eau: r1((loadItems(r).items.find(it=>it.water)||{act:0}).act),
     aliments: loadItems(r).items.filter(it=>!it.water && !it.godet).map(it=>({nom:it.a.nom, kg:r1(it.act), prevu:r1(it.planned), ms:+it.a.ms||1, cond:!!it.a.condiment})),
     // L'aliment traite est donné chaque jour : sur un mélange pour plusieurs jours, il compte pour chacun de ces jours
@@ -1709,7 +1794,7 @@ function renderBilan(){
     const loads = journal[d];
     const kg = loads.reduce((s,l)=>s+(l.aliments||[]).reduce((t,a)=>t+(+a.kg||0),0)+(+l.eau||0),0);
     const dt = new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
-    return `<div class="dayrow"><div class="row"><span>${dt}${loads.length>1?` · ${loads.length} chargements`:""}${(loads[0].jours||1)>1?` · pour ${loads[0].jours} jours`:""}${loads[0].pct!==100?` · ${loads[0].pct} %`:""}</span><b>${nf(kg)} kg</b></div>
+    return `<div class="dayrow"><div class="row"><span>${dt}${loads.length>1?` · ${loads.length} chargements`:""}${(loads[0].jours||1)>1?` · pour ${loads[0].jours} jours`:""}${loads[0].pct!==100?` · ${loads[0].pct} %`:""}${(loads[0].pature||[]).length?` · pâture ${loads[0].pature.map(x=>nf(x.h,1)+" h").join("/")}`:""}</span><b>${nf(kg)} kg</b></div>
       <button class="linkbtn" data-delask="${d}">Supprimer ce jour</button>
       <div class="actions" data-delbox="${d}" hidden><button class="btn btn-rust" data-delno="${d}">Garder</button><button class="btn btn-red" data-delyes="${d}">Supprimer</button></div></div>`;
   }).join("") : `<p class="note">Rien pour l'instant.</p>`;
