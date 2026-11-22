@@ -726,7 +726,9 @@ let liste=LS.get('cb_liste',{debut:null,items:[],dbl:0});
 let rech=LS.get('cb_rech',null);         // {titre, cible:[...], trouvees:[], trop:[]}
 
 const A=()=>DB?DB.animaux:{};
-function plaqueDe(raw){
+// numéro électronique différent du numéro de la base (ex. boucle 50006 = brebis 506) : table DB.alias
+function plaqueDe(raw){ const p=plaque0(raw); const al=(DB&&DB.alias)||{}; return p&&!A()[p]&&al[p]?al[p]:p}
+function plaque0(raw){
   const d=String(raw).replace(/\D/g,''); if(!d) return null;
   if(d.length>=12) return d.slice(-5);
   if(d.length===6 && !A()[d]) return d.slice(1);
