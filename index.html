@@ -149,7 +149,14 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .nums{display:flex;flex-wrap:wrap;gap:6px}
 .nums span{font-variant-numeric:tabular-nums;font-weight:700;padding:4px 8px;border-radius:8px;background:var(--bg)}
 .cl-quai{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0} .cl-quai>div{border:1px solid var(--line);border-radius:10px;padding:4px 6px;text-align:center;min-height:52px} .cl-quai small{display:block;font-size:12px;opacity:.7} .cl-quai b{font-size:16px} .cl-quai .lien{padding:2px 3px!important;font-size:15px!important;display:inline-block;max-width:100%;box-sizing:border-box}
-.cl-quai .cl-next{border:3px solid var(--accent)} .cl-cases{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:17px} .cl-cases input{transform:scale(1.4);margin-right:6px}
+.cl-quai .cl-next{border:3px solid var(--accent)} .tag.mini::before{display:none}
+#cl-ml::-webkit-inner-spin-button,#cl-ml::-webkit-outer-spin-button{-webkit-appearance:none;margin:0} #cl-ml{-moz-appearance:textfield}
+.cl-saisie{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px;align-items:end}
+.cl-saisie .btn{height:66px;font-size:20px;margin:0}
+#cl-ml{font:inherit;font-size:34px;font-weight:700;padding:6px;width:100%;box-sizing:border-box;text-align:center;height:66px}
+.cl-flac{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px;align-items:center;margin-top:6px}
+#cl-fl{font:inherit;font-size:22px;padding:6px;width:100%;box-sizing:border-box;text-align:center}
+.cl-cases{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:17px} .cl-cases input{transform:scale(1.4);margin-right:6px}
 .cl-al,tr.cl-al td{background:#ffe0b2!important} @media (prefers-color-scheme: dark){.cl-al,tr.cl-al td{background:#5a3a10!important}}
 .agrow{margin:3px 0 3px 26px;padding:3px 8px;border-radius:8px;background:#e3effa;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
 @media (prefers-color-scheme: dark){.agrow{background:#1d3347}}
@@ -2361,6 +2368,13 @@ function clBip(p){const c=clCur(); if(!c) return; if(CLV.st!=='quai'){toast('Lec
   for(let i=0;i<c.q.length;i++){const j=c.q[i].indexOf(p); if(j>=0){clMsg(p+' est déjà passée (quai '+(i+1)+', place '+(j+1)+').'); return}}
   if(q.length>=CLQ){clMsg('Quai complet ('+CLQ+' places) : passe au lait.'); return} q.push(p); saveCL(); bip(); renderCL()}
 function clMsg(t,ok){const s=$('#cl-st'); if(s){s.textContent=t; s.className='state '+(ok?'ok':'err')} else toast(t)}
+// Flacons d'analyse : liste n° brebis ↔ n° flacon, triable par brebis (ordre CBI) ou par flacon
+function clFlacons(c){const L=Object.entries(c.l).filter(([k,r])=>r&&r.fl); if(!L.length) return '';
+  const t=CLV.fltri||'b'; L.sort((a,b)=>t==='f'?String(a[1].fl).localeCompare(String(b[1].fl),'fr',{numeric:true}):cmpAnim(a[0],b[0]));
+  return `<div class="lg-act"><b>🧪 Flacons d'analyse · ${L.length}</b> <span class="hint">contrôle du ${frJA(c.d)}</span>
+   <div class="row" style="margin:6px 0;gap:6px"><button type="button" class="${t==='b'?'btn':'btn2'}" data-clflt="b">Trier par brebis</button><button type="button" class="${t==='f'?'btn':'btn2'}" data-clflt="f">Trier par flacon</button></div>
+   <div class="tbl"><table><thead><tr><th>Brebis</th><th>Flacon</th></tr></thead><tbody>${L.map(([k,r])=>`<tr><td><b class="lien${lisere(k)}" data-fiche="${k}">${k}</b></td><td><b>${esc(r.fl)}</b></td></tr>`).join('')}</tbody></table></div>
+   <div class="hint">Pour l'envoyer : 🖨 en haut (imprimer ou PDF), dans l'ordre choisi.</div></div>`}
 function clMed(p){return `<span class="tag${lisere(p)}" style="display:inline-block;padding:14px 30px 8px"><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}</span>`}
 function renderCLsai(){const el=$('#cl-sai'), c=clCur(); if(!el) return;
   if(!c){el.innerHTML=`<h3>Nouveau contrôle</h3>
@@ -2378,17 +2392,18 @@ function renderCLsai(){const el=$('#cl-sai'), c=clCur(); if(!el) return;
      ${q.length?`<button type="button" class="btn2 b-retour" data-clrm="1" style="margin-top:6px">Retirer la dernière (${q[q.length-1]})</button>`:''}
      <button type="button" class="btn b-valid" data-cllait="1" style="width:100%;margin-top:10px"${q.length?'':' disabled'}>Passer au lait derrière les brebis (${q.length}) →</button>`}
   else if(CLV.st==='lait'){const i=Math.min(CLV.i,q.length-1), p=q[i], r=c.l[p]||{};
-    h+=`<h3>Quai n° ${nq} · place ${i+1} / ${q.length}</h3><div style="text-align:center">${clMed(p)}</div>
-     <label class="hint">Lait pesé (ml)</label><input id="cl-ml" type="number" inputmode="numeric" min="0" step="1" value="${r.ml!=null?r.ml:''}" style="font:inherit;font-size:30px;padding:10px;width:100%;box-sizing:border-box;text-align:center">
+    h+=`<div class="row" style="align-items:center;gap:8px;margin:4px 0 6px"><span class="hint" style="flex:1">Quai ${nq} · place <b>${i+1}</b>/${q.length}</span><span class="tag mini${lisere(p)}" style="display:inline-block;padding:6px 14px 4px;border-radius:12px 12px 16px 16px"><b style="font-size:30px">${esc(p)}</b></span></div>
+     <div class="cl-saisie"><button type="button" class="btn b-valid" data-clok="1">✔ ${i<q.length-1?'Suivante':'Fin du quai'}</button>
+      <div><label class="hint" for="cl-ml">Lait (ml)</label><input id="cl-ml" type="number" inputmode="numeric" enterkeyhint="next" min="0" step="1" value="${r.ml!=null?r.ml:''}"></div></div>
+     <div class="cl-flac"><label class="hint" for="cl-fl">Flacon (si analyse)</label><input id="cl-fl" type="text" inputmode="numeric" enterkeyhint="next" value="${esc(r.fl||'')}" placeholder="—"></div>
      <div class="cl-cases"><label><input type="checkbox" id="cl-t1"${r.t1?' checked':''}> 1 tétine</label><label><input type="checkbox" id="cl-mp"${mpis(p)?' checked':''}> Mauvais pis</label><label><input type="checkbox" id="cl-mt"${mam(p)?' checked':''}> Mammite</label></div>
-     <button type="button" class="btn b-valid" data-clok="1" style="width:100%;margin-top:8px;font-size:20px">✔ ${i<q.length-1?'Suivante':'Fin du quai'}</button>
      <div class="cl-quai" style="margin-top:10px">${q.map((x,j)=>`<div class="${j===i?'cl-next':''}" data-clgoto="${j}"><small>${j+1}</small><b>${x}</b><small>${c.l[x]&&c.l[x].ml!=null?c.l[x].ml+' ml':''}</small></div>`).join('')}</div>
      <button type="button" class="btn2 b-retour" data-clbackq="1" style="margin-top:6px">← Revenir au bipage du quai</button>`}
   else if(CLV.st==='finq'){h+=`<h3>Quai n° ${nq} terminé</h3><div class="row"><button type="button" class="btn" data-clnext="1" style="flex:1">Quai suivant →</button><button type="button" class="btn b-valid" data-clfin="1" style="flex:1">Terminer le contrôle</button></div>
      <button type="button" class="btn2 b-retour" data-clgoto="0" style="margin-top:6px">← Corriger ce quai</button>`}
   else if(CLV.st==='fin'){const R=clCalc(c), sans=c.q.flat().filter(p=>!(c.l[p]&&c.l[p].ml>0));
     h+=`<h3>Fin du contrôle</h3><div class="lg-act"><div>Brebis pesées : <b>${R.n}</b></div><div>Total des pesées : <b>${(R.S/1000).toFixed(1).replace('.',',')} L</b></div><div>Lait du jour du troupeau (tank) : <b>${clNb(R.tj)} L</b></div><div>Moyenne : <b>${R.n?clNb(R.tj/R.n):'0'} L/jour</b> par brebis</div>${sans.length?`<div class="c-warn">Sans lait saisi (non comptées) : ${sans.join(' ')}</div>`:''}</div>
-     <button type="button" class="btn b-valid" data-clval="1" style="width:100%;margin-top:8px"${R.n&&R.tj?'':' disabled'}>Valider le contrôle</button>${R.tj?'':'<div class="hint c-bad">Il manque le lait du tank.</div>'}
+     ${clFlacons(c)}<button type="button" class="btn b-valid" data-clval="1" style="width:100%;margin-top:8px"${R.n&&R.tj?'':' disabled'}>Valider le contrôle</button>${R.tj?'':'<div class="hint c-bad">Il manque le lait du tank.</div>'}
      <button type="button" class="btn2 b-retour" data-clgoto="0" style="margin-top:6px">← Reprendre la saisie</button>`}
   h+=`<button type="button" class="btn2 b-retour" data-cldel="1" style="width:100%;margin-top:14px">${CLV.ask==='del'?'Confirmer : effacer tout ce contrôle':'Annuler : effacer ce contrôle sans l’enregistrer'}</button><span id="cl-st" class="state"></span>`;
   el.innerHTML=h; if(CLV.st==='lait') setTimeout(()=>{const i=$('#cl-ml'); if(i&&!i.value) try{i.focus()}catch(e){}},30)}
@@ -2399,10 +2414,10 @@ function renderCLcon(){const el=$('#cl-con'); if(!el) return; const V=clVal(), c
     el.innerHTML=h+`<button type="button" class="btn2 b-retour" data-clopen="" style="margin-top:8px">← Tous les contrôles</button><h3>Contrôle du ${frJA(c.d)} · ${R.n} brebis</h3>
      <div class="hint">Lait du jour du troupeau ${clNb(R.tj)} L · moyenne ${clNb(R.tj/R.n)} L/jour · chute moyenne depuis le contrôle précédent : ${clNb(ch.moy)} L/jour. <span class="cl-al">orange</span> = chute plus forte que la moyenne.</div>
      <div class="tbl"><table><thead><tr><th>N°</th><th>L/jour</th><th>Évolution</th><th></th></tr></thead><tbody>${K.map(k=>{const r=R.L[k], d=ch.D[k];
-       return `<tr class="${clAlerte(ch,k)?'cl-al':''}"><td><b class="lien${lisere(k)}" data-fiche="${k}">${k}</b></td><td><b>${clNb(r.v)}</b>${r.t1?' <span class="hint">(1 tétine, estimé)</span>':''}</td><td>${d==null?'':(d>0?'−':'+')+clNb(Math.abs(d))}</td><td>${mpis(k)?'<span class="c-bad">pis</span> ':''}${mam(k)?'<span class="c-bad">mammite</span> ':''}<button type="button" class="btn2" data-cled="${k}" style="padding:2px 8px">✏️</button></td></tr>${CLV.ed===k?`<tr><td colspan="4"><div class="lg-act" style="margin:0">Pesée de <b>${k}</b> (ml) <input id="cl-edml" type="number" inputmode="numeric" min="0" value="${c.l[k].ml}" style="font:inherit;font-size:20px;width:6em;padding:6px"> <label><input type="checkbox" id="cl-edt1"${c.l[k].t1?' checked':''}> 1 tétine</label>
+       return `<tr class="${clAlerte(ch,k)?'cl-al':''}"><td><b class="lien${lisere(k)}" data-fiche="${k}">${k}</b></td><td><b>${clNb(r.v)}</b>${r.t1?' <span class="hint">(1 tétine, estimé)</span>':''}</td><td>${d==null?'':(d>0?'−':'+')+clNb(Math.abs(d))}</td><td>${mpis(k)?'<span class="c-bad">pis</span> ':''}${mam(k)?'<span class="c-bad">mammite</span> ':''}<button type="button" class="btn2" data-cled="${k}" style="padding:2px 8px">✏️</button></td></tr>${CLV.ed===k?`<tr><td colspan="4"><div class="lg-act" style="margin:0">Pesée de <b>${k}</b> (ml) <input id="cl-edml" type="number" inputmode="numeric" min="0" value="${c.l[k].ml}" style="font:inherit;font-size:20px;width:6em;padding:6px"> <label><input type="checkbox" id="cl-edt1"${c.l[k].t1?' checked':''}> 1 tétine</label> Flacon <input id="cl-edfl" type="text" inputmode="numeric" value="${esc(c.l[k].fl||'')}" style="font:inherit;font-size:18px;width:6em;padding:6px">
        <div class="row" style="margin-top:6px"><button type="button" class="btn2 b-retour" data-cledx="1" style="flex:1">Annuler</button><button type="button" class="btn b-valid" data-cledok="${k}" style="flex:1">Enregistrer</button></div>
        <button type="button" class="btn2 b-retour" data-cledrm="${k}" style="width:100%;margin-top:6px">${CLV.ask==='rm'+k?'Confirmer : retirer '+k+' de ce contrôle':'Retirer '+k+' de ce contrôle'}</button><div class="hint">Les autres brebis sont recalculées (le tank est partagé entre les pesées).</div></div></td></tr>`:''}`}).join('')}</tbody></table></div>
-     <div class="lg-act"><b>＋ Ajouter une brebis oubliée</b><div class="row"><input id="cl-adn" inputmode="numeric" placeholder="N°" style="font:inherit;padding:8px;width:6em"><input id="cl-adml" type="number" inputmode="numeric" placeholder="ml" style="font:inherit;padding:8px;width:6em"><label><input type="checkbox" id="cl-adt1"> 1 tétine</label><button type="button" class="btn" data-cladd="${id}">Ajouter</button></div><span id="cl-st2" class="state"></span></div>
+     ${clFlacons(c)}<div class="lg-act"><b>＋ Ajouter une brebis oubliée</b><div class="row"><input id="cl-adn" inputmode="numeric" placeholder="N°" style="font:inherit;padding:8px;width:6em"><input id="cl-adml" type="number" inputmode="numeric" placeholder="ml" style="font:inherit;padding:8px;width:6em"><label><input type="checkbox" id="cl-adt1"> 1 tétine</label><button type="button" class="btn" data-cladd="${id}">Ajouter</button></div><span id="cl-st2" class="state"></span></div>
      <button type="button" class="btn2 b-retour" data-cldelv="${id}" style="width:100%;margin-top:10px">${CLV.ask==='delv'+id?'Confirmer : supprimer ce contrôle':'🗑 Supprimer ce contrôle'}</button>`; return}
   const C=new Set(); V.forEach(([,c])=>Object.keys(clCalc(c).L).forEach(k=>C.add(k))); const CU=[...C].map(k=>[k,clCumul(k)]).filter(x=>x[1]).sort((a,b)=>b[1].tot-a[1].tot), M=clManq();
   h+=`<h3>Contrôles · ${V.length}</h3><div class="tbl"><table><thead><tr><th>Date</th><th>Brebis</th><th>Troupeau L/j</th><th>Moy. L/j</th><th>Alertes</th></tr></thead><tbody>${V.slice().reverse().map(([id,c])=>{const R=clCalc(c), ch=clChutes(id), na=Object.keys(R.L).filter(k=>clAlerte(ch,k)).length;
@@ -2418,8 +2433,9 @@ function renderCL(){ if(!$('#v-cl')) return; renderCLsai(); renderCLcon()}
 // bloc de la fiche
 function ficheCL(p){const u=clCumul(p); if(!u) return ''; const L=u.last, id=L.id, ch=id?clChutes(id):null, al=ch&&clAlerte(ch,p);
   return `<div class="lg-act${al?' cl-al':''}" style="margin:4px 0"><b>🥛 Contrôle laitier</b><div>Dernier contrôle ${frJA(L.d)} : <b>${clNb(L.v)} L/jour</b>${L.t1?' (1 tétine, estimé 2 tétines)':''}${L.est?' (estimé)':''}${al?` · <b>chute de ${clNb(ch.D[p])} L/j</b> (moyenne ${clNb(ch.moy)})`:''}</div><div>Cumul campagne : <b>${Math.round(u.tot)} L</b> en ${u.j} jours (${u.n} contrôle${u.n>1?'s':''})</div></div>`}
+$('#v-cl').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='cl-ml'||e.target.id==='cl-fl')){e.preventDefault(); const b=$('#v-cl [data-clok]'); if(b) b.click()}});
 $('#v-cl').addEventListener('change',e=>{if(e.target.id==='cl-camp'){CLV.camp=e.target.value; CLV.open=null; renderCL()}});
-$('#v-cl').addEventListener('click',e=>{const b=e.target.closest('[data-cltpj],[data-clgo],[data-clman],[data-clrm],[data-cllait],[data-clok],[data-clgoto],[data-clbackq],[data-clnext],[data-clfin],[data-clval],[data-cldel],[data-clopen],[data-cldelv],[data-clest],[data-clestx],[data-clsend],[data-cled],[data-cledx],[data-cledok],[data-cledrm],[data-cladd]'); if(!b) return; const c=clCur(), D=b.dataset;
+$('#v-cl').addEventListener('click',e=>{const b=e.target.closest('[data-clflt],[data-cltpj],[data-clgo],[data-clman],[data-clrm],[data-cllait],[data-clok],[data-clgoto],[data-clbackq],[data-clnext],[data-clfin],[data-clval],[data-cldel],[data-clopen],[data-cldelv],[data-clest],[data-clestx],[data-clsend],[data-cled],[data-cledx],[data-cledok],[data-cledrm],[data-cladd]'); if(!b) return; const c=clCur(), D=b.dataset;
   if(D.cltpj){b.parentElement.querySelectorAll('button').forEach(x=>x.className=x===b?'btn':'btn2'); return}
   if(D.clgo){const d=$('#cl-d').value, tank=parseFloat(String($('#cl-tank').value).replace(',','.')), ntk=parseInt($('#cl-ntk').value,10), tpj=+((($('#cl-tpj .btn')||{}).dataset||{}).cltpj||0);
     if(!d) return clMsg('Choisis la date du contrôle.'); if(!(tank>0)) return clMsg('Indique le lait du tank (litres).'); if(!(ntk>0)) return clMsg('Indique le nombre de traites dans le tank.'); if(!tpj) return clMsg('Choisis 1 ou 2 traites par jour.');
@@ -2431,8 +2447,9 @@ $('#v-cl').addEventListener('click',e=>{const b=e.target.closest('[data-cltpj],[
   if(D.cllait){if(!q.length) return; CLV.st='lait'; CLV.i=q.findIndex(p=>!(c.l[p]&&c.l[p].ml!=null)); if(CLV.i<0) CLV.i=0; renderCL(); window.scrollTo(0,0); return}
   if(D.clgoto!=null){CLV.st='lait'; CLV.i=+D.clgoto; renderCL(); return}
   if(D.clbackq){CLV.st='quai'; renderCL(); return}
+  if(D.clflt){CLV.fltri=D.clflt; renderCL(); return}
   if(D.clok){const p=q[CLV.i], v=$('#cl-ml').value; if(v===''||!(+v>=0)) return clMsg('Tape le lait pesé en ml.');
-    c.l[p]={ml:Math.round(+v),t1:$('#cl-t1').checked}; if($('#cl-mp').checked!==mpis(p)) setMP(p,$('#cl-mp').checked);
+    const fl=($('#cl-fl').value||'').trim(); c.l[p]={ml:Math.round(+v),t1:$('#cl-t1').checked}; if(fl) c.l[p].fl=fl; if($('#cl-mp').checked!==mpis(p)) setMP(p,$('#cl-mp').checked);
     if($('#cl-mt').checked&&!mam(p)){MT[p]={d:c.d,delai:0}; LS.set('cb_mam',MT)} else if(!$('#cl-mt').checked&&MT[p]&&!MT[p].off&&MT[p].d===c.d){delete MT[p]; LS.set('cb_mam',MT)}
     saveCL(); bip(); if(CLV.i<q.length-1){CLV.i++} else CLV.st='finq'; renderCL(); return}
   if(D.clnext){c.q.push([]); CLV.st='quai'; CLV.i=0; saveCL(); renderCL(); window.scrollTo(0,0); return}
@@ -2441,7 +2458,7 @@ $('#v-cl').addEventListener('click',e=>{const b=e.target.closest('[data-cltpj],[
   if(D.cldel){if(CLV.ask!=='del'){CLV.ask='del'; renderCL(); setTimeout(()=>{if(CLV.ask==='del'){CLV.ask=null; renderCL()}},5000); return} CLV.ask=null; delete CL.c[CL.cur]; CL.cur=null; CLV.st='quai'; saveCL(); renderCL(); return}
   if(D.cled){CLV.ed=CLV.ed===D.cled?null:D.cled; renderCL(); return}
   if(D.cledx){CLV.ed=null; renderCL(); return}
-  if(D.cledok){const cc=CL.c[CLV.open], k=D.cledok, v=$('#cl-edml').value; if(!cc||v===''||!(+v>=0)) return; cc.l[k]={ml:Math.round(+v),t1:$('#cl-edt1').checked}; cc.s=0; CLV.ed=null; saveCL(); renderCL(); toast(k+' corrigée'); return}
+  if(D.cledok){const cc=CL.c[CLV.open], k=D.cledok, v=$('#cl-edml').value; if(!cc||v===''||!(+v>=0)) return; const fl=($('#cl-edfl').value||'').trim(); cc.l[k]={ml:Math.round(+v),t1:$('#cl-edt1').checked}; if(fl) cc.l[k].fl=fl; cc.s=0; CLV.ed=null; saveCL(); renderCL(); toast(k+' corrigée'); return}
   if(D.cledrm){const cc=CL.c[CLV.open], k=D.cledrm, a='rm'+k; if(CLV.ask!==a){CLV.ask=a; renderCL(); setTimeout(()=>{if(CLV.ask===a){CLV.ask=null; renderCL()}},5000); return} CLV.ask=null; delete cc.l[k]; cc.q=cc.q.map(x=>x.filter(y=>y!==k)); cc.s=0; CLV.ed=null; saveCL(); renderCL(); toast(k+' retirée du contrôle'); return}
   if(D.cladd){const cc=CL.c[D.cladd], k=plaqueDe($('#cl-adn').value), v=$('#cl-adml').value, st=$('#cl-st2'); const er=t=>{st.textContent=t; st.className='state err'};
     if(!k) return er('Tape le numéro.'); if(!A()[k]) return er(k+' : inconnue dans la base.'); if(cc.l[k]) return er(k+' est déjà dans ce contrôle : utilise ✏️.'); if(v===''||!(+v>=0)) return er('Tape le lait pesé en ml.');
@@ -2577,6 +2594,23 @@ function lectBouton(){ if(!port){OFF_ASK=false; LECT_ETEINT=false; $('#cnx').cli
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 let INSTALL=null; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault(); INSTALL=e; const b=$('#inst'); if(b) b.hidden=false});
 showBase(); setTab('accueil');
+/* Reprise après une fermeture imprévue (téléphone éteint, page rechargée) : l'appli garde en permanence où on était
+   (onglet, saisie/consultation, contrôle laitier avec le chiffre tapé, saisie ✏️ en cours, mise à la traite)
+   et y revient à la réouverture (moins de 24 h). Les données déjà saisies sont gardées par chaque module. */
+function whereSave(){ try{ const sh=$('#v-edit'), W={t:Date.now(), tab, md:MD[tab]||null,
+  cl:{st:CLV.st,i:CLV.i,open:CLV.open,camp:CLV.camp, ml:($('#cl-ml')||{}).value||'', fl:($('#cl-fl')||{}).value||''},
+  ed:(sh&&!sh.hidden&&ED.p)?{p:ED.p,page:ED.page,mb:ED.mb||null}:null,
+  trb:document.body.classList.contains('qfull')}; LS.set('cb_where',W)}catch(e){} }
+function whereRestore(){ const W=LS.get('cb_where',null); if(!W||!DB||Date.now()-W.t>24*3600e3) return; let ok=0;
+  try{ if(W.tab&&W.tab!=='accueil'&&W.tab!=='keenan'){ setTab(W.tab); if(W.md) setMode(W.tab,W.md); ok=1 }
+   if(W.tab==='cl'&&W.cl&&clCur&&(W.cl.open||clCur())){ Object.assign(CLV,{st:W.cl.st,i:W.cl.i,open:W.cl.open,camp:W.cl.camp}); renderCL();
+     const m=$('#cl-ml'),f=$('#cl-fl'); if(m&&W.cl.ml&&!m.value) m.value=W.cl.ml; if(f&&W.cl.fl&&!f.value) f.value=W.cl.fl }
+   if(W.ed&&A()[W.ed.p]){ edOuvrir(W.ed.p); ED.page=W.ed.page; if(W.ed.mb) ED.mb=W.ed.mb; renderEdit(); ok=1 }
+   if(W.trb){ document.body.classList.add('qfull'); $('#v-trb').hidden=false; trbMaj(); ok=1 }
+   if(ok) toast('Reprise là où vous étiez')}catch(e){} }
+whereRestore();
+setInterval(whereSave,2000); document.addEventListener('visibilitychange',()=>{if(document.hidden) whereSave()}); window.addEventListener('pagehide',whereSave);
+document.addEventListener('input',e=>{if(e.target&&(e.target.id==='cl-ml'||e.target.id==='cl-fl')) whereSave()});
 </script>
 </body>
 </html>
