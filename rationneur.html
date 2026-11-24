@@ -1423,7 +1423,7 @@ function buildLots(fromDraft){
     <label class="f" for="lot-${i}-nom">Lot<input type="text" id="lot-${i}-nom" value="${esc(l.nom)}"></label>
     <div class="grid">
       <label class="f" for="lot-${i}-eff">Effectif${KN_CAT(l)&&l.auto!==false?' (OviLink)':''}<input type="number" inputmode="numeric" step="1" min="0" id="lot-${i}-eff" value="${l.effectif}"${KN_CAT(l)&&l.auto!==false?' readonly':''}></label>
-      <label class="f" for="lot-${i}-coef">Coefficient (part)<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
+      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?'Coefficient cible après 10 jours':'Coefficient (part)'}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
     </div>
     <div class="seg3" role="group" aria-label="Ration traite du lot ${esc(l.nom)}">
       ${TRAITE.map(t=>`<button type="button" data-lot="${i}" data-tr="${t.v}" aria-pressed="${+l.traite===t.v}">${t.t}</button>`).join("")}
