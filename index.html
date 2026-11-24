@@ -104,11 +104,15 @@ body.page #pbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z
 #pbar{flex-wrap:wrap;row-gap:4px} #pbar b{order:9;flex:1 1 100%;font-size:21px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #pbar #p-print{margin-left:auto}
 #pbar .b-retour{padding-left:10px;padding-right:10px}
 .lect-b{flex-shrink:0;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--mute);white-space:nowrap}
-.lect-b.on{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
-.lect-b.off{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+.lect-b{min-height:38px;min-width:76px;font-size:14px}
+#p-lect,#lect-pill{background:#2f7d4a;color:#fff;border-color:#2f7d4a}
+/* lecteur connecté : voyant rouge allumé pour penser à le couper (comme une lumière oubliée) */
+.lect-b.on,#p-lect.on,#lect-pill.on{background:#c62828;color:#fff;border-color:#8e0000;box-shadow:0 0 0 3px rgba(198,40,40,.25)}
+#cnx.lect-allume{background:#c62828;border-color:#8e0000;color:#fff}
+.lect-b.off,#p-lect.off,#lect-pill.off{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
 #lect-pill{position:fixed;top:3px;right:8px;z-index:40;display:none}
 body.efull #lect-pill,body.qfull #lect-pill,body.ttfull #lect-pill,body.zfull #lect-pill,body.xfull #lect-pill,body.sfull #lect-pill,body.tfull #lect-pill,body.kfull #lect-pill,body.cfull #lect-pill{display:block}
-body.efull #v-echo,body.qfull #v-trb,body.ttfull #v-ttb,body.zfull .zon,body.xfull #v-edit,body.sfull #v-sai,body.tfull #v-tri,body.kfull #v-cons,body.cfull #v-coll{padding-top:34px!important}
+body.efull #v-echo,body.qfull #v-trb,body.ttfull #v-ttb,body.zfull .zon,body.xfull #v-edit,body.sfull #v-sai,body.tfull #v-tri,body.kfull #v-cons,body.cfull #v-coll{padding-top:48px!important}
 body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important} body:not(.page) .tabs button{padding:22px 6px!important;font-size:19px!important;border-radius:16px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 
@@ -132,6 +136,19 @@ body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important
 .tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .sum2{display:block;margin:2px 0 0 22px}
+.jf,.nums span.jf{background:#fdeef4!important;color:#8e2453!important}
+.jm,.nums span.jm{background:#eaf6fc!important;color:#1f5a6e!important}
+.agrow:has(.jf){background:#fdeef4} .agrow:has(.jm){background:#eaf6fc}
+@media (prefers-color-scheme: dark){.jf,.nums span.jf{background:#4a2234!important;color:#f6c2d9!important}.jm,.nums span.jm{background:#1c3a45!important;color:#bfe6f5!important}.agrow:has(.jf){background:#3a1f2b}.agrow:has(.jm){background:#1c3440}}
+@media print{#print-reg .agrow:has(.jf){background:#fdeef4!important} #print-reg .agrow:has(.jm){background:#eaf6fc!important}}
+.inv-t{width:100%;border-collapse:collapse;margin-top:10px;font-size:18px}
+.inv-t td{padding:8px 6px;border-bottom:1px solid var(--line)}
+.inv-t td.n{text-align:right;font-size:24px;font-weight:800;width:70px}
+.inv-l{cursor:pointer}
+.inv-tot td{border-top:3px solid #333}
+.com-b{display:inline-block;margin-left:3px;color:#ef6c00;font-size:.85em}
+.com-med{position:absolute;left:10px;top:8px;background:#ef6c00;color:#fff;font-weight:800;font-size:18px;border-radius:50%;width:30px;height:30px;line-height:30px;text-align:center;box-shadow:0 1px 3px #0005}
+.com-box{border:2px solid #ef8a00;background:#fff3e0;border-radius:12px;padding:8px 10px;margin:8px 0;line-height:1.4}
 .bk-band{border-radius:16px;padding:12px 14px;margin:0 0 10px;font-size:17px;line-height:1.35;border:3px solid}
 .bk-band .bk-t{font-weight:800;font-size:19px}
 .bk-ok{background:#e3f3e6;border-color:#2f7d4a;color:#1d4d2e}
@@ -156,6 +173,9 @@ dt{color:var(--mute)} dd{margin:0;font-weight:700;min-width:0}
 .count{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
 .count div{background:var(--bg);border-radius:10px;padding:8px}
 .count b{display:block;font-family:var(--display);font-size:30px}
+.count.petit{grid-template-columns:repeat(4,1fr);margin-top:6px;font-size:14px}
+.count.petit div{padding:5px}
+.count.petit b{font-size:21px}
 .nums{display:flex;flex-wrap:wrap;gap:6px}
 .nums span{font-variant-numeric:tabular-nums;font-weight:700;padding:4px 8px;border-radius:8px;background:var(--bg)}
 .cl-quai{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0} .cl-quai>div{border:1px solid var(--line);border-radius:10px;padding:4px 6px;text-align:center;min-height:52px} .cl-quai small{display:block;font-size:12px;opacity:.7} .cl-quai b{font-size:16px} .cl-quai .lien{padding:2px 3px!important;font-size:15px!important;display:inline-block;max-width:100%;box-sizing:border-box}
@@ -251,11 +271,13 @@ tr.sel td{background:var(--okbg)}
     <button type="button" role="tab" data-t="mb" aria-selected="false" class="t-mouv">Mises bas</button>
     <button type="button" role="tab" data-t="cl" aria-selected="false">Contrôle laitier</button>
     <button type="button" role="tab" data-t="keenan" aria-selected="false">KEENAN</button>
+    <button type="button" role="tab" data-t="inv" aria-selected="false" class="t-mouv">Inventaire</button>
     <button type="button" role="tab" data-t="tests" aria-selected="false" class="t-mouv" hidden>Tests</button>
   </div>
 
   <!-- TROUPEAU -->
   <section id="v-troupeau" class="card" hidden>
+    <button type="button" class="lg-card" data-mvgo="inv" style="margin-bottom:8px"><span>📋 Inventaire</span><span class="hint">effectifs à une date choisie</span></button>
     <div id="t-tv" class="row" style="gap:6px"></div>
     <div id="t-alert"></div>
     <details id="t-dlot" class="tdrop"><summary>📍 Lot : <b id="t-slot">Tous</b></summary>
@@ -270,7 +292,7 @@ tr.sel td{background:var(--okbg)}
     <div class="filt">
       <select id="f-lot" aria-label="Lot" hidden><option value="">Tous les lots</option></select>
       <select id="f-grp" aria-label="Groupe" hidden><option value="">Tous les groupes</option></select>
-      <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option value="adultes">Adultes</option><option>Brebis</option><option>Bélier</option><option value="jeunes">Jeunes (de l’année)</option><option>Agnelle</option><option>Agneau</option></select>
+      <select id="f-cat" aria-label="Catégorie"><option value="">Toutes catégories</option><option value="adultes">Adultes</option><option>Brebis</option><option>Bélier</option><option value="jeunes">Jeunes (de l’année)</option><option>Agnelle</option><option>Agneau</option><option>Antenaise</option><option>Antenais</option></select>
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
       <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">À suivre (hors réformes)</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option><option value="mam">Mammites traitées</option><option value="or">Brebis d'or</option></select>
@@ -544,6 +566,7 @@ tr.sel td{background:var(--okbg)}
   </section>
 
   <!-- MOUVEMENTS -->
+  <section id="v-inv" class="card" hidden><h2>Inventaire</h2><div id="inv-body"></div></section>
   <section id="v-mouv" class="card" hidden>
     <button type="button" class="lg-card" data-mvgo="lots"><span>📍 Lots</span><span class="hint">déplacer, créer, consulter</span></button>
     <button type="button" class="lg-card" data-mvgo="traite"><span>🥛 Traite</span><span class="hint">mise à la traite, tarissement</span></button>
@@ -682,6 +705,11 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const BK_IGN=/^cb_(where|bk|bkn|bkt|tab|tv|smode|liste|rech|rch|trbi|keenan|data|lreg|son|spar|ttp|tb|esess_vue)$/; let BK_PRET=false; setTimeout(()=>{BK_PRET=true},4000);
 // chaque enregistrement de données compte comme une modification à sauvegarder (pas pendant le démarrage)
 function bkInc(k){ if(!BK_PRET||!k.startsWith('cb_')||BK_IGN.test(k)) return; try{localStorage.setItem('cb_bkn',String(+(localStorage.getItem('cb_bkn')||0)+1)); if(typeof bkCheck==='function') clearTimeout(bkInc.t), bkInc.t=setTimeout(bkCheck,300)}catch(e){} }
+/* Commentaires libres sur un animal (ex. « patte tordue ») : {plaque:[{d:'AAAA-MM-JJ',t:'texte'}]} */
+function comsOf(p){try{return (JSON.parse(localStorage.getItem('cb_com')||'{}')[p])||[]}catch(e){return []}}
+function comAdd(p,t,d){t=String(t||'').trim(); if(!p||!t) return; const C=LS.get('cb_com',{}); (C[p]=C[p]||[]).push({d:d||auj(),t}); LS.set('cb_com',C)}
+function comDel(p,i){const C=LS.get('cb_com',{}); if(!C[p]) return; C[p].splice(i,1); if(!C[p].length) delete C[p]; LS.set('cb_com',C)}
+const comBadge=p=>comsOf(p).length?'<span class="com-b" title="Commentaire">⚠</span>':'';
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v)); bkInc(k)}catch(e){}}};
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='accueil';
@@ -746,7 +774,8 @@ const isoNe=s=>{const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return
 const bascule=()=>{const d=new Date(), y=d.getMonth()+1>=10?d.getFullYear():d.getFullYear()-1; return y+'-10-01'};
 const femelle=x=>/Brebis|Antenaise|Agnelle/i.test(x.cat||'');
 const jeuneCat=x=>{const n=isoNe(x.ne); return n?n>=bascule():/Antenai|Agne/i.test(x.cat||'')};
-const catAff=x=>jeuneCat(x)?(femelle(x)?'Agnelle':'Agneau'):(femelle(x)?'Brebis':'Bélier');
+// au sevrage (passage en renouvellement) le jeune s'appelle antenais / antenaise ; adulte au 1er octobre (Jack 24/11)
+const catAff=x=>jeuneCat(x)?(x.renouv?(femelle(x)?'Antenaise':'Antenais'):(femelle(x)?'Agnelle':'Agneau')):(femelle(x)?'Brebis':'Bélier');
 const campOf=iso=>{if(!iso) return ''; const y=+iso.slice(0,4), m=+iso.slice(5,7); const a=m>=CAMPR.mois?y:y-1; return a+'-'+(a+1)};
 const campAuj=()=>campOf(new Date().toISOString().slice(0,10));
 let CV=LS.get('cb_cv',null)||campAuj();
@@ -819,7 +848,7 @@ $('#file').addEventListener('change',e=>{
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
 function setTab(t){ if(t==='keenan'){knOpen(); return} tab=t; LAST_LECT=null; document.body.classList.toggle('page',t!=='accueil'); document.body.classList.remove('zfull'); document.querySelectorAll('.zon').forEach(x=>x.classList.remove('zon'));
   if(THEMES.includes(t)){MD[t]=(t==='echo'&&typeof eOuverte==='function'&&eOuverte())?'saisie':'choix'; const sec=document.getElementById('v-'+t); if(sec) sec.dataset.md=MD[t]; renderChoix(t)} const tb=document.querySelector(`.tabs [data-t="${t==='recherche'?(R_ORIG||'lots'):t}"]`); $('#p-titre').textContent=t==='recherche'?'Recherche':(tb?tb.textContent:''); lectMaj(); window.scrollTo(0,0); if(t==='recherche'&&typeof showBase==='function') try{showBase()}catch(e){}document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t||(t==='recherche'&&b.dataset.t===(R_ORIG||'lots'))));
-  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','repro','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
+  if(typeof eVue==='function'){ if(t==='echo'&&eOuverte()) eVue(EV==='consult'?'saisie':EV); else if(t==='echo') eVue('consult'); else eFull(false)} ['fiche','liste','recherche','mouv','repro','lots','groupes','troupeau','soins','echo','sevrage','vente','traite','mort','mb','cl','tests','inv'].forEach(k=>$('#v-'+k).hidden=k!==t); if(t==='fiche') setTimeout(()=>{try{$('#q').focus({preventScroll:true})}catch(e){}},50); LS.set('cb_tab',t); render();}
 
 // ---- fiche
 function row(k,v){return v===''||v==null?'':`<dt>${k}</dt><dd>${esc(v)}</dd>`}
@@ -884,7 +913,7 @@ function ficheExt(id,retour){ const I=DB.ixb&&DB.ixb[id], r=(DB.ia||[]).find(o=>
    ${I?`<dl><dt>iProd</dt><dd><b>${I.iprod}</b></dd><dt>iSol</dt><dd><b>${I.isol}</b></dd></dl><div class="hint">${esc((DB.ixb._src)||'')}</div>`:''}
    ${P.length>1?`<div class="hint">Deux élevages possibles pour ce n° : le fichier ne dit pas lequel est le père de chaque animal.</div>`:''}${homo}
    <h2>Descendants dans la base (${enf.length})</h2><div class="nums">${enf.map(([k])=>lien(k)).join(' ')||'<span class="hint">aucun</span>'}</div>`}
-function lien(id){ if(!id) return 'inconnu'; return A()[id]?`<button type="button" class="lien${pres(A()[id])?'':' off'}" data-go="${id}">${id} ›</button>`:`${esc(id)} <span class="hint">(hors base)</span>`; }
+function lien(id){ if(!id) return 'inconnu'; return A()[id]?`<button type="button" class="lien${pres(A()[id])?'':' off'}" data-go="${id}">${id}${comBadge(id)} ›</button>`:`${esc(id)} <span class="hint">(hors base)</span>`; }
 function fiche(p,nav,el='#fiche'){
   const S=ST[el]; if(nav!=='nav'){S.pile=[]} S.cour=p; const pile=S.pile;
   const x=A()[p];
@@ -898,8 +927,8 @@ function fiche(p,nav,el='#fiche'){
   const mamTxt=mm&&!reforme(p)?`<span class="chip ${mr<=7?'c-bad':'c-warn'}">Mammite traitée le ${frDe(mm.d)} · délai viande ${mm.delai} j → ${finMam(mm).toLocaleDateString('fr-FR')} ${mr>7?'(J-'+mr+')':mr>0?'· fini dans '+mr+' j : réformer ?':'· délai fini : réformer ?'}</span>`:'';
   const orTxt=x.or&&!reforme(p)&&!mpis(p)?`<span class="chip c-or">★ Brebis d'or – garder ses agnelles${/^ARR\/ARR$/i.test(x.prp||'')?' et son mâle':' · mâle : génotype à vérifier'}</span>`:'';
   const niv=orTxt+(mpis(p)?`<span class="chip c-bad">Mauvais pis – ne pas garder la suite · risque réforme</span>`:'')+(garde(p)&&!x.or?`<span class="chip c-ok">Garder ses agnelles</span>`:'')+(x.niveau?`<span class="chip ${/réformer/i.test(x.niveau)?'c-bad':'c-warn'}">${esc(x.niveau)}</span>`:'')+(deter(p)?`<span class="chip c-bad">Détérioratrice${/Bélier|Antenais/.test(x.cat)?' (bélier)':''} : filles ${Math.round(deter(p).m*100)} pts</span>`:'');
-  $(el).innerHTML=retour+`<div class="tag${lisere(p)}${pres(x)?'':' sortie'}" style="padding-right:70px">${pres(x)?`<button type="button" data-rbr="${p}" aria-label="Chercher en bipant" title="Chercher en bipant" style="position:absolute;top:6px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">📡</button>`:''}<button type="button" data-cons="${p}" aria-label="Consulter" title="Consulter" style="position:absolute;top:${pres(x)?44:6}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">🔍</button><button type="button" data-edit="${p}" aria-label="Saisir" title="Saisir" style="position:absolute;top:${pres(x)?82:44}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">✏️</button><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}<span class="tag-lot">${coulLot(lotOf(p))?`<span class="pb" style="background:${coulLot(lotOf(p))};vertical-align:middle;margin-right:6px"></span>`:''}${esc(lotAff(lotOf(p))||'Sans lot')}</span></div>
-   <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${jeuneCat(x)&&agCode(p)?`<span class="chip c-mute">état : ${agCode(p)}</span>`:''}${niv}</div>${ficheAgneaux(p,x)}${typeof ficheCL==='function'?ficheCL(p):''}${famTxt}
+  $(el).innerHTML=retour+`<div class="tag${lisere(p)}${pres(x)?'':' sortie'}" style="padding-right:70px">${pres(x)?`<button type="button" data-rbr="${p}" aria-label="Chercher en bipant" title="Chercher en bipant" style="position:absolute;top:6px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">📡</button>`:''}<button type="button" data-cons="${p}" aria-label="Consulter" title="Consulter" style="position:absolute;top:${pres(x)?44:6}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">🔍</button>${comsOf(p).length?'<span class="com-med" title="Voir les commentaires">⚠</span>':''}<button type="button" data-edit="${p}" aria-label="Saisir" title="Saisir" style="position:absolute;top:${pres(x)?82:44}px;right:8px;font-size:18px;padding:3px 7px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0005;line-height:1.3">✏️</button><small>FR 450000</small><b>${esc(p)}</b>${nomOf(p)?`<i class="tag-nom">${esc(nomOf(p))}</i>`:''}<span class="tag-lot">${coulLot(lotOf(p))?`<span class="pb" style="background:${coulLot(lotOf(p))};vertical-align:middle;margin-right:6px"></span>`:''}${esc(lotAff(lotOf(p))||'Sans lot')}</span></div>
+   <div class="chips"><span class="chip c-mute">${esc(catAff(x))}</span><span class="chip ${st}">${esc(x.statut)}</span>${jeuneCat(x)&&agCode(p)?`<span class="chip c-mute">état : ${agCode(p)}</span>`:''}${niv}</div>${comsOf(p).length?`<div class="com-box"><b>💬 Commentaires</b>${comsOf(p).map(c=>`<div>${frJA(c.d)} · ${esc(c.t)}</div>`).join('')}</div>`:''}${ficheAgneaux(p,x)}${typeof ficheCL==='function'?ficheCL(p):''}${famTxt}
    ${(()=>{const H=histLots(p); return H.length>1?`<details class="hint"><summary>Historique des lots (${H.length})</summary>${H.slice().reverse().map(h=>`<div>${h.du?'du '+h.du+' '+(h.au?'au '+h.au:'à aujourd’hui'):'jusqu’au '+h.au} : <b>${esc(h.lot)}</b>${h.ren?' (renommé ensuite)':''}</div>`).join('')}</details>`:''})()}
    <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsOf(p).length+grpsAutoOf(p).length?'':'<span class="hint">aucun</span>'}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
@@ -1229,7 +1258,7 @@ function knMinut(){ let el=$('#kn-min'); const g=k=>{try{return +JSON.parse(loca
 setInterval(knMinut,1000);
 function knClose(){ const w=$('#kn-wrap'); if(w) w.hidden=true; document.body.style.overflow='' }
 function render(){ try{keenanMaj()}catch(e){} if(typeof bkCheck==='function') try{bkCheck()}catch(e){} if(typeof campMaj==='function') try{campMaj()}catch(e){}
-  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB(); if(tab==='cl'&&typeof renderCL==='function') renderCL();
+  if(tab==='troupeau') renderTroupeau(); if(tab==='soins') renderSoins(); if(tab==='lots') renderLots(); if(tab==='groupes') renderGroupes(); if(tab==='echo') renderEcho(); if(tab==='sevrage') renderSev(); if(tab==='vente') renderVente(); if(tab==='traite') renderTraite(); if(tab==='mort') renderMort(); if(tab==='mb'&&typeof renderMB==='function') renderMB(); if(tab==='cl'&&typeof renderCL==='function') renderCL(); if(tab==='inv'&&typeof renderInv==='function') renderInv();
   if(tab==='liste'&&document.activeElement!==$('#l-dest')&&document.activeElement!==$('#l-nom')) lDest();
   $('#l-n').textContent=liste.items.length; $('#l-dbl').textContent=liste.dbl;
   $('#l-inc').textContent=liste.items.filter(p=>!A()[p]).length;
@@ -1272,12 +1301,12 @@ async function lectFermer(P){ try{if(PIPEAB) PIPEAB.abort()}catch(e){} try{await
   for(let i=0;i<5;i++){ if(!P.readable&&!P.writable) return true; try{await P.close(); return true}catch(e){ await new Promise(r=>setTimeout(r,300)) } } return false}
 let port=null, LPORT=null, LECT_ETEINT=false, LAST_LECT=null, LREADER=null, USER_OFF=false, OFF_ASK=false;
 // lecture continue : le même numéro est ignoré tant qu'aucune autre boucle n'a été lue (et quand on change d'écran, on repart à zéro)
-function lectMaj(){const cx=$('#cnx'); if(cx&&port){cx.textContent=OFF_ASK?'Confirmer : déconnecter':'Connecté · appuyer pour déconnecter'}
+function lectMaj(){const cx=$('#cnx'); if(cx){ if(port) cx.textContent=OFF_ASK?'Confirmer : déconnecter':'● Déconnecter le lecteur'; cx.classList.toggle('lect-allume',!!port)}
   ['#p-lect','#lect-pill'].forEach(i=>{const b=$(i); if(!b) return; const off=!port&&LECT_ETEINT;
-  b.textContent=OFF_ASK&&port?'📡 Confirmer : déconnecter':i==='#p-lect'?(port?'📡 ● Connecté':off?'📡 Éteint…':'📡 Connecter'):(port?'📡 ● Lecteur connecté · appuyer pour déconnecter':off?'📡 Lecteur éteint · reconnexion dès qu’il se rallume':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port); b.classList.toggle('off',off)})}
+  b.textContent=OFF_ASK&&port?'Confirmer : déconnecter':i==='#p-lect'?(port?'● Déconnecter':off?'📡 Éteint…':'📡 Connecter'):(port?'● Déconnecter le lecteur':off?'📡 Lecteur éteint · reconnexion dès qu’il se rallume':'📡 Connecter le lecteur'); b.classList.toggle('on',!!port); b.classList.toggle('off',off)})}
 // reconnexion automatique au même lecteur quand il se rallume (sans repasser par la liste Bluetooth)
 setInterval(async()=>{ if(port||!LECT_ETEINT||!LPORT||window._lectEssai) return; window._lectEssai=true;
-  try{ await lectFermer(LPORT); await LPORT.open({baudRate:9600}); port=LPORT; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur reconnecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur reconnecté'); lire() }catch(e){}
+  try{ await lectFermer(LPORT); await LPORT.open({baudRate:9600}); port=LPORT; LECT_ETEINT=false; LAST_LECT=null; setSt('Lecteur reconnecté','ok'); $('#cnx').classList.add('on'); lectMaj(); toast('Lecteur reconnecté'); lire() }catch(e){}
   window._lectEssai=false},5000);
 function setSt(t,c){$('#st').textContent=t;$('#st').className='state '+(c||''); lectMaj()}
 function luLect(l){const p=plaqueDe(l); if(p&&p===LAST_LECT) return; LAST_LECT=p; lu(l)}
@@ -1289,7 +1318,7 @@ async function lire(){
     while((i=buf.search(/[\r\n]/))>=0){const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(l) luLect(l)}
     clearTimeout(tm); if(buf.trim()) tm=setTimeout(()=>{const l=buf.trim(); buf=''; if(/\d{12,}/.test(l)) luLect(l); else if(l) setSt('Reçu du lecteur : '+l,'err')},400);}}
   catch(e){setSt('Lecteur déconnecté : '+e.message,'err')}
-  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on'); const p0=port; port=null; LREADER=null; if(p0){ await lectFermer(p0); if(USER_OFF){USER_OFF=false; LECT_ETEINT=false; setSt('Lecteur déconnecté (par vous)','')} else {LECT_ETEINT=true; alerte(); toast('Lecteur éteint ou hors de portée : il se reconnectera dès qu’il se rallume')}} lectMaj()}
+  finally{$('#cnx').textContent='Connecter le lecteur';$('#cnx').classList.remove('on','lect-allume'); const p0=port; port=null; LREADER=null; if(p0){ await lectFermer(p0); if(USER_OFF){USER_OFF=false; LECT_ETEINT=false; setSt('Lecteur déconnecté (par vous)','')} else {LECT_ETEINT=true; alerte(); toast('Lecteur éteint ou hors de portée : il se reconnectera dès qu’il se rallume')}} lectMaj()}
 }
 $('#cnx').addEventListener('click',async e=>{
   if(port){ if(e.isTrusted) lectBouton(); return}
@@ -1302,7 +1331,7 @@ $('#cnx').addEventListener('click',async e=>{
     try{ await lectFermer(P); await P.open({baudRate:9600}); err=null; break }
     catch(e){ err=e; setSt('Connexion… essai '+i+'/5 ('+e.message+')',''); lectMaj(); toast('Connexion au lecteur… essai '+i+'/5'); await new Promise(r=>setTimeout(r,1500*i)) } }
   if(err){ port=null; setSt('Connexion impossible : '+err.message+' — éteindre puis rallumer le lecteur, et réessayer','err'); toast('Connexion impossible : éteindre puis rallumer le lecteur, et réessayer'); return}
-  port=P; LPORT=P; LECT_ETEINT=false; USER_OFF=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').textContent='Connecté'; $('#cnx').classList.add('on'); toast('Lecteur connecté'); lire();
+  port=P; LPORT=P; LECT_ETEINT=false; USER_OFF=false; LAST_LECT=null; setSt('Lecteur connecté','ok'); $('#cnx').classList.add('on'); lectMaj(); toast('Lecteur connecté'); lire();
 });
 
 // ---- soins et pharmacie
@@ -1344,13 +1373,13 @@ function mamSoin(k){const t=SO.T.find(t=>t.a===k&&t.p==='mammite'&&!t.clos); if(
   return {d:t.debut,delai:Math.round((new Date(e.viande+'T12:00:00')-new Date(t.debut+'T12:00:00'))/86400000)}}
 let S_CUR=null, S_RAT=null;
 function carteSoin(a){const x=A()[a]; const L=actifsT(a); const pr=PH().proto;
-  let h=`<div class="row" style="align-items:center;margin-top:10px"><span class="tag${x?lisere(a):''}" style="font-size:28px;padding:6px 14px"><b>${a}</b></span><span class="hint">${x?esc(x.lot||x.cat):'Pas dans la base (agneau ou animal inconnu)'}</span>${x?`<button type="button" class="btn2" data-fiche="${a}">Voir la fiche ›</button>`:''}</div><button type="button" class="btn2 b-retour" data-sferme="1" style="width:100%;margin-top:6px">← Fermer, rien changé</button>`;
+  let h=`<div class="row" style="align-items:center;margin-top:10px"><span class="tag${x?lisere(a):''}" style="font-size:28px;padding:6px 14px"><b>${a}</b></span><span class="hint">${x?esc(x.lot||x.cat):'Pas dans la base (agneau ou animal inconnu)'}</span>${x?`<button type="button" class="btn2" data-fiche="${a}">Voir la fiche ›</button>`:''}</div><button type="button" class="btn2 b-retour" data-sferme="1" style="width:100%;margin-top:6px">← Retour</button>`;
   if(!L.length) h+=`<div class="big warn">Aucun traitement en cours<small>Choisir un traitement à démarrer :</small></div>`;
   L.forEach(t=>{const e=etatT(t);
     const box={afaire:['bad','À FAIRE AUJOURD’HUI','Jour '+e.jour+' sur '+e.tot],fait:['ok','DÉJÀ FAIT AUJOURD’HUI','Jour '+e.n+' sur '+e.tot+' · prochain demain'],
       attlait:['bad','TRAITEMENT TERMINÉ','Lait à jeter · traite possible à partir du '+frJ(e.lait)+' · marque rouge'],traite:['ok','PEUT PASSER À LA TRAITE','Marque verte · attente viande jusqu’au '+frJ(e.viande)],
       viande:['warn','ATTENTE VIANDE','Jusqu’au '+frJ(e.viande)+(t.p==='mammite'?' · réforme ?':'')],clos:['ok','TERMINÉ','Plus d’attente']}[e.cat];
-    h+=`<div style="border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px"><b>${esc(nomT(t))}</b> · commencé le ${frJ(t.debut)}
+    h+=`<div style="border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px"><b>${esc(nomT(t))}</b><div class="hint">Commencé le ${frJ(t.debut)}</div>
       <div class="big ${box[0]}" style="font-size:30px;margin-top:6px">${box[1]}<small>${box[2]}</small></div>`;
     if(!e.fini&&!e.faitAuj) h+=`<div style="margin-top:8px"><b>Doses du jour ${e.jour} :</b>${e.dosesJ.map(([k,ml])=>`<div class="row" style="align-items:center"><span style="flex:1">${esc(pNom(k))}</span><input type="number" step="0.5" min="0" inputmode="decimal" style="width:5em" data-ml="${k}" value="${ml}"> ml</div>`).join('')}
       <button type="button" class="btn" style="width:100%;margin-top:6px" data-sfait="${t.id}">✔ Fait</button></div>`;
@@ -1825,6 +1854,7 @@ function retourTel(){
   if(document.body.classList.contains('efull')){ if(EV==='liste') eVue('saisie'); else toast('Appuyez sur « Enregistrer la séance » ou « Annuler »'); return true}
   if(tab==='fiche'&&ST['#fiche'].pile.length){ fiche(ST['#fiche'].pile.pop(),'nav','#fiche'); return true}
   if(THEMES.includes(tab)&&MD[tab]&&MD[tab]!=='choix'){ setMode(tab,'choix'); return true}
+  if(tab==='inv'){ setTab('troupeau'); return true}
   if(MOUV.includes(tab)){ setTab('mouv'); return true}
   if(REPRO.includes(tab)){ setTab('repro'); return true}
   if(tab!=='accueil'){ setTab('accueil'); return true}
@@ -1849,8 +1879,9 @@ function lotSel(id,cur){const L=lotsNoms().filter(l=>l!=='Sans lot'); if(cur&&!L
 // saisie : les jeunes bipés attendent « Enregistrer » (SVP), puis passent en renouvellement dans le lot choisi
 let SVP=LS.get('cb_svp',{}); const saveSVP=()=>LS.set('cb_svp',SVP);   // {plaque: sexe}
 let SV_SX=null;
-function sevBip(p){SV_CUR=p; SV_SX=null; const x=A()[p];
-  if(x&&!pres(x)){alerte();sonHors()} else if(x&&!jeuneCat(x)){alerte();sonHors()} else if(SEV[p]){bip();sonDeja()} else if(x&&!x.sev){SVP[p]=sexeSev(p)||'F'; saveSVP(); bip();sonTrouve()} else {bip();sonDeja()}
+let SV_COM=null;
+function sevBip(p){SV_CUR=p; SV_SX=null; SV_COM=null; const x=A()[p];
+  if(x&&!pres(x)){alerte();sonHors()} else if(x&&!jeuneCat(x)){alerte();sonHors()} else if(SEV[p]){bip();sonDeja()} else if(x&&!x.sev&&comsOf(p).length){SV_COM=p; alerte()} else if(x&&!x.sev){SVP[p]=sexeSev(p)||'F'; saveSVP(); bip();sonTrouve()} else {bip();sonDeja()}
   renderSev(); $('#sv-card').scrollIntoView({block:'start',behavior:'smooth'})}
 function renderSev(){ if(!$('#v-sevrage')) return; const p=SV_CUR;
   if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest('#sv-lotb')) $('#sv-lotb').innerHTML='<div class="hint">Lot de renouvellement (où vont les jeunes gardés) :</div>'+lotSel('sv-lot',SV_LOT);
@@ -1859,6 +1890,7 @@ function renderSev(){ if(!$('#v-sevrage')) return; const p=SV_CUR;
      (x&&!pres(x)?`<div class="big bad" style="font-size:22px;margin-top:6px">${esc(x.statut)}<small>Pas présent : ne peut pas passer en renouvellement</small></div>`:
      x&&!jeuneCat(x)?`<div class="big bad" style="font-size:22px;margin-top:6px">${esc(catAff(x))}<small>Adulte : pas de sevrage</small></div>`:
      v?`<div class="big ok" style="font-size:22px;margin-top:6px">DÉJÀ EN RENOUVELLEMENT<small>depuis le ${frJ(v.d)} · lot « ${esc(v.lot)} »</small></div>`:
+     SV_COM===p&&!SVP[p]?`<div class="com-box" style="margin-top:6px"><b>⚠ Commentaire sur cet animal</b>${comsOf(p).map(c=>`<div>${frJA(c.d)} · ${esc(c.t)}</div>`).join('')}</div><div style="font-size:20px;font-weight:700;margin:8px 0 4px">Le garder quand même ?</div><div class="row"><button type="button" class="btn b-valid" data-svcom="oui" style="flex:1;padding:14px;font-size:19px">Oui, le garder</button><button type="button" class="btn2" data-svcom="non" style="flex:1;padding:14px;font-size:19px">Non</button></div>`:
      SVP[p]?`<div class="big ok" style="font-size:22px;margin-top:6px">AJOUTÉ<small>${SVP[p]==='F'?'agnelle':'agneau'} · passera en renouvellement en enregistrant</small></div>`:
      `<div class="hint" style="margin-top:6px">Pas encore dans la base : choisis le sexe pour l’ajouter.</div><div class="row" style="margin-top:6px"><button type="button" class="btn2" data-svx="F" style="flex:1;padding:12px;font-size:18px">Femelle</button><button type="button" class="btn2" data-svx="M" style="flex:1;padding:12px;font-size:18px">Mâle</button></div>`)}
   else $('#sv-card').innerHTML='<div class="hint" style="margin-top:8px">Bipez l’agnelle ou l’agneau gardé.</div>';
@@ -1870,6 +1902,7 @@ function renderSev(){ if(!$('#v-sevrage')) return; const p=SV_CUR;
 $('#v-sevrage').addEventListener('change',e=>{if(e.target.id==='sv-lot'){const v=e.target.value; if(v==='__new'){$('#sv-lot-nb').hidden=false; $('#sv-lot-n').focus()} else {SV_LOT=v; LS.set('cb_svlot',SV_LOT); e.target.blur(); renderSev()}}});
 $('#v-sevrage').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const p=SV_CUR;
   if(b.dataset.lotok){const n=$('#sv-lot-n').value.trim(); if(!n) return; SV_LOT=n; LS.set('cb_svlot',n); if(!LREG[n]){LREG[n]={cree:fdate()}; LS.set('cb_lreg',LREG)} $('#sv-lot-n').blur(); renderSev(); return}
+  if(b.dataset.svcom&&p){if(b.dataset.svcom==='oui'){SVP[p]=sexeSev(p)||'F'; saveSVP(); bip(); toast(p+' gardé malgré le commentaire')} else {SV_CUR=null; toast(p+' pas gardé')} SV_COM=null; renderSev(); return}
   if(b.dataset.svx&&p){SVP[p]=b.dataset.svx; saveSVP(); bip(); renderSev(); return}
   if(b.dataset.svrm){delete SVP[b.dataset.svrm]; saveSVP(); renderSev(); return}
   if(b.dataset.svann){SVP={}; saveSVP(); SV_CUR=null; setMode('sevrage','choix'); toast('Sevrage annulé : rien n’a été enregistré'); return}
@@ -2064,6 +2097,7 @@ function annulerAdoption(k){ if(NOUR[k].prev) NOUR[k]={n:NOUR[k].prev,d:fdate(),
 function edTuiles(p){const x=A()[p]; if(!x) return []; const T=[];
   if(femelle(x)&&!jeuneCat(x)&&pres(x)){const M=mbDe(p); T.push(['agn','🐑 Agnelage',M?'mise bas du '+frJ(M.d)+' · '+mbPortee(M):'mise bas, adoption'])}
   T.push(['nom','✎ Nom',nomOf(p)||'aucun']);
+  T.push(['com','💬 Commentaire',comsOf(p).length?comsOf(p).length+' commentaire(s)':'aucun']);
   if(femelle(x)&&!jeuneCat(x)&&pres(x)) T.push(['mpis','⚠ Mauvais pis',mpis(p)?'marquée':'non']);
   if(pres(x)) T.push(['soins','💉 Soins individuels','']);
   if(pres(x)) T.push(['grp','🏷 Groupes',grpsOf(p).length+' groupe(s)']);
@@ -2077,6 +2111,9 @@ function renderEdit(){ if(!ED.p) return; const p=ED.p, x=A()[p]||{}, pg=ED.page;
   const saisie=(pg==='agn'&&(ED.mb||ED.adc))||pg==='bib'||pg==='pan'; // pendant une saisie : seulement Annuler / Enregistrer en bas
   const top=`<div class="e-top">${saisie?'':`<button type="button" class="btn2 b-retour" data-edback="1">${pg?'← Retour':'← Retour à la fiche'}</button>`}<b style="flex:1;text-align:center">${esc(p)}${nomOf(p)?' · '+esc(nomOf(p)):''}</b></div>`;
   if(!pg){h=`<h2 style="margin-top:8px">Saisie</h2>`+edTuiles(p).map(([k,t,s])=>`<button type="button" class="lg-card" data-edpg="${k}"><span>${t}</span><span class="hint">${esc(s)}</span></button>`).join('')}
+  else if(pg==='com'){const C=comsOf(p); h=`<h2 style="margin-top:8px">Commentaire</h2><textarea id="ed-com" rows="3" placeholder="ex. patte tordue, ne pas garder" style="font:inherit;font-size:19px;padding:10px;width:100%;box-sizing:border-box"></textarea>
+    <button type="button" class="btn b-valid" data-edcomok="1" style="width:100%;margin-top:8px;padding:14px">Enregistrer le commentaire</button>
+    ${C.length?`<h3 style="margin-top:12px">Déjà écrits</h3>${C.map((c,i)=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><div style="flex:1"><div class="hint">${frJA(c.d)}</div><div>${esc(c.t)}</div></div><button type="button" class="btn2 b-retour" data-edcomdel="${i}">${ED.ask==='c'+i?'Confirmer : effacer':'Effacer'}</button></div>`).join('')}`:''}`}
   else if(pg==='nom') h=`<h2 style="margin-top:8px">Nom</h2><input id="ed-nom" value="${esc(nomOf(p))}" placeholder="Nom (ex. Pouponne)" style="font:inherit;font-size:20px;padding:10px;width:100%;box-sizing:border-box"><button type="button" class="btn b-valid" data-ednom="1" style="width:100%;margin-top:8px;padding:14px">Enregistrer</button>`;
   else if(pg==='mpis') h=`<h2 style="margin-top:8px">Mauvais pis</h2><div class="big ${mpis(p)?'bad':'ok'}" style="font-size:22px">${mpis(p)?'Marquée « mauvais pis »<small>ne pas garder la suite · risque réforme</small>':'Pas marquée'}</div><button type="button" class="btn b-valid" data-edmp="1" style="width:100%;margin-top:8px;padding:14px">${mpis(p)?'↩ Retirer « mauvais pis »':'⚠ Marquer mauvais pis – ne pas garder la suite'}</button>`;
   else if(pg==='grp'){const G=grpsOf(p); h=`<h2 style="margin-top:8px">Groupes</h2>${G.map(g=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}<b style="flex:1">${esc(g)}</b><button type="button" class="btn2 b-retour" data-edgdel="${esc(g)}">${ED.ask==='g:'+g?'Confirmer : retirer':'Retirer'}</button></div>`).join('')||'<div class="hint">Dans aucun groupe.</div>'}
@@ -2095,7 +2132,7 @@ function renderEdit(){ if(!ED.p) return; const p=ED.p, x=A()[p]||{}, pg=ED.page;
     <label class="hint" style="display:block;margin-top:6px">Date du résultat <input type="date" id="pan-d" value="${c?c.d:auj()}"></label>
     <div class="zbar"><button type="button" class="btn2 b-retour" data-edback="1">Annuler</button><button type="button" class="btn b-valid" data-panok="1">Enregistrer</button></div>${c?`<button type="button" class="btn2 c-bad" data-pandel="1" style="margin-top:6px">${ED.ask==='pan'?'Confirmer : retirer (erreur)':'🗑 Retirer (erreur)'}</button>`:''}`}
   $('#v-edit').innerHTML=top+h+'<div id="ed-st" class="state"></div>'}
-$('#v-edit').addEventListener('input',e=>{const t=e.target; if(!ED.mb) return; if(t.dataset.mbad!=null){const a=ED.mb.ad[+t.dataset.mbad]; a.n=t.value.trim(); a.ok=0; ED.adq=null} if(t.dataset.mbadsx!=null) ED.mb.ad[+t.dataset.mbadsx].sx=t.value; if(t.dataset.mbn!=null){const a=ED.mb.ag[+t.dataset.mbn]; a.n=t.value.trim(); a.tape=1} if(t.id==='mb-d') ED.mb.d=t.value; if(t.id==='mb-pere') ED.mb.pere=t.value});
+$('#v-edit').addEventListener('input',e=>{const t=e.target; if(!ED.mb) return; if(t.dataset.mbad!=null){const a=ED.mb.ad[+t.dataset.mbad]; a.n=t.value.trim(); a.ok=0; ED.adq=null} if(t.dataset.mbadsx!=null) ED.mb.ad[+t.dataset.mbadsx].sx=t.value; if(t.dataset.mbn!=null){const a=ED.mb.ag[+t.dataset.mbn]; a.n=t.value.trim(); a.tape=1} if(t.dataset.mbcom!=null) ED.mb.ag[+t.dataset.mbcom].com=t.value; if(t.id==='mb-d') ED.mb.d=t.value; if(t.id==='mb-pere') ED.mb.pere=t.value});
 $('#v-edit').addEventListener('change',e=>{const t=e.target; if(ED.mb&&t.dataset.mbadsx!=null){ED.mb.ad[+t.dataset.mbadsx].sx=t.value; return} if(ED.mb&&t.dataset.mbad!=null){ED.mb.ad[+t.dataset.mbad].n=t.value.trim(); renderEdit(); return} if(ED.mb&&(t.id==='mb-d'||t.id==='mb-pere')){if(t.id==='mb-d') ED.mb.d=t.value||auj(); else ED.mb.pere=t.value; return} if(t.id==='ed-lot'){const nb=$('#ed-lot-nb'); nb.hidden=t.value!=='__new'; if(!nb.hidden) $('#ed-lot-n').focus()}});
 $('#v-edit').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const p=ED.p, msg=(t,ok)=>{const s=$('#ed-st'); s.textContent=t; s.className='state '+(ok?'ok':'err')};
   const ask=k=>{if(ED.ask===k){ED.ask=null; return true} ED.ask=k; clearTimeout(window._edT); window._edT=setTimeout(()=>{ED.ask=null; renderEdit()},5000); renderEdit(); return false};
@@ -2104,6 +2141,8 @@ $('#v-edit').addEventListener('click',e=>{const b=e.target.closest('button'); if
     if(k==='soins'){edFermer(); setTab('soins'); setMode('soins','saisie'); soinsBip(p); return}
     if(k==='mort'){edFermer(); setTab('mort'); setMode('mort','saisie'); moBip(p); return}
     ED.page=k; ED.ask=null; if(k==='agn'&&!mbDe(p)) ED.mb={oid:null,d:auj(),ag:[],pere:''}; renderEdit(); const i=$('#v-edit input'); if(i&&k!=='lot'&&k!=='agn') i.focus(); return}
+  if(b.dataset.edcomok){const t=$('#ed-com').value.trim(); if(!t) return msg('Écris le commentaire.'); comAdd(p,t); renderEdit(); msg('Commentaire enregistré.',1); return}
+  if(b.dataset.edcomdel!=null){const i=+b.dataset.edcomdel, a='c'+i; if(ED.ask!==a){ED.ask=a; renderEdit(); return} ED.ask=null; comDel(p,i); renderEdit(); msg('Commentaire effacé.',1); return}
   if(b.dataset.ednom){NOMS[p]={nom:$('#ed-nom').value.trim()}; LS.set('cb_noms',NOMS); ED.page=null; renderEdit(); msg('Nom enregistré.',1); return}
   if(b.dataset.edmp){setMP(p,!mpis(p)); renderEdit(); msg(mpis(p)?'Marquée mauvais pis.':'Mauvais pis retiré.',1); return}
   if(b.dataset.edgdel){const g=b.dataset.edgdel; if(!ask('g:'+g)) return; grpDel(p,g); saveG(); renderEdit(); msg('Retirée de « '+g+' ».',1); return}
@@ -2181,7 +2220,7 @@ function agCode(k){const x=A()[k]; if(!x) return ''; if(MORT[k]||/^mort/i.test(x
   const n=nourrice(k); return n&&n!==x.mere?'AD':'A'}
 const agBadge=k=>{const c=agCode(k); return c?` <span class="agc agc-${c==='✝'?'m':c.toLowerCase()}">${c}</span>`:''};
 const horsFerme=k=>{const x=A()[k]; return !!x&&!pres(x)};
-const numL=(k,go)=>k?`<b class="lien${horsFerme(k)?' off':''}" ${go?'data-go':'data-fiche'}="${esc(k)}">${esc(k)}</b>`:'?';
+const numL=(k,go)=>k?`<b class="lien${horsFerme(k)?' off':''}" ${go?'data-go':'data-fiche'}="${esc(k)}">${esc(k)}${comBadge(k)}</b>`:'?';
 const agL=(k,go)=>numL(k,go)+agBadge(k);
 // ligne sous la mère dans la liste des mises bas (comme le carnet du CBI)
 function mbSous(v){const L=v.ag.map(a=>{if(a.mn) return '<span class="c-bad">✝ mort-né</span>'; const n=nourrice(a.n); return `${a.sx==='M'?'♂':'♀'} ${agL(a.n)}${n&&n!==v.m?` <span class="hint">(adopté par ${numL(n)})</span>`:''}`});
@@ -2210,7 +2249,7 @@ function mbPage(p){const F=ED.mb, D=mbDerniere(), x=A()[p]||{};
      ${ED.serEd?mbSerForm('mbs'):''}
      <div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:6px"><button type="button" class="btn" data-mbadd="M" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">♂ Mâle</button><button type="button" class="btn" data-mbadd="F" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">♀ Femelle</button><button type="button" class="btn2 b-retour" data-mbadd="X" style="flex:1;padding:16px 2px;font-size:19px;white-space:nowrap">✝ Mort-né</button></div>
      <button type="button" class="btn2" data-mbadd="A" style="width:100%;margin-top:6px;padding:14px;font-size:19px;border:2px solid var(--accent);color:var(--accent)">Adoption</button>
-     <div style="margin-top:6px">${F.ag.map((a,i)=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><b>${i+1}.</b>${a.mn?'<span style="flex:1" class="c-bad"><b>Mort-né</b> (sans numéro)</span>':`<input data-mbn="${i}" value="${esc(a.n)}" inputmode="numeric" aria-label="Numéro de l’agneau ${i+1}" style="font:inherit;font-size:20px;padding:6px;width:6.5em"><span style="flex:1">${sx[a.sx]}</span>${SER.art?`<button type="button" class="btn2" data-mbart="${i}">${a.art?'🍼 biberon':'sous la mère'}</button>`:''}`}<button type="button" class="btn2" data-mbrm="${i}" aria-label="Enlever la ligne ${i+1}" style="padding:4px 10px">✕</button></div>`).join('')||'<div class="hint">Appuyez sur ♂, ♀ ou ✝ pour chaque agneau. Le numéro proposé peut être corrigé (ou bipé).</div>'}</div>
+     <div style="margin-top:6px">${F.ag.map((a,i)=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><b>${i+1}.</b>${a.mn?'<span style="flex:1" class="c-bad"><b>Mort-né</b> (sans numéro)</span>':`<input data-mbn="${i}" value="${esc(a.n)}" inputmode="numeric" aria-label="Numéro de l’agneau ${i+1}" style="font:inherit;font-size:20px;padding:6px;width:6.5em"><span style="flex:1">${sx[a.sx]}</span>${SER.art?`<button type="button" class="btn2" data-mbart="${i}">${a.art?'🍼 biberon':'sous la mère'}</button>`:''}`}${a.mn?'':`<button type="button" class="btn2" data-mbcomb="${i}" aria-label="Commentaire" style="padding:4px 8px">💬</button>`}<button type="button" class="btn2" data-mbrm="${i}" aria-label="Enlever la ligne ${i+1}" style="padding:4px 10px">✕</button></div>${!a.mn&&(a.comOn||a.com)?`<input data-mbcom="${i}" value="${esc(a.com||'')}" placeholder="💬 ex. patte tordue" style="font:inherit;font-size:18px;padding:6px;width:100%;box-sizing:border-box;margin:2px 0 6px">`:''}`).join('')||'<div class="hint">Appuyez sur ♂, ♀ ou ✝ pour chaque agneau. Le numéro proposé peut être corrigé (ou bipé).</div>'}</div>
      ${(F.ad||[]).length?`<div style="margin-top:6px"><b>Adopte</b> <span class="hint">(pas comptés dans sa portée)</span>${F.ad.map((a,i)=>{const x=A()[plaqueDe(a.n||'')||'']; return `<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><span>le n°</span><input data-mbad="${i}" value="${esc(a.n)}" inputmode="numeric" placeholder="n° bipé ou tapé" aria-label="Numéro de l’agneau adopté" style="font:inherit;font-size:20px;padding:6px;width:6.5em"><span style="flex:1" class="hint">${x?esc(catAff(x))+(x.mere?' · né de '+numL(x.mere):''):a.n?`<select data-mbadsx="${i}" aria-label="Sexe"><option value="">sexe ?</option><option value="M"${a.sx==='M'?' selected':''}>♂ mâle</option><option value="F"${a.sx==='F'?' selected':''}>♀ femelle</option></select>`:''}</span><button type="button" class="btn2" data-mbadrm="${i}" aria-label="Enlever l’adoption" style="padding:4px 10px">✕</button></div>`}).join('')}</div>`:''}
      ${ED.adq!=null&&F.ad&&F.ad[ED.adq]?(()=>{const a=F.ad[ED.adq], x=A()[a.n]||{}; return `<div class="big warn" style="font-size:19px;margin-top:8px">Confirmez-vous qu’il s’agit bien de l’agneau ${numL(a.n)}<small>de la brebis ${numL(x.mere)}${x.ne?', né le '+esc(x.ne):''}${nourrice(a.n)&&nourrice(a.n)!==x.mere?' · aujourd’hui sous '+numL(nourrice(a.n)):''}${BIBS[a.n]?' · aujourd’hui au biberon':''} ?</small></div><div class="row"><button type="button" class="btn b-valid" data-mbadoui="1" style="flex:1;padding:14px">✔ Oui</button><button type="button" class="btn2 b-retour" data-mbadnon="1" style="flex:1;padding:14px">Non</button></div>`})():''}
      ${P.length?`<label class="hint" style="display:block;margin-top:8px">Père (IA) <select id="mb-pere"><option value="">— inconnu —</option>${P.map(o=>`<option value="${esc(o.v)}"${o.v===F.pere?' selected':''}>${esc(o.t)}</option>`).join('')}</select></label>`:'<div class="hint" style="margin-top:8px">Père : inconnu. Il viendra de la liste des IA, ou plus tard d’une analyse (agnelles de renouvellement).</div>'}
@@ -2243,6 +2282,7 @@ function mbClic(b,p,msg,ask){const F=ED.mb;
   if(b.dataset.mbadrm!=null){F.ad.splice(+b.dataset.mbadrm,1); ED.adq=null; renderEdit(); return true}
   if(b.dataset.mbadoui){F.ad[ED.adq].ok=1; ED.adq=null; const k=document.querySelector('#v-edit [data-mbok]'); if(k) k.click(); return true}
   if(b.dataset.mbadnon){const a=F.ad[ED.adq]; ED.adq=null; renderEdit(); msg('Vérifiez le numéro de l’agneau '+(a?a.n:'')+'.'); return true}
+  if(b.dataset.mbcomb!=null){const a=F.ag[+b.dataset.mbcomb]; a.comOn=1; renderEdit(); const i=document.querySelector(`#v-edit [data-mbcom="${b.dataset.mbcomb}"]`); if(i) i.focus(); return true}
   if(b.dataset.mbadd){const sx=b.dataset.mbadd; if(sx==='X') F.ag.push({sx:'',n:'',mn:1}); else {const n=mbProchain(sx,F.ag.map(a=>a.n),F.oid); F.ag.push({sx,n,mn:0}); if(!n) msg('Réglez d’abord les numéros (✎).')} bip(); renderEdit(); return true}
   if(b.dataset.mbmvoui){F.move=[...(F.move||[]),ED.mvq.n]; ED.mvq=null; const k=document.querySelector('#v-edit [data-mbok]'); if(k) k.click(); return true}
   if(b.dataset.mbmvnon){ED.mvq=null; renderEdit(); msg('Changez le numéro de l’agneau, ou laissez-le chez sa mère.'); return true}
@@ -2273,7 +2313,7 @@ function mbClic(b,p,msg,ask){const F=ED.mb;
       (F.move||[]).forEach(n=>{const x=DB.animaux[n]; if(!x||!x.mb||!MBS[x.mb]||x.mb===F.oid) return; const S=MBS[x.mb]; S.ag=S.ag.filter(a=>a.n!==n); S.t=new Date().toISOString(); S.s=0; if(!S.ag.length) delete MBS[S.id]; x.mb=F.oid||id; if(NOUR[n]&&NOUR[n].n===p){delete NOUR[n]; LS.set('cb_nour',NOUR)}});
       if(F.oid){const O=MBS[F.oid]; O.ag.forEach(a=>{if(a.n&&!vus.includes(a.n)) mbRetirer(a.n,F.oid)}); mbReculer(); vus.forEach(n=>{const x=DB.animaux[n]; if(x&&x.mb===F.oid) x.mb=id}); if(F.oid!==id) delete MBS[F.oid]}
       MBS[id]={id,m:p,d,pere:F.pere,mode:pe?pe.mode:'',ag:F.ag.map(a=>({n:a.mn?'':a.n,sx:a.mn?'':a.sx,mn:a.mn?1:0,art:a.art?1:0})),t:new Date().toISOString(),s:0};
-      saveMB(); mbAvancer(MBS[id].ag); mbAppliquer(); txt='Mise bas enregistrée : '+mbPortee(MBS[id])+(vus.length?' · '+vus.join(' '):'')}
+      saveMB(); mbAvancer(MBS[id].ag); mbAppliquer(); F.ag.forEach(a=>{if(!a.mn&&a.n&&a.com&&a.com.trim()) comAdd(a.n,a.com,d)}); txt='Mise bas enregistrée : '+mbPortee(MBS[id])+(vus.length?' · '+vus.join(' '):'')}
     const faits=[]; AD.forEach(a=>{const err=adopter(p,a.n,a.sx==='M'?'Agneau':a.sx==='F'?'Agnelle':''); if(!err) faits.push(a.n)});
     if(faits.length) txt+=(txt?' · ':'')+'adopté'+(faits.length>1?'s':'')+' : '+faits.join(' ');
     _pis=null; ED.mb=null; ED.adq=null; ED.mvq=null; renderEdit(); msg(txt,1); const se=$('#ed-st'); if(se) se.innerHTML=esc(txt).replace(/\b(\d{5})\b/g,(m0,k)=>A()[k]?numL(k):k); toast((F.ag.length?'Mise bas':'Adoption')+' de '+p+' enregistrée'); return true}
@@ -2287,7 +2327,9 @@ function mbFiltre(){const L=Object.values(MBS).filter(v=>(!MBF.du||v.d>=MBF.du)&
   const o=milOrdre(L.map(v=>v.m)), r=x=>o(coMil(x)); return L.filter(v=>(!MBF.mmin||r(v.m)>=o(MBF.mmin))&&(!MBF.mmax||r(v.m)<=o(MBF.mmax)))
    .sort((a,b)=>MBF.sens*(MBF.tri==='m'?cmpAnim(a.m,b.m):MBF.tri==='n'?a.ag.length-b.ag.length:MBF.tri==='mo'?(a.mode||'').localeCompare(b.mode||''):a.d.localeCompare(b.d))||a.m.localeCompare(b.m))}
 function mbBilan(L){const ag=L.reduce((s,v)=>s+v.ag.length,0), mn=L.reduce((s,v)=>s+v.ag.filter(a=>a.mn).length,0), ad=L.reduce((s,v)=>s+v.ag.filter(a=>!a.mn&&a.n&&A()[a.n]&&nourrice(a.n)&&nourrice(a.n)!==v.m).length,0), c=n=>L.filter(v=>v.ag.length===n).length;
-  return {mb:L.length,ag,mn,ad,s:c(1),d:c(2),t:L.filter(v=>v.ag.length>=3).length}}
+  // où en sont les agneaux nés aujourd'hui : présents, morts après la naissance, vendus, sevrés (renouvellement)
+  const st={pr:0,mo:0,ve:0,se:0}; L.forEach(v=>v.ag.forEach(a=>{ if(a.mn||!a.n) return; const k=agCode(a.n); if(k==='✝') st.mo++; else if(k==='V') st.ve++; else if(k==='S') st.se++; else st.pr++ }));
+  return {mb:L.length,ag,mn,ad,s:c(1),d:c(2),t:L.filter(v=>v.ag.length>=3).length,...st}}
 function renderMB(){ if(!$('#v-mb')) return;
   if(MD.mb==='saisie'&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#mb-sai'))){
     const D=mbDerniere(), PR=SER.prov?tri(Object.keys(A()).filter(k=>/^P/.test(k)&&pres(A()[k]))):[];
@@ -2304,6 +2346,7 @@ function renderMB(){ if(!$('#v-mb')) return;
       <select id="mbf-lot" aria-label="Lot"><option value="">Tous les lots</option>${lots.map(l=>`<option${l===MBF.lot?' selected':''}>${esc(l)}</option>`).join('')}</select><select id="mbf-mode" aria-label="Mode"><option value="">Tous les modes</option>${['MN','IA','?'].map(m=>`<option value="${m}"${m===MBF.mode?' selected':''}>${m==='?'?'Père inconnu':m==='MN'?'MN (monte naturelle)':'IA'}</option>`).join('')}</select></div>
       ${MBF.du||MBF.au?'':`<div class="hint">Campagne ${CV}.</div>`}
       <div class="count" style="margin-top:8px"><div><b>${B.mb}</b>mises bas</div><div><b>${B.ag}</b>agneaux</div><div><b>${B.mn}</b>mort-nés</div></div>
+      <div class="count petit"><div><b>${B.pr}</b>présents</div><div><b>${B.mo}</b>morts</div><div><b>${B.ve}</b>vendus</div><div><b>${B.se}</b>sevrés</div></div>
       <div class="hint">${B.ad} adopté(s) · portées : ${B.s} simple(s), ${B.d} double(s), ${B.t} triple(s) ou plus</div>
       <div class="tbl"><table><thead><tr>${th('m','Mère')}${th('d','Date')}${th('n','Nb')}<th>Portée</th>${th('mo','Mode')}</tr></thead><tbody>${L.map(v=>`<tr class="mbl" data-mbopen="${esc(v.id)}"><td><b class="lien" data-fiche="${v.m}">${v.m}</b></td><td>${frJ(v.d)}</td><td>${v.ag.length}</td><td>${mbPortee(v)}</td><td>${v.mode||''}${v.s?'':' <span class="c-warn">•</span>'}</td></tr><tr class="mbsous" data-mbopen="${esc(v.id)}"><td colspan="5" style="white-space:normal;padding-top:0">${mbSous(v)}</td></tr>${MBF.open===v.id?`<tr><td colspan="5" style="white-space:normal;background:var(--bg)">${mbLignesH(v)}${v.pere?`<div class="hint">Père : ${numL(v.pere)}${v.mode?' ('+v.mode+')':''}</div>`:''}<div class="row" style="margin-top:4px"><button type="button" class="btn2 b-retour" data-mbcorr="${esc(v.id)}">✏ Corriger</button><button type="button" class="btn2 c-bad" data-mbsup="${esc(v.id)}">${MB_ASK===v.id?'Confirmer : supprimer (erreur)':'🗑 Supprimer (erreur)'}</button></div></td></tr>`:''}`).join('')||'<tr><td colspan="5" class="hint">Aucune mise bas.</td></tr>'}</tbody></table></div>
       <div class="row" style="margin-top:8px"><button type="button" class="btn" data-mbprint="1">🖨 Imprimer / PDF</button><button type="button" class="btn" data-mbsend="1">Envoyer à Claude</button><button type="button" class="btn2" data-mbsent="1">Marquer comme envoyé</button></div>
@@ -2331,7 +2374,7 @@ function mbPoser(o,nv){ if(!/^\d{5}$/.test(nv)) return 'Le numéro définitif fa
   [[NOUR,'cb_nour'],[LOTS,'cb_lots'],[MORT,'cb_mort'],[NOMS,'cb_noms'],[SEV,'cb_sev'],[VEN,'cb_ven'],[TRA,'cb_tra']].forEach(([O,k])=>{if(O[o]!==undefined){O[nv]=O[o]; delete O[o]; LS.set(k,O)}});
   Object.values(GRP).forEach(g=>{if(g[o]){g[nv]=g[o]; delete g[o]}}); saveG(); REP[o]={n:nv,d:auj()}; LS.set('cb_rep',REP); saveMB(); LS.set('cb_data',DB); _pis=null; return ''}
 function mbImprimer(){const L=mbFiltre(), B=mbBilan(L);
-  $('#print-reg').innerHTML=`<h1>Mises bas${MBF.du||MBF.au?' du '+(MBF.du?frJA(MBF.du):'…')+' au '+(MBF.au?frJA(MBF.au):'…'):' – campagne '+CV}</h1><div>GAEC KINTIA – édité le ${fdate()} · ${B.mb} mises bas · ${B.ag} agneaux · ${B.mn} mort-nés · ${B.ad} adoptés · portées : ${B.s} simples, ${B.d} doubles, ${B.t} triples ou plus</div><br>
+  $('#print-reg').innerHTML=`<h1>Mises bas${MBF.du||MBF.au?' du '+(MBF.du?frJA(MBF.du):'…')+' au '+(MBF.au?frJA(MBF.au):'…'):' – campagne '+CV}</h1><div>GAEC KINTIA – édité le ${fdate()} · ${B.mb} mises bas · ${B.ag} agneaux · ${B.mn} mort-nés · présents ${B.pr} · morts ${B.mo} · vendus ${B.ve} · sevrés ${B.se} · ${B.ad} adoptés · portées : ${B.s} simples, ${B.d} doubles, ${B.t} triples ou plus</div><br>
    <table><thead><tr><th>Mère</th><th>Date</th><th>Lot</th><th>Portée</th><th>Agneaux</th><th>Père</th><th>Mode</th></tr></thead><tbody>${L.map(v=>`<tr><td>${v.m}</td><td>${frJA(v.d)}</td><td>${esc(lotOf(v.m)||'')}</td><td>${mbPortee(v)}</td><td>${esc(mbLignes(v))}</td><td>${esc(v.pere?nomPere(v.pere):'')}</td><td>${v.mode||''}</td></tr>`).join('')||'<tr><td colspan="7">Aucune mise bas.</td></tr>'}</tbody></table>`;
   setTimeout(()=>window.print(),100)}
 // mise au biberon : l'agneau sort de sous sa mère et va dans le lot « Biberon »
@@ -2354,7 +2397,7 @@ let PAN=LS.get('cb_pan',{});   // père confirmé par analyse : {agneau:{p,d,pre
 function panAppliquer(){ if(!DB) return; Object.entries(PAN).forEach(([k,v])=>{const x=DB.animaux[k]; if(x){x.pere=v.p; x.pereAn=v.d}}); LS.set('cb_data',DB)}
 mbAppliquer(); bibAppliquer(); panAppliquer(); mortAppliquer();
 // animaux qui ne sont plus à la ferme (morts, vendus, sortis) : numéros en grisé partout
-let _griseT=0; function griser(){_griseT=0; document.querySelectorAll('[data-fiche],[data-go]').forEach(e=>{const k=e.dataset.fiche||e.dataset.go, x=A()[k]; e.classList.toggle('off',!!x&&!pres(x))})}
+let _griseT=0; function griser(){_griseT=0; document.querySelectorAll('[data-fiche],[data-go]').forEach(e=>{const k=e.dataset.fiche||e.dataset.go, x=A()[k]; const j=!!x&&pres(x)&&jeuneCat(x); e.classList.toggle('off',!!x&&!pres(x)); e.classList.toggle('jf',j&&femelle(x)); e.classList.toggle('jm',j&&!femelle(x))})}
 new MutationObserver(()=>{if(!_griseT) _griseT=requestAnimationFrame(griser)}).observe(document.body,{childList:true,subtree:true});
 // ===== CONTRÔLE LAITIER =====
 // CL.c[id]={d,tank,ntk,tpj,q:[[n° place 1..16],...],l:{n°:{ml,t1}},val,s} ; CL.cur = contrôle en cours ; CL.est[n°][date]=L/j estimé (contrôle manquant)
@@ -2623,6 +2666,32 @@ let INSTALL=null; window.addEventListener('beforeinstallprompt',e=>{e.preventDef
 // Fiche : pavé numérique d'abord ; ABC ⇄ 123 pour chercher par nom
 $('#q-abc').onclick=()=>{const q=$('#q'), num=q.inputMode!=='text'; q.inputMode=num?'text':'numeric'; $('#q-abc').textContent=num?'123':'ABC'; q.blur(); setTimeout(()=>q.focus(),30)};
 showBase(); setTab('accueil');
+// ---- inventaire à une date choisie (par défaut 31/12/2026, clôture de Jack)
+// Règle : un animal compte s'il est né au plus tard ce jour-là et n'est pas mort, vendu ou sorti avant.
+// Les jeunes deviennent adultes au 1er octobre (même règle que le reste de l'appli).
+let INV_D=LS.get('cb_invd','2026-12-31'), INV_OUV=null;
+function invEtat(p,D){const x=A()[p]; if(!x) return null; const ne=isoNe(x.ne); if(ne&&ne>D) return null;
+  const sortie=(MORT[p]&&MORT[p].d)||(VEN[p]&&VEN[p].d)||'';
+  if(sortie){ if(sortie<=D) return null } else if(!pres(x)) return null;
+  const y=+D.slice(0,4), m=+D.slice(5,7), bas=(m>=10?y:y-1)+'-10-01';
+  const jeune=ne?ne>=bas:jeuneCat(x), f=femelle(x);
+  if(!jeune) return f?'brebis':'belier';
+  const sv=(SEV[p]&&SEV[p].dest==='renouv'&&(!SEV[p].d||SEV[p].d<=D))||(!!x.renouv&&!SEV[p]);
+  return sv?(f?'sevF':'sevM'):(f?'smF':'smM')}
+function invCalc(D){const R={belier:[],brebis:[],smM:[],smF:[],sevM:[],sevF:[]}; Object.keys(A()).forEach(p=>{const e=invEtat(p,D); if(e) R[e].push(p)}); return R}
+function renderInv(){ if(!$('#v-inv')) return; const D=INV_D, R=invCalc(D);
+  const L=[['belier','Béliers adultes',R.belier],['brebis','Brebis adultes',R.brebis],
+    ['sm','Agneaux sous la mère',[...R.smM,...R.smF],`${R.smM.length} mâles · ${R.smF.length} femelles`],
+    ['sev','Agneaux et agnelles sevrés',[...R.sevM,...R.sevF],`dont ${R.sevM.length} mâle${R.sevM.length>1?'s':''}`]];
+  const tot=L.reduce((s,l)=>s+l[2].length,0);
+  $('#inv-body').innerHTML=`<label class="hint" style="display:block">Date de l’inventaire<br><input type="date" id="inv-d" value="${D}" style="font:inherit;font-size:20px;padding:6px"></label>
+  ${D<'2026-10-01'?'<div class="hint" style="color:#ef6c00;margin-top:4px">Attention : avant le démarrage d’OviLink, les morts et ventes ne sont pas datés.</div>':''}
+  <table class="inv-t"><tbody>${L.map(([k,t,a,s])=>`<tr class="inv-l" data-invk="${k}"><td><b>${t}</b>${s?`<div class="hint">${s}</div>`:''}</td><td class="n">${a.length}</td></tr>${INV_OUV===k?`<tr><td colspan="2"><div class="nums">${tri(a).map(p=>`<span data-fiche="${p}">${p}${comBadge(p)}</span>`).join('')||'<span class="hint">aucun</span>'}</div></td></tr>`:''}`).join('')}
+  <tr class="inv-tot"><td><b>Total</b></td><td class="n">${tot}</td></tr></tbody></table>
+  <div class="hint" style="margin-top:6px">Touchez une ligne pour voir les numéros.</div>`}
+$('#v-inv').addEventListener('click',e=>{const r=e.target.closest('[data-invk]'); if(r){INV_OUV=INV_OUV===r.dataset.invk?null:r.dataset.invk; renderInv()}});
+$('#v-inv').addEventListener('change',e=>{if(e.target.id==='inv-d'&&e.target.value){INV_D=e.target.value; LS.set('cb_invd',INV_D); INV_OUV=null; renderInv()}});
+
 /* Reprise après une fermeture imprévue (téléphone éteint, page rechargée) : l'appli garde en permanence où on était
    (onglet, saisie/consultation, contrôle laitier avec le chiffre tapé, saisie ✏️ en cours, mise à la traite)
    et y revient à la réouverture (moins de 24 h). Les données déjà saisies sont gardées par chaque module. */
