@@ -131,6 +131,7 @@ body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important
 .chip.c-or{color:#8a6508;background:#fff3c4}
 .tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
+.sum2{display:block;margin:2px 0 0 22px}
 .tag.sortie{background:#b9b9b9;color:#444}
 .tag.sortie b{text-decoration:line-through;text-decoration-color:#c62828;text-decoration-thickness:5px}
 .tag .tag-lot{display:block;font-size:15px;font-weight:700;text-align:center;margin-top:4px;opacity:.9}
@@ -1651,7 +1652,7 @@ function renderLots(){ if(MD.lots==='consult') return lgConsult('lots'); const e
        <button type="button" class="btn" data-tri="1" style="width:100%;margin-top:6px;padding:12px">🔀 Brebis mélangées : à quel lot ?</button>
        <button type="button" class="btn2" data-rcolle="lots" style="width:100%;margin-top:6px">🔍 Rechercher une liste reçue de Claude</button>`; return}
   const l=S.sel, M=membresLot(l);
-  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(lotAff(l))} · ${M.length}</h2><div class="hint">${lotDet(l)}</div><details class="lg-act"><summary><b>🖍 Modifier le lot</b> <span class="hint">(nom, regrouper)</span></summary>
+  el.innerHTML=`<button type="button" class="btn2 b-retour" data-lgback="lots">← Tous les lots</button><h2 style="margin-top:8px">${coulLot(l)?`<span class="pt" style="background:${coulLot(l)}"></span>`:''}${esc(lotAff(l))} · ${M.length}</h2><div class="hint">${lotDet(l)}</div><details class="lg-act"><summary><b>🖍 Modifier le lot</b><span class="hint sum2">Nom, regrouper avec un autre lot</span></summary>
       <div class="hint" style="margin-top:8px">Nom du lot :</div><input id="lg-rn" type="text" value="${esc(l)}" placeholder="Nouveau nom" style="font:inherit;padding:8px;width:100%;box-sizing:border-box"><button type="button" class="btn b-valid" data-lgren="1" style="width:100%;margin-top:6px">Enregistrer le nom</button><div class="hint" style="margin-top:12px">Regrouper : toutes ses bêtes passent dans l'autre lot, ce lot disparaît.</div>${destSel('lg-lr','lots',l)}<button type="button" class="btn b-valid" data-lgreg="1" style="width:100%;margin-top:6px">${S.ask==='reg'?'Confirmer : regrouper':'Regrouper'}</button>
       </details><div class="row" style="margin:6px 0"><span class="hint">Bâtiment :</span>${BATS.map(bt=>`<button type="button" class="btn${batOf(l)===bt?'':'2'}" data-lgbat="${bt}" style="padding:8px 10px">${bt}</button>`).join('')}</div><details class="lg-act"${LG.lots.co?' open':''}><summary><b>🎨 Changer la couleur du lot</b></summary>${pastilles(coulLot(l),'data-lgcoul','l:'+l)}</details>
     <div class="row"><button type="button" class="btn" data-lgrech="lots">🔍 Rechercher ce lot en bipant</button><button type="button" class="btn" data-sai="lot|${esc(l)}">＋ Ajouter des brebis</button></div>
@@ -2275,7 +2276,7 @@ function renderMB(){ if(!$('#v-mb')) return;
     $('#mb-sai').innerHTML=`${D?`<div class="hint">Dernière MB : ${numL(D.m)} le ${frJ(D.d)} · ${D.ag.length} agn.</div>`:''}
      <div class="hint" style="margin-top:6px">Bipez la mère (ou tapez son numéro) : sa page de mise bas s’ouvre.</div>
      <form id="mb-f" class="row"><input id="mb-q" inputmode="numeric" autocomplete="off" placeholder="N° de la mère" aria-label="Numéro de la mère"><button class="btn" type="submit">OK</button></form><div id="mb-msg" class="state"></div>
-     <details class="lg-act"><summary><b>⚙ Numéros des agneaux</b> <span class="hint">· prochains : ${serTexte()}</span></summary>${mbSerForm('mbr')}</details>
+     <details class="lg-act"><summary><b>⚙ Numéros des agneaux</b><span class="hint sum2">Prochains : ${serTexte()}</span></summary>${mbSerForm('mbr')}</details>
      ${SER.prov?`<h3>Pose des repères définitifs · ${PR.length}</h3>${PR.map(k=>`<div class="row" style="align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><b style="flex:1">${k} <span class="hint">mère ${esc(A()[k].mere||'?')}</span></b><input data-mbpose="${k}" inputmode="numeric" placeholder="n° définitif" style="width:6.5em;font:inherit;padding:6px"><button type="button" class="btn b-valid" data-mbposeok="${k}">Poser</button></div>`).join('')||'<div class="hint">Aucun agneau avec repère provisoire.</div>'}`:''}`}
   if(MD.mb==='consult'){const L=mbFiltre(), B=mbBilan(L), all=Object.values(MBS), mils=[...new Set(all.map(v=>coMil(v.m)))], o=milOrdre(all.map(v=>v.m)); mils.sort((a,b)=>o(a).localeCompare(o(b)));
     const lots=[...new Set(all.map(v=>lotOf(v.m)||'Sans lot'))].sort(), th=(k,t)=>`<th data-mbtri="${k}">${t}${MBF.tri===k?(MBF.sens>0?' ▲':' ▼'):''}</th>`;
