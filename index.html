@@ -296,7 +296,7 @@ tr.sel td{background:var(--okbg)}
       <select id="f-sexe" aria-label="Sexe"><option value="">Femelles et mâles</option><option value="F">Femelles</option><option value="M">Mâles</option></select>
       <select id="f-etat" aria-label="Gestation"><option value="">Pleines, vides…</option><option value="pleine">Pleines</option><option value="vide">Vides</option><option value="sans">Sans écho</option></select>
       <select id="f-suivi" aria-label="Suivi"><option value="">Tout suivi</option><option value="vendre">À vendre (à réformer)</option><option value="pb">À suivre (hors réformes)</option><option value="deter">Détérioratrices (filles moins bonnes)</option><option value="garde">Garder ses agnelles</option><option value="mpis">Mauvais pis (risque réforme)</option><option value="mam">Mammites traitées</option><option value="or">Brebis d'or</option></select>
-      <select id="f-agn" aria-label="Lot d'agnelage"><option value="">Tous lots d'agnelage</option></select>
+      <select id="f-agn" aria-label="Groupe d'agnelage"><option value="">Tous groupes d'agnelage</option></select>
       <select id="f-stat" aria-label="Statut"><option value="pres">Présents seulement</option><option value="">Présents et sortis</option></select>
       <select id="f-tri" aria-label="Trier par"><option value="num">Tri : numéro</option><option value="agn">Tri : agnelage prévu</option><option value="idx">Tri : index lait</option><option value="lot">Tri : lot</option></select>
     </div></details>
@@ -710,7 +710,8 @@ function comsOf(p){try{return (JSON.parse(localStorage.getItem('cb_com')||'{}')[
 function comAdd(p,t,d){t=String(t||'').trim(); if(!p||!t) return; const C=LS.get('cb_com',{}); (C[p]=C[p]||[]).push({d:d||auj(),t}); LS.set('cb_com',C)}
 function comDel(p,i){const C=LS.get('cb_com',{}); if(!C[p]) return; C[p].splice(i,1); if(!C[p].length) delete C[p]; LS.set('cb_com',C)}
 const comBadge=p=>comsOf(p).length?'<span class="com-b" title="Commentaire">⚠</span>':'';
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v)); bkInc(k)}catch(e){}}};
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v)); _lag=null; bkInc(k)}catch(e){}}};
+var _lag=null;   // cache des lots d'agnelage, vidé à chaque enregistrement
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='accueil';
 // chaque thème : un choix « Saisie » ou « Consultation » ; les thèmes de Mouvements reviennent à Mouvements
@@ -757,6 +758,7 @@ function agneauSousMere(p){const x=A()[p]; return !!x&&pres(x)&&jeuneCat(x)&&!(t
 function lotOf(p,prof){ if(LOTS[p]!==undefined) return LOTS[p]; const x=A()[p]||{}; if(!prof&&agneauSousMere(p)) return lotOf(nourrice(p),1); return x.lot||''}
 const COULS=[['Bleu','#1f5fa8'],['Rouge','#c62828'],['Vert','#2e7d32'],['Jaune','#e0a800'],['Orange','#ef6c00'],['Violet','#7b3fa0'],['Rose','#d81b60'],['Marron','#6d4c41'],['Gris','#607d8b'],['Noir','#212121']];
 let COUL=LS.get('cb_coul',{});   // {'l:Nom du lot' ou 'g:Nom du groupe' : '#couleur'}
+Object.keys(COUL).forEach(k=>{const m=k.match(/^g:Lot d’agnelage (.+)$/); if(m){COUL['g:Groupe d’agnelage '+m[1]]=COUL[k]; delete COUL[k]; LS.set('cb_coul',COUL)}});
 const coulLot=l=>COUL['l:'+l]||'', coulGrp=g=>COUL['g:'+g]||'';
 // couleurs libres et partageables, sauf celles du lot de traite et du groupe À réformer : elles leur sont réservées
 const coulReservee=k=>k==='g:À réformer'||(k.startsWith('l:')&&(/traite/i.test(k)||(typeof TR_LOT!=='undefined'&&k==='l:'+TR_LOT)));
@@ -797,8 +799,17 @@ const GDER={'À réformer':k=>/réformer/i.test((A()[k]||{}).niveau||''),
   'À mettre à la traite':k=>typeof aTraire==='function'&&aTraire().includes(k)};
 function grpsUser(){return Object.keys(GRP).filter(g=>grpCamp(g)===CV).sort()}
 function grpsTous(){return Object.keys(GRP).sort()}
-function grpsAuto(){const a=Object.keys(GDER); [...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((x,y)=>x-y).forEach(n=>a.push('Lot d’agnelage '+n)); return a}
-function membreDe(g,k){ if(GRP[g]) return !!GRP[g][k]; if(GDER[g]) return GDER[g](k); const m=g.match(/^Lot d’agnelage (.+)$/); return m?(A()[k]||{}).lotagn===m[1]:false}
+/* Lots d'agnelage (Jack 24/11) : seulement les brebis présentes de la campagne qui restent à agneler ; un lot vide disparaît.
+   Lot = tranche de 10 jours à partir du 1er agnelage prévu de la campagne (agnelage prévu = écho − stade + 150 j) ;
+   2 agneaux ou plus : lot précédent. Le lot déjà donné dans le fichier de données est gardé ; une écho saisie dans l'appli le recalcule. */
+const LAG_J=10;
+function lagCalc(){ if(_lag&&Date.now()-_lag.t<1500&&_lag.cv===CV) return _lag; const R={t:Date.now(),cv:CV,m:{}}; const E=[];
+  Object.entries(A()).forEach(([k,x])=>{const d=isoNe(x.agn); if(d&&campOf(d)===CV) E.push([k,x,d])}); const st=E.map(e=>e[2]).sort()[0];
+  E.forEach(([k,x,d])=>{let l=x.lotagn?+x.lotagn:0; if(!l&&st){const f=Math.floor((new Date(d+'T12:00:00')-new Date(st+'T12:00:00'))/864e5/LAG_J)+1; l=(+x.nb||1)>=2?Math.max(1,f-1):f}
+    if(l&&pres(x)&&!(typeof mbDe==='function'&&mbDe(k))) R.m[k]=String(l)}); _lag=R; return R}
+const lotAgn=k=>lagCalc().m[k]||'';
+function grpsAuto(){const a=Object.keys(GDER); [...new Set(Object.values(lagCalc().m))].sort((x,y)=>x-y).forEach(n=>a.push('Groupe d’agnelage '+n)); return a}
+function membreDe(g,k){ if(GRP[g]) return !!GRP[g][k]; if(GDER[g]) return GDER[g](k); const m=g.match(/^Groupe d’agnelage (.+)$/); return m?lotAgn(k)===m[1]:false}
 function grpsOf(k){return grpsTous().filter(g=>GRP[g][k]&&grpCamp(g)===CV)}
 function grpsAutoOf(k){return grpsAuto().filter(g=>membreDe(g,k))}
 function grpAdd(k,g){g=g.trim(); if(!g||!A()[k]) return 0; if(!GRP[g]){GRP[g]={}; GMETA[g]={camp:CV}; LS.set('cb_gmeta',GMETA)} if(GRP[g][k]) return 0; GRP[g][k]=auj(); GM.push({d:fdate(),p:k,g,a:'+'}); return 1}
@@ -932,7 +943,7 @@ function fiche(p,nav,el='#fiche'){
    ${(()=>{const H=histLots(p); return H.length>1?`<details class="hint"><summary>Historique des lots (${H.length})</summary>${H.slice().reverse().map(h=>`<div>${h.du?'du '+h.du+' '+(h.au?'au '+h.au:'à aujourd’hui'):'jusqu’au '+h.au} : <b>${esc(h.lot)}</b>${h.ren?' (renommé ensuite)':''}</div>`).join('')}</details>`:''})()}
    <div class="chips" style="align-items:center"><span class="hint">Groupes :</span>${grpsOf(p).map(g=>`<span class="chip c-ok" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsAutoOf(p).map(g=>`<span class="chip c-mute" style="${coulGrp(g)?'border-color:'+coulGrp(g)+';border-width:3px':''}">${coulGrp(g)?`<span class="pt" style="background:${coulGrp(g)}"></span>`:''}${esc(g)}</span>`).join('')}${grpsOf(p).length+grpsAutoOf(p).length?'':'<span class="hint">aucun</span>'}</div>
    ${(x.niveau||(x.pb||[]).length)?`<dl>${row('Raison',x.raison)}</dl>${(x.pb||[]).map(t=>`<div class="c-warn">${esc(t)}</div>`).join('')}`:''}
-   <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Lot d’agnelage',x.lotagn)}${row('Agneaux attendus',x.nb)}
+   <dl>${row('Dernière écho',x.echo)}${row('Agnelage prévu',x.agn)}${row('Groupe d’agnelage',lotAgn(p))}${row('Agneaux attendus',x.nb)}
    ${row('Index lait maison',x.idx!=null?x.idx+(x.rang?' (rang '+x.rang+')':''):'')}${row('Lait moyen',x.laitmoy?x.laitmoy+' L en '+x.dureemoy+' j'+(LJ(x)!=null?' ('+fLJ(LJ(x))+' L/jour, '+fC(nC(x))+')':''):'')}
    ${row('Index lait / MSU',x.ioff!==undefined&&(x.ioff||x.msu)?(x.ioff||'–')+' / '+(x.msu||'–'):'')}${row('Viables / nés',x.viab)}
    ${row('Né(e) le',x.ne)}${row('Type',x.type)}
@@ -1124,7 +1135,7 @@ document.addEventListener('click',e=>{ if(!e.target.closest('#t-rech')) return; 
 function filtre(){const f=k=>$('#f-'+k).value;
   let r=Object.entries(A()).filter(([k,x])=>(tab!=='troupeau'||tvOk(k,x))&&(!f('stat')||pres(x))&&(!f('lot')||(lotOf(k)||'Sans lot')===f('lot'))&&(!f('cat')||(f('cat')==='adultes'?!jeuneCat(x):f('cat')==='jeunes'?jeuneCat(x):catAff(x)===f('cat')))
    &&(!f('sexe')||sexeOf(x)===f('sexe'))&&(!f('etat')||(x.cat!=='Bélier'&&x.cat!=='Antenais'&&etatOf(x)===f('etat')))
-   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||x.lotagn===f('agn'))&&(!f('grp')||membreDe(f('grp'),k)));
+   &&(!f('suivi')||(f('suivi')==='vendre'?/réformer/i.test(x.niveau||''):f('suivi')==='deter'?!!deter(k):f('suivi')==='garde'?garde(k):f('suivi')==='mpis'?mpis(k):f('suivi')==='mam'?!!mam(k):f('suivi')==='or'?!!x.or:(!!x.niveau||!!mam(k))&&!/réformer/i.test(x.niveau||'')))&&(!f('agn')||lotAgn(k)===f('agn'))&&(!f('grp')||membreDe(f('grp'),k)));
   const dj=s=>{if(!s)return '9';const [d,m,y]=s.split('/');return y+m+d};
   const t=f('tri'); r.sort((a,b)=>t==='agn'?dj(a[1].agn).localeCompare(dj(b[1].agn)):t==='idx'?(b[1].idx??-1e9)-(a[1].idx??-1e9):t==='lot'?lotOf(a[0]).localeCompare(lotOf(b[0])):cmpAnim(a[0],b[0])||a[0].localeCompare(b[0],'fr',{numeric:true}));
   return r}
@@ -1159,7 +1170,7 @@ function renderTroupeau(){
   { const lv=$('#f-lot').value, nl=lv?(L.find(x=>x[0]===lv)||[,0])[1]:tot; $('#t-slot').textContent=($('#f-suivi').value==='mpis'?MPLOT:(lv?lotAff(lv):'Tous'))+' ('+nl+')';
     $('#t-sgrp').textContent=cg?cg+' ('+nbG(cg)+')':'Tous';
     const C=['f-cat','f-sexe','f-etat','f-suivi','f-agn','f-stat','f-tri'].map(id=>{const el=$('#'+id); return el&&el.selectedIndex>0?el.options[el.selectedIndex].text:''}).filter(Boolean); $('#t-scrit').textContent=C.length?C.join(' · '):'aucun' }
-  fillSel('#f-agn',[...new Set(Object.values(A()).map(x=>x.lotagn).filter(Boolean))].sort((a,b)=>a-b),v=>'Lot d’agnelage '+v);
+  fillSel('#f-agn',[...new Set(Object.values(lagCalc().m))].sort((a,b)=>a-b),v=>'Groupe d’agnelage '+v);
   renderPeres(); const r=filtre(); $('#t-n').textContent=r.length;
   $('#t-body').innerHTML=r.map(([k,x])=>`<tr class="${sel.has(k)?'sel':''}"><td><input type="checkbox" data-k="${k}" ${sel.has(k)?'checked':''} aria-label="Cocher ${k}"></td><td><b data-fiche="${k}" class="lien${lisere(k)}">${k}</b>${x.niveau?' <span class="c-bad">●</span>':''}</td><td>${esc(lotOf(k)||x.statut)}</td><td>${esc(x.agn||(x.echo||'').replace(/ \(.*\)/,'')||x.cat)}</td><td>${x.idx??''}</td></tr>`).join('');
   $('#t-sel').textContent=sel.size;
