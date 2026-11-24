@@ -132,6 +132,13 @@ body:not(.page) .tabs{grid-template-columns:1fr 1fr!important;gap:10px!important
 .tag.reforme,.lien.reforme{background:var(--bad);color:#fff}
 .tag b{display:block;font-family:var(--display);font-size:60px;line-height:1}
 .sum2{display:block;margin:2px 0 0 22px}
+.bk-band{border-radius:16px;padding:12px 14px;margin:0 0 10px;font-size:17px;line-height:1.35;border:3px solid}
+.bk-band .bk-t{font-weight:800;font-size:19px}
+.bk-ok{background:#e3f3e6;border-color:#2f7d4a;color:#1d4d2e}
+.bk-warn{background:#ffe0b2;border-color:#ef8a00;color:#5a3300}
+.bk-fort{background:#ff9800;border-color:#e65100;color:#2b1600;animation:bkpulse 1.6s ease-in-out infinite}
+@keyframes bkpulse{50%{box-shadow:0 0 0 6px rgba(255,152,0,.35)}}
+body.page #bk-alert{display:none!important}
 .tag.sortie{background:#b9b9b9;color:#444}
 .tag.sortie b{text-decoration:line-through;text-decoration-color:#c62828;text-decoration-thickness:5px}
 .tag .tag-lot{display:block;font-size:15px;font-weight:700;text-align:center;margin-top:4px;opacity:.9}
@@ -226,7 +233,7 @@ tr.sel td{background:var(--okbg)}
   </div>
 
   <div id="pbar"><button id="p-back" class="btn2 b-retour" type="button">← Retour</button><button id="p-home" class="btn2" type="button" title="Accueil" aria-label="Retour à l'accueil" style="font-size:19px;padding:4px 8px">🏠</button><b id="p-titre"></b><button id="p-print" type="button" class="lect-b" title="Imprimer / PDF" aria-label="Imprimer ou PDF" style="font-size:18px;padding:3px 9px">🖨</button><button id="p-lect" type="button" class="lect-b"></button></div><div id="p-camp" class="hint"></div>
-  <div id="bk-alert" class="state err" hidden style="margin:0 0 8px"></div>
+  <div id="bk-alert" class="bk-band" hidden></div>
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-t="fiche" aria-selected="true">Fiche</button>
     <button type="button" role="tab" data-t="liste" aria-selected="false">Liste</button>
@@ -672,7 +679,10 @@ tr.sel td{background:var(--okbg)}
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const BK_IGN=/^cb_(where|bk|bkn|bkt|tab|tv|smode|liste|rech|rch|trbi|keenan|data|lreg|son|spar|ttp|tb|esess_vue)$/; let BK_PRET=false; setTimeout(()=>{BK_PRET=true},4000);
+// chaque enregistrement de données compte comme une modification à sauvegarder (pas pendant le démarrage)
+function bkInc(k){ if(!BK_PRET||!k.startsWith('cb_')||BK_IGN.test(k)) return; try{localStorage.setItem('cb_bkn',String(+(localStorage.getItem('cb_bkn')||0)+1)); if(typeof bkCheck==='function') clearTimeout(bkInc.t), bkInc.t=setTimeout(bkCheck,300)}catch(e){} }
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v)); bkInc(k)}catch(e){}}};
 let DB=LS.get('cb_data',null);           // {date, animaux:{plaque:{...}}}
 let tab='accueil';
 // chaque thème : un choix « Saisie » ou « Consultation » ; les thèmes de Mouvements reviennent à Mouvements
@@ -1779,16 +1789,24 @@ function bkData(){const o={}; for(let i=0;i<localStorage.length;i++){const k=loc
 function bkNom(){return 'claude_brebis_sauvegarde_'+auj()+'.json'}
 $('#inst').onclick=async()=>{ if(!INSTALL) return; INSTALL.prompt(); try{await INSTALL.userChoice}catch(e){} INSTALL=null; $('#inst').hidden=true};
 $('#bk-save').onclick=()=>{const t=JSON.stringify(bkData()); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'application/json'})); a.download=bkNom(); document.body.appendChild(a); a.click(); a.remove();
-  LS.set('cb_bk',auj()); $('#bk-st').textContent='Sauvegarde enregistrée dans Téléchargements : '+bkNom(); $('#bk-st').className='state ok'; bkCheck()};
+  bkFait(); $('#bk-st').textContent='Sauvegarde enregistrée dans Téléchargements : '+bkNom(); $('#bk-st').className='state ok'; toast('Sauvegarde enregistrée dans Téléchargements')};
 $('#bk-send').onclick=async e=>{const t=JSON.stringify(bkData()); const f=new File([t],bkNom(),{type:'application/json'});
-  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sauvegarde OviLink'}); LS.set('cb_bk',auj()); bkCheck(); return} }catch(err){ if(err.name==='AbortError') return }
-  envoyer('OviLink – sauvegarde du '+fdate()+'\n'+t,e.target); LS.set('cb_bk',auj()); bkCheck()};
+  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sauvegarde OviLink'}); bkFait(); return} }catch(err){ if(err.name==='AbortError') return }
+  envoyer('OviLink – sauvegarde du '+fdate()+'\n'+t,e.target); bkFait()};
 $('#bk-file').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(r.result); if(!['OviLink','Claude Brebis'].includes(j.app)||!j.cles) throw new Error('ce n’est pas une sauvegarde OviLink');
     Object.entries(j.cles).forEach(([k,v])=>localStorage.setItem(k,v)); $('#bk-st').textContent='Sauvegarde du '+fdate(j.quand)+' restaurée. Rechargement…'; $('#bk-st').className='state ok'; setTimeout(()=>location.reload(),1200)}
   catch(err){$('#bk-st').textContent='Restauration impossible : '+err.message; $('#bk-st').className='state err'}}; r.readAsText(f)});
-function bkCheck(){const d=LS.get('cb_bk',null); const saisies=(LS.get('cb_soins',{T:[]}).T||[]).length+Object.keys(LS.get('cb_echo',{})).length+(LS.get('cb_moves',[])||[]).length;
-  const j=d?Math.round((new Date(auj())-new Date(d))/86400000):null; const al=$('#bk-alert');
-  if(saisies&&(j==null||j>=7)){al.hidden=false; al.innerHTML=(j==null?'⚠ Aucune sauvegarde faite.':'⚠ Dernière sauvegarde il y a '+j+' jours.')+' <button type="button" class="btn2" id="bk-go">Sauvegarder maintenant</button>'; $('#bk-go').onclick=()=>$('#bk-save').click()} else al.hidden=true}
+function bkFait(){LS.set('cb_bk',auj()); try{localStorage.setItem('cb_bkt',new Date().toISOString()); localStorage.setItem('cb_bkn','0')}catch(e){} bkCheck()}
+/* Bandeau permanent de l'accueil : depuis quand la dernière sauvegarde, combien de modifications depuis.
+   Vert : rien à sauvegarder · orange : à faire · orange vif qui clignote : beaucoup de saisies ou plus de 7 jours. */
+function bkCheck(){const al=$('#bk-alert'); if(!al) return; const n=+(localStorage.getItem('cb_bkn')||0), ti=localStorage.getItem('cb_bkt'), d=LS.get('cb_bk',null);
+  const quand=ti?new Date(ti):(d?new Date(d+'T12:00:00'):null), j=quand?Math.floor((new Date(auj()+'T12:00:00')-new Date(quand.toISOString().slice(0,10)+'T12:00:00'))/86400000):null;
+  const qTxt=!quand?'jamais':j===0?(ti?'aujourd’hui à '+quand.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}).replace(':',' h '):'aujourd’hui'):j===1?'hier':'il y a '+j+' jours';
+  const niv=(n===0&&quand)?'ok':(n>=20||j==null||j>=7)?'fort':'warn';
+  al.hidden=false; al.className='bk-band bk-'+niv;
+  al.innerHTML=`<div class="bk-t">💾 Sauvegarde</div><div>Dernière : <b>${qTxt}</b></div><div>${n===0?'Aucune modification depuis':'<b>'+n+'</b> modification'+(n>1?'s':'')+' depuis'}</div>
+   <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn" id="bk-go" style="flex:1">💾 Sauvegarder</button><button type="button" class="btn2" id="bk-sh" style="flex:1">📤 Envoyer</button></div>`;
+  $('#bk-go').onclick=()=>$('#bk-save').click(); $('#bk-sh').onclick=()=>$('#bk-send').click()}
 bkCheck();
 // ---- bouton Retour du téléphone : reste dans l'appli
 let QUIT=0;
