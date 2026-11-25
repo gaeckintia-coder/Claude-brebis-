@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calcul de ration</title>
+<style>
+/* Outil de calcul de ration, même principe que les fiches du contrôle laitier (CDEO).
+   Valeurs des aliments par kg BRUT, comme sur les fiches. Séparé d'OviLink pour l'instant. */
+:root{--bg:#eef1ec;--card:#fff;--fg:#1d2a22;--mute:#5d6b62;--line:#d3dbd4;--accent:#2f6b4f;--warn:#b4600e;--warnbg:#fbe9d6;--ok:#2f6b4f;--okbg:#dff1e6;--rust:#9a4a22;--valid:#b3261e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#121915;--card:#1b241f;--fg:#e6ece7;--mute:#9aa8a0;--line:#2e3a33;--accent:#7cc39f;--warn:#e7a253;--warnbg:#3d2c18;--ok:#7cc39f;--okbg:#1f3a2b;--rust:#d27c4f;--valid:#e0635a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121915;--card:#1b241f;--fg:#e6ece7;--mute:#9aa8a0;--line:#2e3a33;--accent:#7cc39f;--warn:#e7a253;--warnbg:#3d2c18;--ok:#7cc39f;--okbg:#1f3a2b;--rust:#d27c4f;--valid:#e0635a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 "Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:600px;margin:0 auto;padding:12px 16px 90px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:24px;margin:0} h2{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--mute);margin:0 0 6px}
+button{font:inherit;font-weight:700;border-radius:10px;padding:11px 14px;cursor:pointer;border:0}
+.btn{background:var(--accent);color:#fff}.btn2{background:var(--card);color:var(--fg);border:1px solid var(--line)}
+.b-retour{background:var(--card);color:var(--rust);border:2px solid var(--rust)}
+.b-valid{background:var(--valid);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.hint{font-size:13px;color:var(--mute)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lg{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:4px 0}
+.lg b{font-size:18px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .mute{color:var(--mute)}
+.big4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.big4 div{background:var(--bg);border-radius:12px;padding:8px 10px}
+.big4 b{display:block;font-size:26px;line-height:1.1}
+.big4 .warn{background:var(--warnbg)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:5px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:12px;color:var(--mute);font-weight:700}
+.ind{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+.ind:last-child{border-bottom:0}
+.ind b{font-size:18px;text-align:right}
+.ind .hint{grid-column:1 / -1}
+.zbar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;z-index:5}
+.zbar button{flex:1;max-width:280px;padding:15px;font-size:18px}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--mute);font-weight:700;min-width:0}
+input,select{font:inherit;font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;min-width:0}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ligne{display:grid;grid-template-columns:minmax(0,1fr) 5.5em auto;gap:6px;align-items:end;padding:6px 0;border-bottom:1px solid var(--line)}
+.live{position:sticky;top:0;z-index:4;background:var(--bg);padding:6px 0}
+.live .pills .pill{font-size:13px}
+.note-aoc{border-left:4px solid var(--warn);padding-left:8px}
+[hidden]{display:none!important}
+.btab td,.btab th{padding:4px 5px;font-size:13px}.btab td:first-child,.btab th:first-child{position:sticky;left:0;background:var(--card);z-index:1;min-width:92px}.btab div.info{position:sticky;left:0;width:min(520px,calc(100vw - 70px));white-space:normal;text-align:left}.btab tr.sep td,.btab td:has(>div.info){position:static;background:none}.btab tr.sep td{border-top:3px solid var(--fg);padding-top:10px}.btab input{padding:4px;font-size:15px}.btab small{font-size:11px}
+@media print{.noprint,.zbar{display:none!important} body{background:#fff;color:#000} .card{border:1px solid #999;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+/* ---------- Données de départ : les 3 fiches du contrôleur laitier (photos du 25/11/2026) ----------
+   Toutes les valeurs sont PAR KG BRUT (c'est ce qui redonne les totaux des fiches).
+   Champs : ms (taux de MS), ufl, pdin, pdie (g), p, ca (g), uem, prix (€/kg brut), pdia, mat, cb, ndf, adf, adl, mg, amidon (g),
+   dmo, it3 (repris des fiches, sens à préciser), aoc (1 = zone AOC), ferm (fourrage fermenté), type. */
+const LIB0=[
+ {id:'enr',nom:'Enrubannés',type:'fourrage',ms:.70,ufl:.49,pdin:56,pdie:53,p:2.1,ca:4.6,uem:.95,prix:.10,pdia:21,mat:88,cb:210,ndf:420,adf:245,adl:0,mg:14,amidon:0,dmo:890,it3:5.5,aoc:1,ferm:1},
+ {id:'enrb',nom:'Enrubannés foin bon',type:'fourrage',ms:.75,ufl:.53,pdin:60,pdie:56,p:2.3,ca:4.9,uem:1.01,prix:.10,pdia:23,mat:94,cb:225,ndf:450,adf:263,adl:0,mg:15,amidon:0,dmo:890,it3:5.5,aoc:1,ferm:1},
+ {id:'luz93',nom:'Foin luzerne 2-3e coupe (MS 93 %)',type:'fourrage',ms:.93,ufl:.61,pdin:110,pdie:90,p:2.3,ca:14,uem:.90,prix:.32,pdia:45,mat:177,cb:307,ndf:499,adf:318,adl:0,mg:23,amidon:0,dmo:880,it3:3.4,aoc:0,ferm:0},
+ {id:'luz87',nom:'Foin luzerne 2-3e coupe (MS 87 %)',type:'fourrage',ms:.87,ufl:.61,pdin:110,pdie:90,p:2.3,ca:14,uem:.90,prix:.32,pdia:42,mat:165,cb:287,ndf:467,adf:298,adl:0,mg:22,amidon:0,dmo:880,it3:3.4,aoc:0,ferm:0},
+ {id:'reg',nom:'Regain bon',type:'fourrage',ms:.70,ufl:.63,pdin:74,pdie:74,p:3,ca:5.3,uem:1.22,prix:.17,pdia:35,mat:95,cb:175,ndf:420,adf:196,adl:0,mg:23,amidon:0,dmo:880,it3:4,aoc:1,ferm:0},
+ {id:'pat',nom:'Pâture hiver',type:'fourrage',ms:.17,ufl:.17,pdin:25,pdie:22,p:.5,ca:.8,uem:.15,prix:.013,pdia:9,mat:36,cb:36,ndf:85,adf:43,adl:0,mg:5,amidon:0,dmo:900,it3:10,aoc:1,ferm:0},
+ {id:'ovi',nom:'Ovipro 26 NT',type:'concentre',ms:.87,ufl:.90,pdin:185,pdie:132,p:8,ca:9,uem:0,prix:0,pdia:0,mat:260,cb:0,ndf:0,adf:0,adl:0,mg:0,amidon:0,dmo:0,it3:11,aoc:0,ferm:0},
+ {id:'mel',nom:'Mélovigest NT',type:'fibre',ms:.87,ufl:.99,pdin:119,pdie:105,p:7,ca:7,uem:0,prix:0,pdia:0,mat:170,cb:0,ndf:0,adf:0,adl:0,mg:0,amidon:0,dmo:0,it3:0,aoc:0,ferm:0}];
+const RAT0=[
+ {id:'fg',nom:'Fin de gestation (fiche CDEO)',stade:'fg',pv:75,prol:1.6,ecart:2,lait:0,tb:60,tp:45,prixLait:1.178,
+  rec:{ms:1.66,ufl:1.68,pdi:162,p:8.0,ca:16.6,uem:1.80},l:[['enr',1.2],['luz93',.7],['ovi',.1],['mel',.5]]},
+ {id:'agx',nom:'Avec agneaux 1,9 L (fiche CDEO)',stade:'agx',pv:65,prol:0,ecart:0,lait:1.9,tb:60,tp:45,prixLait:1.178,
+  rec:{ms:2.60,ufl:2.28,pdi:290,p:8.925,ca:18.1,uem:2.87},l:[['enrb',1.44],['luz87',.85],['ovi',.27],['mel',.70]]},
+ {id:'pic',nom:'Traite 2,6 L au pic (fiche CDEO)',stade:'traite',pv:65,prol:0,ecart:0,lait:2.6,tb:60,tp:45,prixLait:1.178,
+  rec:{ms:2.95,ufl:2.80,pdi:372,p:10.85,ca:23,uem:3.08},l:[['enrb',.3],['luz93',1.5],['reg',1],['pat',0],['ovi',.25],['mel',.75]]}];
+const STADES={fg:'Fin de gestation',agx:'Lactation avec agneaux',traite:'Traite',tarie:'Tarie / entretien',autre:'Autre'};
+const TYPES={fourrage:'Fourrage',concentre:'Concentré',fibre:'Mélange fibré'};
+const NUM=['ms','ufl','pdin','pdie','p','ca','uem','prix','pdia','mat','cb','ndf','adf','adl','mg','amidon','dmo','it3'];
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(n,d=0)=>(isFinite(n)?+n:0).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const num=v=>{const x=parseFloat(String(v).replace(',','.')); return isFinite(x)?x:0};
+const clone=o=>JSON.parse(JSON.stringify(o));
+function load(k,d){try{const v=localStorage.getItem('rt_'+k); return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem('rt_'+k,JSON.stringify(v))}catch(e){}}
+let LIB=load('lib',null)||clone(LIB0), RAT=load('rat',null)||clone(RAT0);
+const alim=id=>LIB.find(a=>a.id===id);
+
+/* ---------- Calcul : comme les fiches CDEO ----------
+   Apports = somme (kg brut × valeur par kg brut). IT3 = somme (kg MS × IT3) (c'est ce qui redonne les fiches).
+   PDI = le plus petit de PDIN et PDIE. Couverture = apport ÷ recommandation. */
+function calc(r){
+  const T={ms:0,it3:0,four:0,conc:0,fib:0,aoc:0,ferm:0}; NUM.forEach(k=>{if(k!=='ms'&&k!=='it3') T[k]=0});
+  const lignes=r.l.map(([id,q])=>({a:alim(id),q:+q||0})).filter(x=>x.a);
+  lignes.forEach(({a,q})=>{const m=q*(+a.ms||0); T.ms+=m; T.it3+=m*(+a.it3||0);
+    ['ufl','pdin','pdie','p','ca','uem','prix','pdia','mat','cb','ndf','adf','adl','mg','amidon'].forEach(k=>T[k]+=q*(+a[k]||0));
+    if(a.type==='fourrage') T.four+=m; else if(a.type==='concentre') T.conc+=m; else T.fib+=m;
+    if(+a.aoc===1) T.aoc+=m; if(+a.ferm===1) T.ferm+=q});
+  const R=r.rec||{}, pdi=Math.min(T.pdin,T.pdie), pc=(a,b)=>b>0?a/b*100:null;
+  const lait=+r.lait||0, coutL=lait>0?T.prix/lait:null;
+  return {T,lignes,pdi,R,
+    couv:{ufl:pc(T.ufl,R.ufl),pdin:pc(T.pdin,R.pdi),pdie:pc(T.pdie,R.pdi),uem:pc(T.uem,R.uem),ms:pc(T.ms,R.ms)},
+    densE:T.ms>0?T.ufl/T.ms:0, densN:T.ms>0?pdi/T.ms:0,
+    pdinpdie:T.ufl>0?(T.pdin-T.pdie)/T.ufl:0, pdieufl:T.ufl>0?T.pdie/T.ufl:0,
+    pco:T.ms>0?T.conc/T.ms*100:0, ni:(+r.pv>0)?T.ms/(+r.pv)*100:0, bpr:(T.pdin-T.pdie)*1.529,
+    parKg:k=>T.ms>0?T[k]/T.ms:0, coutL, mcaL:coutL!=null?(+r.prixLait||0)-coutL:null, mcaB:coutL!=null?((+r.prixLait||0)-coutL)*lait:null};
+}
+/* Recommandation estimée pour la lactation, 65 kg, TB 60 / TP 45 : droite passant par les 2 fiches CDEO
+   (1,9 L avec agneaux et 2,6 L au pic). Approximation à vérifier avec le contrôleur, pas une formule officielle. */
+function estimeLact(L){return {ms:+(1.65+.5*L).toFixed(2),ufl:+(.8686+.742857*L).toFixed(2),pdi:Math.round(67.43+117.143*L),p:+(3.7+2.75*L).toFixed(2),ca:+(4.8+7*L).toFixed(1),uem:+(2.30+.3*L).toFixed(2)}}
+
+/* ---------- Écrans ---------- */
+let V={vue:'liste',id:null,ask:null,brouillon:null};
+function go(vue,id){V={vue,id:id??null,ask:null,brouillon:null}; render(); window.scrollTo(0,0)}
+const st=(v,lo,hi)=>v==null?'mute':(lo!=null&&v<lo)||(hi!=null&&v>hi)?'warn':'ok';
+const pct=v=>v==null?'–':nf(v,0)+' %';
+
+function render(){const a=$('#app');
+  if(V.vue==='liste') a.innerHTML=vListe();
+  else if(V.vue==='ration') a.innerHTML=vRation(RAT.find(r=>r.id===V.id));
+  else if(V.vue==='edit') a.innerHTML=vEdit();
+  else if(V.vue==='alims') a.innerHTML=vAlims();
+  else if(V.vue==='alim') a.innerHTML=vAlim();
+  else if(V.vue==='base') a.innerHTML=vBase();
+}
+function vListe(){
+  return `<h1>Calcul de ration</h1><div class="hint">Même calcul que les fiches du contrôle laitier.</div><div class="hint">Valeurs des aliments par kg brut.</div>
+  <button class="lg" data-go="base"><span><b>Mélange de base (KEENAN)</b><br><span class="hint">1 part = 1 brebis pleine · gestation, mères d'agneaux, traite</span></span><span>›</span></button>
+  <div class="card"><h2>Rations</h2>${RAT.map(r=>{const c=calc(r);
+    return `<button class="lg" data-open="${r.id}"><span><b>${esc(r.nom)}</b><br><span class="hint">${nf(c.T.ms,2)} kg MS · ${nf(c.T.ufl,2)} UFL</span><br><span class="pills"><span class="pill ${st(c.couv.ufl,95,115)}">UFL ${pct(c.couv.ufl)}</span><span class="pill ${st(c.couv.pdie,95)}">PDIE ${pct(c.couv.pdie)}</span><span class="pill ${st(c.couv.uem,null,100)}">Encombrement ${pct(c.couv.uem)}</span></span></span><span aria-hidden="true">›</span></button>`}).join('')}
+  <button class="btn" data-new="1" style="width:100%;margin-top:6px">＋ Nouvelle ration</button></div>
+  <button class="lg" data-go="alims"><span><b>Aliments</b><br><span class="hint">${LIB.length} aliments · valeurs par kg brut</span></span><span>›</span></button>`}
+
+function vRation(r){ if(!r) return vListe(); const c=calc(r), T=c.T, R=c.R;
+  const rowT=(lbl,ap,rec,d,cv)=>`<tr><td>${lbl}</td><td>${nf(ap,d)}</td><td>${rec==null?'–':nf(rec,d)}</td><td>${rec==null?'–':(ap-rec>=0?'+':'')+nf(ap-rec,d)}</td><td class="${cv?cv[1]:''}">${cv?pct(cv[0]):''}</td></tr>`;
+  const ind=(lbl,val,rep,cl)=>`<div class="ind"><span>${lbl}</span><b class="${cl||''}">${val}</b>${rep?`<span class="hint">${rep}</span>`:''}</div>`;
+  const fib=(lbl,k,min)=>ind(lbl,nf(c.parKg(k),0)+' g/kg MS',min?'repère de la fiche : plus de '+min:'',min?st(c.parKg(k),min):'');
+  return `<div class="row noprint"><button class="b-retour" data-go="liste">← Retour</button></div>
+  <h1>${esc(r.nom)}</h1>
+  <div class="hint">${STADES[r.stade]||''}</div>
+  <div class="hint">Format ${nf(r.pv)} kg${r.stade==='fg'?` · prolificité ${nf(r.prol,1)} · écart mise bas ${nf(r.ecart)}`:''}</div>
+  ${+r.lait>0?`<div class="hint">Objectif lait ${nf(r.lait,1)} L · TB ${nf(r.tb)} · TP ${nf(r.tp)}</div>`:''}
+  <div class="card"><h2>Couverture des besoins</h2><div class="big4">
+    <div class="${st(c.couv.ufl,95,115)==='warn'?'warn':''}"><b>${pct(c.couv.ufl)}</b>énergie (UFL)</div>
+    <div class="${st(c.couv.pdie,95)==='warn'?'warn':''}"><b>${pct(c.couv.pdie)}</b>PDIE</div>
+    <div class="${st(c.couv.pdin,95)==='warn'?'warn':''}"><b>${pct(c.couv.pdin)}</b>PDIN</div>
+    <div class="${st(c.couv.uem,null,100)==='warn'?'warn':''}"><b>${pct(c.couv.uem)}</b>encombrement (UEM)</div></div>
+    <div class="hint" style="margin-top:6px">Encombrement : au-dessus de 100 %, la ration est plus encombrante que ce que la brebis peut manger.</div></div>
+  <div class="card"><h2>Apports et recommandation</h2><table><thead><tr><th></th><th>Apports</th><th>Recom.</th><th>Écart</th><th>Couv.</th></tr></thead><tbody>
+    ${rowT('MS (kg)',T.ms,R.ms,2)}${rowT('UFL',T.ufl,R.ufl,2,[c.couv.ufl,st(c.couv.ufl,95,115)])}${rowT('PDIN (g)',T.pdin,R.pdi,0,[c.couv.pdin,st(c.couv.pdin,95)])}${rowT('PDIE (g)',T.pdie,R.pdi,0,[c.couv.pdie,st(c.couv.pdie,95)])}
+    ${rowT('P (g)',T.p,R.p,1)}${rowT('Ca (g)',T.ca,R.ca,1)}${rowT('UEM',T.uem,R.uem,2)}</tbody></table>
+    <div class="hint">Recommandation : recopiée de la fiche du contrôleur, ou saisie à la main.</div></div>
+  <div class="card"><h2>Équilibre de la ration</h2>
+    ${ind('Densité énergétique',nf(c.densE,2)+' UFL/kg MS')}
+    ${ind('Densité azotée',nf(c.densN,0)+' g PDI/kg MS','repère de la fiche : 100',st(c.densN,95,110))}
+    ${ind('(PDIN − PDIE) / UFL',nf(c.pdinpdie,0),'repère de la fiche : moins de 12 (moins de 25 pour un expert)',st(c.pdinpdie,null,25))}
+    ${ind('PDIE / UFL',nf(c.pdieufl,0),'repère de la fiche : 115 à 135',st(c.pdieufl,115,135))}
+    ${ind('BPR',nf(c.bpr,0),'formule de la fiche : (PDIN − PDIE) × 1,529 · repère 0 · 2 à 4 de moins que les fiches, écart pas expliqué',st(c.bpr,-25,25))}
+    ${ind('Part de concentrés (ID PCO)',nf(c.pco,1)+' %','repère de la fiche : moins de 25 %',st(c.pco,null,25))}
+    ${ind('Niveau d’ingéré (ID NI)',nf(c.ni,1)+' % du poids','kg de MS ÷ poids de l’animal')}</div>
+  <div class="card"><h2>Par kg de matière sèche</h2>
+    ${fib('PDIA','pdia')}${fib('MAT (protéines)','mat')}${fib('Cellulose brute (CB)','cb',180)}${fib('NDF','ndf',350)}${fib('ADF','adf',200)}${fib('ADL','adl')}${fib('Matière grasse','mg')}${fib('Amidon','amidon')}
+    ${ind('IT3 (total)',nf(T.it3,1),'calcul repris de la fiche (kg MS × IT3), sens à préciser avec le contrôleur')}</div>
+  <div class="card"><h2>Catégories d’aliments</h2>
+    ${ind('MS totale',nf(T.ms,2)+' kg')}
+    ${ind('Fourrages (ration de base)',nf(T.four,2)+' kg · '+nf(T.ms?T.four/T.ms*100:0,1)+' %','repère de la fiche : plus de 40 %',st(T.ms?T.four/T.ms*100:0,40))}
+    ${ind('Concentrés',nf(T.conc,2)+' kg · '+nf(c.pco,1)+' %','repère de la fiche : moins de 40 %',st(c.pco,null,40))}
+    ${ind('Mélange fibré',nf(T.fib,2)+' kg · '+nf(T.ms?T.fib/T.ms*100:0,1)+' %')}
+    ${ind('Zone AOC',nf(T.aoc,2)+' kg MS · '+nf(T.ms?T.aoc/T.ms*100:0,1)+' %','critère AOC noté sur la fiche : mini 0,6 (à faire préciser)')}
+    ${ind('Fourrage fermenté (brut)',nf(T.ferm,2)+' kg','critère AOC noté sur la fiche : maxi 1 à 2,5 kg (à faire préciser)')}
+    <div class="hint note-aoc" style="margin-top:6px">Critère « concentré maxi 0,8 » noté sur la fiche : unité (kg brut ou MS) à faire préciser.</div></div>
+  ${+r.lait>0?`<div class="card"><h2>Économie</h2>
+    ${ind('Coût de la ration',nf(T.prix,2)+' € par brebis et par jour')}
+    ${ind('Coût par litre',nf(c.coutL,2)+' €')}
+    ${ind('Prix du lait',nf(r.prixLait,3)+' €/L')}
+    ${ind('Marge sur coût alimentaire par litre',nf(c.mcaL,2)+' €')}
+    ${ind('Marge sur coût alimentaire par brebis',nf(c.mcaB,2)+' € par jour')}
+    ${c.lignes.some(x=>!(+x.a.prix>0)&&x.q>0)?`<div class="hint warn">Prix manquant pour : ${c.lignes.filter(x=>!(+x.a.prix>0)&&x.q>0).map(x=>esc(x.a.nom)).join(', ')}.</div>`:''}</div>`:''}
+  <div class="card"><h2>Composition</h2><table><thead><tr><th>Aliment</th><th>kg brut</th><th>kg MS</th></tr></thead><tbody>
+    ${c.lignes.map(x=>`<tr><td>${esc(x.a.nom)}<br><span class="hint">${TYPES[x.a.type]||''}</span></td><td>${nf(x.q,2)}</td><td>${nf(x.q*x.a.ms,2)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="row noprint"><button class="btn" data-edit="${r.id}">✏️ Modifier</button><button class="btn2" data-dup="${r.id}">Dupliquer</button><button class="btn2" data-print="1">🖨 Imprimer</button></div>
+  <div class="row noprint"><button class="btn2 b-retour" data-del="${r.id}">${V.ask==='del'?'Confirmer : supprimer':'🗑 Supprimer cette ration'}</button></div>`}
+
+function vEdit(){const r=V.brouillon, c=calc(r), R=r.rec;
+  const inp=(k,lbl,v,step)=>`<label class="f">${lbl}<input data-f="${k}" inputmode="decimal" value="${v??''}"></label>`;
+  return `<div class="live card"><div class="pills"><span class="pill mute">${nf(c.T.ms,2)} kg MS</span><span class="pill ${st(c.couv.ufl,95,115)}">UFL ${pct(c.couv.ufl)}</span><span class="pill ${st(c.couv.pdie,95)}">PDIE ${pct(c.couv.pdie)}</span><span class="pill ${st(c.couv.pdin,95)}">PDIN ${pct(c.couv.pdin)}</span><span class="pill ${st(c.couv.uem,null,100)}">UEM ${pct(c.couv.uem)}</span>${+r.lait>0?`<span class="pill mute">${nf(c.coutL,2)} €/L</span>`:''}</div></div>
+  <h1>${V.id?'Modifier la ration':'Nouvelle ration'}</h1>
+  <div class="card"><label class="f">Nom<input data-f="nom" value="${esc(r.nom)}"></label>
+    <label class="f" style="margin-top:6px">Stade<select data-f="stade">${Object.entries(STADES).map(([k,t])=>`<option value="${k}"${r.stade===k?' selected':''}>${t}</option>`).join('')}</select></label>
+    <div class="g3" style="margin-top:6px">${inp('pv','Format (kg)',r.pv)}${r.stade==='fg'?inp('prol','Prolificité',r.prol)+inp('ecart','Écart mise bas',r.ecart):inp('lait','Objectif lait (L)',r.lait)+inp('prixLait','Prix du lait (€/L)',r.prixLait)}</div>
+    ${r.stade!=='fg'?`<div class="g3" style="margin-top:6px">${inp('tb','TB',r.tb)}${inp('tp','TP',r.tp)}</div>`:''}</div>
+  <div class="card"><h2>Composition (kg brut par brebis et par jour)</h2>
+    ${r.l.map(([id,q],i)=>`<div class="ligne"><label class="f">Aliment<select data-li="${i}">${LIB.map(a=>`<option value="${a.id}"${a.id===id?' selected':''}>${esc(a.nom)}</option>`).join('')}</select></label><label class="f">kg brut<input data-lq="${i}" inputmode="decimal" value="${q}"></label><button class="btn2" data-lrm="${i}" aria-label="Enlever">✕</button></div>`).join('')}
+    <button class="btn2" data-ladd="1" style="width:100%;margin-top:8px">＋ Ajouter un aliment</button></div>
+  <div class="card"><h2>Recommandation (besoins)</h2><div class="hint">Recopier les chiffres de la fiche du contrôleur.</div>
+    <div class="g3" style="margin-top:6px">${inp('rec.ms','MS (kg)',R.ms)}${inp('rec.ufl','UFL',R.ufl)}${inp('rec.pdi','PDI (g)',R.pdi)}${inp('rec.p','P (g)',R.p)}${inp('rec.ca','Ca (g)',R.ca)}${inp('rec.uem','UEM',R.uem)}</div>
+    ${(r.stade==='traite'||r.stade==='agx')&&+r.lait>0?`<button class="btn2" data-estime="1" style="width:100%;margin-top:8px">Estimer pour ${nf(r.lait,1)} L</button><div class="hint">Estimation tirée des 2 fiches du contrôleur (65 kg, 1,9 L et 2,6 L) : approximation, à faire vérifier.</div>`:''}</div>
+  <div class="zbar"><button class="b-retour" data-ann="1">Annuler</button><button class="b-valid" data-enr="1">Enregistrer</button></div>`}
+
+function vAlims(){return `<div class="row"><button class="b-retour" data-go="liste">← Retour</button></div><h1>Aliments</h1>
+  <div class="hint">Valeurs par kg brut, comme sur les fiches du contrôleur.</div>
+  ${LIB.map(a=>`<button class="lg" data-alim="${a.id}"><span><b>${esc(a.nom)}</b><br><span class="hint">${TYPES[a.type]} · MS ${nf(a.ms*100)} % · ${nf(a.ufl,2)} UFL · PDIN ${nf(a.pdin)} · PDIE ${nf(a.pdie)}</span>${+a.prix>0?'':'<br><span class="hint warn">prix à saisir</span>'}</span><span>›</span></button>`).join('')}
+  <button class="btn" data-anew="1" style="width:100%">＋ Nouvel aliment</button>`}
+
+function vAlim(){const a=V.brouillon, inp=(k,lbl)=>`<label class="f">${lbl}<input data-a="${k}" inputmode="decimal" value="${a[k]??''}"></label>`;
+  return `<h1>${V.id?esc(a.nom):'Nouvel aliment'}</h1>
+  <div class="card"><label class="f">Nom<input data-a="nom" inputmode="text" value="${esc(a.nom)}"></label>
+    <label class="f" style="margin-top:6px">Type<select data-a="type">${Object.entries(TYPES).map(([k,t])=>`<option value="${k}"${a.type===k?' selected':''}>${t}</option>`).join('')}</select></label>
+    <div class="g2" style="margin-top:6px"><label class="f">Zone AOC<select data-a="aoc"><option value="1"${+a.aoc===1?' selected':''}>Oui</option><option value="0"${+a.aoc!==1?' selected':''}>Non</option></select></label><label class="f">Fourrage fermenté<select data-a="ferm"><option value="1"${+a.ferm===1?' selected':''}>Oui</option><option value="0"${+a.ferm!==1?' selected':''}>Non</option></select></label></div></div>
+  <div class="card"><h2>Par kg brut</h2><div class="g3">${inp('ms','Taux de MS (0 à 1)')}${inp('ufl','UFL')}${inp('uem','UEM')}${inp('pdin','PDIN (g)')}${inp('pdie','PDIE (g)')}${inp('pdia','PDIA (g)')}${inp('mat','MAT (g)')}${inp('p','P (g)')}${inp('ca','Ca (g)')}${inp('cb','CB (g)')}${inp('ndf','NDF (g)')}${inp('adf','ADF (g)')}${inp('adl','ADL (g)')}${inp('mg','MG (g)')}${inp('amidon','Amidon (g)')}${inp('prix','Prix (€/kg brut)')}${inp('dmo','Dmo')}${inp('it3','IT3')}</div></div>
+  ${V.id?`<button class="btn2 b-retour" data-adel="1" style="width:100%">${V.ask==='adel'?'Confirmer : supprimer cet aliment':'🗑 Supprimer cet aliment'}</button>`:''}
+  <div class="zbar"><button class="b-retour" data-aann="1">Annuler</button><button class="b-valid" data-aenr="1">Enregistrer</button></div>`}
+
+/* ---------- Actions ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; const d=b.dataset;
+  if(d.go){go(d.go); return}
+  if(d.open){go('ration',d.open); return}
+  if(d.print){window.print(); return}
+  if(d.new){V={vue:'edit',id:null,ask:null,brouillon:{id:'r'+Date.now(),nom:'Nouvelle ration',stade:'traite',pv:65,prol:1.6,ecart:0,lait:2,tb:60,tp:45,prixLait:1.178,rec:{},l:[]}}; render(); scrollTo(0,0); return}
+  if(d.edit){V={vue:'edit',id:d.edit,ask:null,brouillon:clone(RAT.find(r=>r.id===d.edit))}; render(); scrollTo(0,0); return}
+  if(d.dup){const r=clone(RAT.find(x=>x.id===d.dup)); r.id='r'+Date.now(); r.nom+=' (copie)'; RAT.push(r); save('rat',RAT); go('ration',r.id); return}
+  if(d.del){if(V.ask!=='del'){V.ask='del'; render(); setTimeout(()=>{if(V.ask==='del'){V.ask=null; render()}},5000); return} RAT=RAT.filter(r=>r.id!==d.del); save('rat',RAT); go('liste'); return}
+  if(d.ladd){V.brouillon.l.push([LIB[0].id,0]); render(); return}
+  if(d.lrm!=null){V.brouillon.l.splice(+d.lrm,1); render(); return}
+  if(d.estime){Object.assign(V.brouillon.rec,estimeLact(+V.brouillon.lait)); render(); return}
+  if(d.ann){const id=V.id; id?go('ration',id):go('liste'); return}
+  if(d.enr){const r=V.brouillon; const i=RAT.findIndex(x=>x.id===r.id); if(i<0) RAT.push(r); else RAT[i]=r; save('rat',RAT); go('ration',r.id); return}
+  if(d.alim){V={vue:'alim',id:d.alim,ask:null,brouillon:clone(alim(d.alim))}; render(); scrollTo(0,0); return}
+  if(d.anew){V={vue:'alim',id:null,ask:null,brouillon:{id:'a'+Date.now(),nom:'Nouvel aliment',type:'fourrage',ms:.85,ufl:0,pdin:0,pdie:0,p:0,ca:0,uem:0,prix:0,pdia:0,mat:0,cb:0,ndf:0,adf:0,adl:0,mg:0,amidon:0,dmo:0,it3:0,aoc:0,ferm:0}}; render(); scrollTo(0,0); return}
+  if(d.aann){go('alims'); return}
+  if(d.aenr){const a=V.brouillon; NUM.forEach(k=>a[k]=num(a[k])); a.aoc=+a.aoc; a.ferm=+a.ferm; if(!(a.ms>0&&a.ms<=1)){alertMs(); return}
+    const i=LIB.findIndex(x=>x.id===a.id); if(i<0) LIB.push(a); else LIB[i]=a; save('lib',LIB); go('alims'); return}
+  if(d.adel){const used=RAT.filter(r=>r.l.some(([id])=>id===V.id)); if(used.length){toast('Utilisé dans : '+used.map(r=>r.nom).join(', ')+'. Enlève-le d’abord de ces rations.'); return}
+    if(V.ask!=='adel'){V.ask='adel'; render(); return} LIB=LIB.filter(a=>a.id!==V.id); save('lib',LIB); go('alims'); return}
+});
+
+/* ---------- Mélange de base (Jack 25/11) ----------
+   1 part = la ration d'une brebis pleine. 17 (max 500 g) et luzerne (max 700 g) en kg brut, un peu de 26 si besoin,
+   l'enrubannée complète jusqu'au besoin en énergie des pleines, sans dépasser leur place (capacité UEM).
+   Valeurs des aliments : tables du technicien (fiches CDEO), ramenées au taux de MS réglé ici.
+   Mères d'agneaux et traite : elles mangent le même mélange à 90 % de leur place (réglable). */
+const BASE0={q:{luz93:.7,mel:.5,ovi:.1},ms:{},mat:{},remp:100,pAgx:90,pTr:90,
+  bes:{fg:{nom:'Gestation (fin, 75 kg, 1,6 agneau)',ms:1.66,ufl:1.68,pdi:162,p:8,ca:16.6,uem:1.80},
+       agx:{nom:'Mères d’agneaux (65 kg, 1,9 L)',ms:2.60,ufl:2.28,pdi:290,p:8.925,ca:18.1,uem:2.87},
+       tr:{nom:'Brebis à traire (65 kg, 2,6 L)',ms:2.95,ufl:2.80,pdi:372,p:10.85,ca:23,uem:3.08}}};
+let BASE=Object.assign(clone(BASE0),load('base',{}));
+const BROWS=[['enrb','Foin enrubanné'],['luz93','Luzerne'],['mel','17 (Mélovigest NT)'],['ovi','26 (Ovipro 26 NT)']];
+const BMAX={luz93:.7,mel:.5};
+const BCOLS=[['ms','kg MS',2],['ufl','UFL',2],['pdin','PDIN',0],['pdie','PDIE',0],['mat','MAT g',0],['uem','UEM',2],['p','P',1],['ca','Ca',1]];
+function bAlim(id){const a=alim(id); if(!a) return null; const ms=BASE.ms[id]!=null?BASE.ms[id]:a.ms, f=a.ms>0?ms/a.ms:1;
+  const v={ms}; ['ufl','pdin','pdie','uem','p','ca'].forEach(k=>v[k]=(+a[k]||0)*f);
+  v.matPct=BASE.mat[id]!=null?BASE.mat[id]:(+a.mat||0)*f/10; v.mat=v.matPct*10; v.matTable=(+a.mat||0)*f/10; return v}
+function bCalc(){const B=BASE.bes, L=[]; let fix={ms:0,ufl:0,pdin:0,pdie:0,mat:0,uem:0,p:0,ca:0};
+  BROWS.forEach(([id])=>{ if(id==='enrb') return; const v=bAlim(id); if(!v) return; const q=+BASE.q[id]||0; L.push({id,q,v}); BCOLS.forEach(([k])=>fix[k]+=q*(k==='ms'?v.ms:v[k]))});
+  const e=bAlim('enrb'); const xU=e.ufl>0?(B.fg.ufl-fix.ufl)/e.ufl:0, xC=e.uem>0?(B.fg.uem*BASE.remp/100-fix.uem)/e.uem:xU;
+  const xe=Math.max(0,Math.min(xU,xC)); L.unshift({id:'enrb',q:xe,v:e,lim:xC<xU?'place':'énergie'});
+  const part={}; BCOLS.forEach(([k])=>part[k]=L.reduce((s,l)=>s+l.q*(k==='ms'?l.v.ms:l.v[k]),0));
+  const alimKg=(+BASE.q.mel||0)+(+BASE.q.ovi||0);
+  const stade=(key,pct)=>{const b=B[key], k=key==='fg'?1:(part.uem>0?b.uem*pct/100/part.uem:0), ap={}; BCOLS.forEach(([c])=>ap[c]=part[c]*k);
+    const pdi=Math.min(ap.pdin,ap.pdie), manqU=b.ufl-ap.ufl, o=alim('ovi'); const salle=manqU>0&&o?manqU/(+o.ufl||.9):0;
+    return {b,k,ap,pdi,alim:alimKg*k,salle}};
+  return {L,part,fg:stade('fg'),agx:stade('agx',BASE.pAgx),tr:stade('tr',BASE.pTr)}}
+function vBase(){const C=bCalc(), th=`<tr><th>Aliment</th><th>kg brut</th><th>MS %</th><th>MAT % brut</th>${BCOLS.map(c=>`<th>${c[1]}</th>`).join('')}</tr>`;
+  const cells=(o,ex)=>BCOLS.map(([k,,d])=>`<td>${nf(o[k],d)}</td>`).join('');
+  const ligneStade=(titre,S,info)=>{const b=S.b, ecart=k=>({ms:S.ap.ms-b.ms,ufl:S.ap.ufl-b.ufl,pdin:S.ap.pdin-b.pdi,pdie:S.ap.pdie-b.pdi,mat:null,uem:S.ap.uem-b.uem,p:S.ap.p-b.p,ca:S.ap.ca-b.ca})[k];
+    const cv=(a,n)=>n>0?a/n*100:null;
+    return `<tr class="sep"><td colspan="${4+BCOLS.length}"><div class="info"><b>${titre}</b><br><span class="hint">${info}</span></div></td></tr>
+    <tr><td>Apports</td><td>${nf(S.k,2)} part</td><td></td><td>${nf(S.ap.ms>0?S.ap.mat/S.ap.ms/10:0,1)} % MS</td>${cells(S.ap)}</tr>
+    <tr><td>Besoins</td><td></td><td></td><td></td>${BCOLS.map(([k,,d])=>`<td>${k==='mat'?'':nf(k==='pdin'||k==='pdie'?b.pdi:b[k],d)}</td>`).join('')}</tr>
+    <tr><td>Variation</td><td></td><td></td><td></td>${BCOLS.map(([k,,d])=>{const x=ecart(k); if(x==null) return '<td></td>'; const n=k==='pdin'||k==='pdie'?b.pdi:b[k]; const pc=cv(S.ap[k],n);
+      const bad=(k==='ufl'||k==='pdin'||k==='pdie')?(pc<95||pc>130):(k==='uem'&&x>0); return `<td class="${bad?'warn':'ok'}">${x>=0?'+':''}${nf(x,d)}${k==='ufl'||k==='pdin'||k==='pdie'?`<br><small>${nf(pc,0)} %</small>`:''}</td>`}).join('')}</tr>
+    <tr><td colspan="${4+BCOLS.length}" class="hint"><div class="info">Aliment dans le mélange : ${nf(S.alim,2)} kg brut${titre==='Gestation'?(S.b.ufl-S.ap.ufl>0.005?` · il manque ${nf(S.b.ufl-S.ap.ufl,2)} UFL (pas de salle pour les pleines)`:' · énergie couverte'):S.salle>0.005?` · pour couvrir l’énergie : + ${nf(S.salle,2)} kg brut de 26 en salle → aliment total ${nf(S.alim+S.salle,2)} kg${S.alim+S.salle>1?' <b class="warn">(plus de 1 kg)</b>':''}`:' · énergie couverte par le mélange'}</div></td></tr>`};
+  return `<div class="row noprint"><button class="b-retour" data-go="liste">← Retour</button></div>
+  <h1>Mélange de base</h1>
+  <div class="hint">1 part = la ration d’une brebis pleine.</div>
+  <div class="hint">Valeurs : tables du technicien, ramenées au taux de MS et à la MAT réglés ici.</div>
+  <div class="card" style="overflow-x:auto"><table class="btab"><thead>${th}</thead><tbody>
+    ${C.L.map(l=>{const nom=(BROWS.find(x=>x[0]===l.id)||[])[1], v=l.v, tot={}; BCOLS.forEach(([k])=>tot[k]=l.q*(k==='ms'?v.ms:v[k]));
+      return `<tr><td>${esc(nom)}${l.id==='enrb'?`<br><small class="hint">calculé (limité par ${l.lim})</small>`:BMAX[l.id]?`<br><small class="hint">max ${nf(BMAX[l.id]*1000)} g</small>`:''}</td>
+      <td>${l.id==='enrb'?`<b>${nf(l.q,2)}</b>`:`<input data-bq="${l.id}" inputmode="decimal" value="${l.q}" style="width:4.2em">`}</td>
+      <td><input data-bms="${l.id}" inputmode="decimal" value="${nf(v.ms*100,0)}" style="width:3.4em"></td>
+      <td><input data-bmat="${l.id}" inputmode="decimal" value="${nf(v.matPct,1)}" style="width:3.6em">${Math.abs(v.matPct-v.matTable)>v.matTable*.1?'<br><small class="warn">≠ table</small>':''}</td>${cells(tot)}</tr>`}).join('')}
+    <tr><td><b>1 part</b></td><td>${nf(C.L.reduce((s,l)=>s+l.q,0),2)}</td><td></td><td>${nf(C.part.ms>0?C.part.mat/C.part.ms/10:0,1)} % MS</td>${cells(C.part)}</tr>
+    ${ligneStade('Gestation',C.fg,'les pleines mangent 1 part')}
+    ${ligneStade('Mères d’agneaux',C.agx,`même mélange, ${nf(BASE.pAgx)} % de leur place (capacité ${nf(C.agx.b.uem,2)} UEM)`)}
+    ${ligneStade('Brebis à traire',C.tr,`même mélange, ${nf(BASE.pTr)} % de leur place (capacité ${nf(C.tr.b.uem,2)} UEM)`)}
+  </tbody></table></div>
+  <div class="card"><h2>Réglages</h2><div class="g3">
+    <label class="f">Enrubannée jusqu’à (% place des pleines)<input data-bset="remp" inputmode="decimal" value="${BASE.remp}"></label>
+    <label class="f">Mères d’agneaux (% de la place)<input data-bset="pAgx" inputmode="decimal" value="${BASE.pAgx}"></label>
+    <label class="f">Traite (% de la place)<input data-bset="pTr" inputmode="decimal" value="${BASE.pTr}"></label></div>
+    <div class="hint" style="margin-top:6px">Besoins : fiches du contrôleur (fin de gestation 75 kg ; mères d’agneaux et traite 65 kg). Concentrés comptés à 0 en encombrement, comme sur les fiches.</div>
+    <div class="hint">Si la MAT diffère de la table, les PDIN et PDIE restent ceux de la table : à faire recalculer par le technicien.</div>
+    <button class="btn2" data-breset="1" style="margin-top:8px">Revenir aux valeurs du technicien</button></div>`}
+function bMaj(){save('base',BASE); const el=document.activeElement, key=el&&el.dataset?Object.keys(el.dataset)[0]:null, val=key?el.dataset[key]:null; render(); if(key){const n=document.querySelector(`[data-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}="${val}"]`); if(n){n.focus(); try{const L=n.value.length; n.setSelectionRange(L,L)}catch(e){}}}}
+document.addEventListener('input',e=>{ if(V.vue!=='base') return; const d=e.target.dataset, v=e.target.value; if(v===''||v==='-') return;
+  if(d.bq){let x=num(v); if(BMAX[d.bq]&&x>BMAX[d.bq]){x=BMAX[d.bq]; toast('Maximum '+nf(BMAX[d.bq]*1000)+' g')} BASE.q[d.bq]=x; bMaj()}
+  else if(d.bms){const x=num(v); if(x>5&&x<=100){BASE.ms[d.bms]=x/100; bMaj()}}
+  else if(d.bmat){const x=num(v); if(x>0&&x<60){BASE.mat[d.bmat]=x; bMaj()}}
+  else if(d.bset){const x=num(v); if(x>0&&x<=120){BASE[d.bset]=x; bMaj()}}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-breset]'); if(b){BASE=clone(BASE0); save('base',BASE); render()}});
+
+function alertMs(){toast('Le taux de MS s’écrit entre 0 et 1 (ex. 0,87).')}
+function toast(t){let d=$('#toast'); if(!d){d=document.createElement('div'); d.id='toast'; d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 16px;border-radius:12px;z-index:9;max-width:90vw;text-align:center'; document.body.appendChild(d)} d.textContent=t; d.hidden=false; clearTimeout(d._t); d._t=setTimeout(()=>d.hidden=true,3500)}
+// saisie : on garde la case active, le calcul en haut se met à jour
+function majLive(){ if(V.vue!=='edit') return; const el=document.activeElement, sel=el&&el.dataset&&Object.keys(el.dataset)[0], val=sel?el.dataset[sel]:null, pos=el&&el.selectionStart;
+  render(); if(sel){const n=document.querySelector(`[data-${sel}="${val}"]`); if(n){n.focus(); try{n.setSelectionRange(pos,pos)}catch(e){}}}}
+document.addEventListener('input',e=>{const t=e.target, d=t.dataset;
+  if(V.vue==='edit'){const r=V.brouillon;
+    if(d.f){const k=d.f; if(k.startsWith('rec.')) r.rec[k.slice(4)]=t.value===''?undefined:num(t.value); else r[k]=(k==='nom'||k==='stade')?t.value:num(t.value); if(k==='stade'){render(); return} if(k!=='nom') majLive(); return}
+    if(d.lq!=null){r.l[+d.lq][1]=num(t.value); majLive(); return}}
+  if(V.vue==='alim'&&d.a){V.brouillon[d.a]=t.value}});
+document.addEventListener('change',e=>{const t=e.target, d=t.dataset; if(V.vue==='edit'&&d.li!=null){V.brouillon.l[+d.li][0]=t.value; render()} if(V.vue==='edit'&&d.f==='stade'){V.brouillon.stade=t.value; render()}});
+render();
+</script>
+</body>
+</html>
