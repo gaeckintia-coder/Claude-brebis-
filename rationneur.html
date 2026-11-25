@@ -347,6 +347,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 <div class="wrap view" id="v-reperes" hidden>
   <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Bilan nutritionnel</h1></div>
   <p class="note">Ration de base à 100 %, par animal et par jour. Besoins et ingestion selon les références INRA (version simplifiée, non validée par l'INRAE) : à confronter au calcul de ton technicien.</p>
+  <p class="note">Cibles : en lactation, 110 à 115 % des besoins en énergie et 125 à 130 % en PDI pour la brebis moyenne du lot (Institut de l’Élevage, Réussir Pâtre 2018). Autres stades : 95 à 110 % (énergie) et 95 à 115 % (PDI), bornes de départ sans référence vérifiée.</p>
   <div id="nutri" class="list"></div>
   <p class="note" id="nutriWarn"></p>
   <section class="panel" aria-label="Ingestion observée">
@@ -750,15 +751,18 @@ function bilanLot(c, l){
   const a = apportsLot(c,l), b = besoinsLot(l);
   const cU = b.ufl>0 ? a.ufl/b.ufl*100 : 0, cP = b.pdi>0 ? a.pdi/b.pdi*100 : 0, cI = b.ci>0 ? a.fill/b.ci*100 : 0;
   const rmic = a.ufl>0 ? (a.pdin-a.pdie)/a.ufl : 0;
+  // cibles : lactation = 110-115 % des besoins en énergie et 125-130 % en PDI pour la brebis moyenne du lot
+  // (Institut de l'Élevage, Réussir Pâtre 2018) ; autres stades : 95-110 % et 95-115 % (bornes de départ, pas de référence vérifiée)
+  const lact = l.stade==="lactation", cib = lact ? {u:[110,115], p:[125,130]} : {u:[95,110], p:[95,115]};
   const st = {
-    ufl: statut(cU, 95, 110), pdi: statut(cP, 95, 115),
+    ufl: statut(cU, cib.u[0], cib.u[1]), pdi: statut(cP, cib.p[0], cib.p[1]),
     ing: cI<=100 ? "ok" : cI<=106 ? "warn" : "crit",
     rmic: rmic>=b.seuil ? "ok" : rmic>=b.seuil-6 ? "warn" : "crit",
     conc: a.concPct<=55 ? "ok" : a.concPct<=60 ? "warn" : "crit"
   };
   // Conseils
   const sug = [];
-  const dU = b.ufl - a.ufl;
+  const uCible = b.ufl*(lact ? 1.125 : 1), dU = uCible - a.ufl;
   if(st.ufl!=="ok" && Math.abs(dU) > b.ufl*0.03){
     const T = c.aliments.find(x=>x.actif && x.lieu==="traite" && x.sec>0 && x.ufl>0);
     if(l.traite>0 && T){
@@ -767,13 +771,13 @@ function bilanLot(c, l){
       sug.push(`Ration traite : ${dBrut>0?"+":"−"}${nf(Math.abs(dBrut)*1000)} g brut de ${esc(T.nom)} par brebis, soit environ ${nf(cible*1000)} g au lieu de ${nf(now*1000)} g.`);
     }
     if(a.mixU>0){
-      const coefOk = Math.max(0, (b.ufl - a.condU - (+l.traite||0)*a.traU) / a.mixU);
+      const coefOk = Math.max(0, (uCible - a.condU - (+l.traite||0)*a.traU) / a.mixU);
       const aOk = apportsLot(c, l, coefOk), ingOk = b.ci>0 ? aOk.fill/b.ci*100 : 0;
       sug.push(`Ou coefficient de part ${nf(coefOk,2)} au lieu de ${nf(cf(l),2)}` + (ingOk>100 ? ` : attention, ingestion à ${nf(ingOk)} % de la capacité, la brebis ne pourra pas tout manger.` : "."));
     }
   }
-  if(cP>125 && st.ufl!=="crit") sug.push(`PDI couverts à ${nf(cP)} % : on peut réduire l'aliment le plus azoté et économiser du concentré.`);
-  if(st.pdi!=="ok" && cP<95 && st.ufl!=="crit") sug.push("PDI insuffisants : remplacer une partie de l'aliment le moins azoté par un aliment plus riche (ex. 26 à la place du 17).");
+  if(cP>cib.p[1]+15 && st.ufl!=="crit") sug.push(`PDI couverts à ${nf(cP)} % : on peut réduire l'aliment le plus azoté et économiser du concentré.`);
+  if(st.pdi!=="ok" && cP<cib.p[0] && st.ufl!=="crit") sug.push("PDI insuffisants : remplacer une partie de l'aliment le moins azoté par un aliment plus riche (ex. 26 à la place du 17).");
   if(st.rmic!=="ok") sug.push("Azote dégradable insuffisant pour le rumen : ajouter une source d'azote (luzerne, aliment azoté).");
   if(st.ing==="crit" && dU>0) sug.push("Ration trop encombrante : un fourrage plus riche ou plus de concentré dans la même quantité de MS.");
   if(st.conc!=="ok") sug.push("Plus de 55 à 60 % de concentré dans la MS : risque d'acidose et de baisse du TB.");
