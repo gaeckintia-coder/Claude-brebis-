@@ -1243,14 +1243,19 @@ $('#t-yes').onclick=()=>{MV=[];LS.set('cb_moves',MV);Object.values(NOMS).forEach
 
 // ---- affichage
 // ===== KEENAN (rationneur de la mélangeuse), ouvert dans OviLink =====
-// Effectifs de la Bergerie pour KEENAN : béliers, pleines (+ vides, taries), antenaises, agnelées (jours depuis la mise bas), à la traite
-function keenanMaj(){ if(!DB) return; const o={beliers:0,pleines:0,antenaises:0,agnelees:0,traite:0,jours:[]}, a=auj();
+// Effectifs de la Bergerie pour KEENAN : béliers, pleines (+ vides, taries), brebis de 1 an pleines, agnelées (jours depuis la mise bas), à la traite
+/* Brebis de 1 an (Jack 25/11) : femelles devenues adultes au dernier 1er octobre (nées dans la campagne d'avant) ;
+   elles mangent 90 % d'une adulte au 1er octobre, +1 % par mois, jusqu'à 100 %. */
+function un_an(x){ const b=bascule(), y=+b.slice(0,4), ne=isoNe(x.ne); return ne ? (ne>=(y-1)+'-10-01' && ne<b) : /Antenaise/i.test(x.cat||'') }
+function facteurJeune(){ const b=new Date(bascule()+'T12:00:00'), n=new Date(auj()+'T12:00:00'); const mois=(n.getFullYear()-b.getFullYear())*12+(n.getMonth()-b.getMonth()); return Math.min(1, 0.9+0.01*Math.max(0,mois)) }
+function keenanMaj(){ if(!DB) return; const o={beliers:0,pleines:0,antenaises:0,agnelees:0,traite:0,jours:[],agn:[],trf:[],jeuneF:facteurJeune()}, a=auj();
   Object.entries(A()).forEach(([k,x])=>{ if(!pres(x)||jeuneCat(x)) return; if(batOf(lotOf(k)||'')!=='Bergerie') return;
     if(!femelle(x)){o.beliers++; return}
-    if(traiteFaite(k)&&!tarie(k)){o.traite++; return}
-    const m=typeof mbDe==='function'?mbDe(k):null; if(m&&!tarie(k)){o.agnelees++; o.jours.push(Math.max(0,Math.round((new Date(a+'T12:00:00')-new Date(m.d+'T12:00:00'))/864e5))); return}
-    if(/Antenaise/i.test(x.cat||'')) o.antenaises++; else o.pleines++});
-  o.jours.sort((x,y)=>x-y); const nv=JSON.stringify(o); if(nv===keenanMaj.der) return; keenanMaj.der=nv; o.t=Date.now(); LS.set('cb_keenan',o)}
+    const f=un_an(x)?o.jeuneF:1;
+    if(traiteFaite(k)&&!tarie(k)){o.traite++; o.trf.push(f); return}
+    const m=typeof mbDe==='function'?mbDe(k):null; if(m&&!tarie(k)){const j=Math.max(0,Math.round((new Date(a+'T12:00:00')-new Date(m.d+'T12:00:00'))/864e5)); o.agnelees++; o.jours.push(j); o.agn.push([j,f]); return}
+    if(un_an(x)) o.antenaises++; else o.pleines++});
+  o.jours.sort((x,y)=>x-y); o.agn.sort((x,y)=>x[0]-y[0]||x[1]-y[1]); o.trf.sort(); const nv=JSON.stringify(o); if(nv===keenanMaj.der) return; keenanMaj.der=nv; o.t=Date.now(); LS.set('cb_keenan',o)}
 function knOpen(){ keenanMaj(); let w=$('#kn-wrap');
   if(!w){ w=document.createElement('div'); w.id='kn-wrap'; w.style.cssText='position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column';
     w.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)"><button type="button" class="btn2 b-retour" id="kn-back">← OviLink</button><b style="font-size:18px">KEENAN</b><span class="hint" style="margin-left:auto">les minuteurs continuent</span></div><iframe id="kn-if" src="rationneur.html?v='+Date.now()+'" title="KEENAN" style="flex:1;width:100%;border:0"></iframe>';
