@@ -236,6 +236,17 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 .ngrid .v{text-align:right;color:var(--muted);font-size:.85rem}
 .nsug{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
 .nsug b{font-family:var(--display)}
+.btabw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.btab{border-collapse:collapse;font-size:13px}
+.btab td,.btab th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.btab th{font-size:12px;color:var(--muted)}
+.btab td:first-child,.btab th:first-child{position:sticky;left:0;background:var(--surface);z-index:1;text-align:left;white-space:normal;min-width:96px}
+.btab tr.sep td{border-top:3px solid var(--ink);padding-top:10px}
+.btab tr.sep td,.btab td.infotd{position:static;background:none}
+.btab div.info{position:sticky;left:6px;width:min(520px,calc(100vw - 70px));white-space:normal;text-align:left}
+.btab input{width:4em;padding:5px;font-size:15px}
+.btab small{font-size:11px}
+.btab .ok{color:var(--green)} .btab .warn{color:var(--warn);font-weight:700}
 </style>
 
 <!-- BANDEAU QUI SUIT LE DÉFILEMENT -->
@@ -311,6 +322,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 
   <button class="repbtn" data-go="bilan"><span><span class="eyebrow">Bilan de saison</span><br><span id="bilanBtnTxt">Quantités chargées par aliment</span></span><b aria-hidden="true">›</b></button>
 
+  <button class="repbtn" data-go="base"><span><span class="eyebrow">Mélange de base</span><br>1 part = 1 brebis pleine · gestation, mères d’agneaux, traite (valeurs du technicien)</span><b aria-hidden="true">›</b></button>
   <button class="repbtn" data-go="reperes"><span><span class="eyebrow">Bilan nutritionnel</span><br>Énergie, protéines et ingestion par lot</span><span id="repBtnVal">–</span></button>
   <div class="status" id="status"></div>
 </div>
@@ -374,6 +386,14 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
     <div class="eyebrow">Par lot · par animal et par jour</div>
     <div id="lotStats" class="lotstats"></div>
   </section>
+</div>
+
+<!-- MÉLANGE DE BASE (valeurs du technicien, ne change rien au chargement) -->
+<div class="wrap view" id="v-base" hidden>
+  <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Mélange de base</h1></div>
+  <p class="note">1 part = la ration d’une brebis pleine.</p>
+  <p class="note">Valeurs : tables du technicien (fiches du contrôle laitier), ramenées au taux de MS et à la MAT réglés ici. Cet écran ne change rien au chargement de KEENAN.</p>
+  <div id="baseBox"></div>
 </div>
 
 <!-- MENU RÉGLAGES -->
@@ -1368,8 +1388,70 @@ $("v-jour").addEventListener("click",e=>{
     jourSave(); }
 });
 
+
+/* ---------- Mélange de base (Jack 25/11) : onglet à part, ne modifie pas la configuration de KEENAN ----------
+   1 part = la ration d'une brebis pleine. 17 (max 500 g) et luzerne (max 700 g) en kg brut, un peu de 26 si besoin ;
+   l'enrubannée complète jusqu'au besoin en énergie des pleines, sans dépasser leur place (capacité UEM).
+   Valeurs des aliments par kg BRUT : fiches du contrôle laitier (CDEO, 25/11/2026), ramenées au taux de MS réglé.
+   Mères d'agneaux et traite : même mélange, mangé à 90 % de leur place (réglable). Besoins : fiches du contrôleur. */
+const BT={enrb:{nom:"Foin enrubanné",ms:.75,ufl:.53,pdin:60,pdie:56,uem:1.01,p:2.3,ca:4.9,mat:94},
+  luz:{nom:"Luzerne",ms:.93,ufl:.61,pdin:110,pdie:90,uem:.90,p:2.3,ca:14,mat:177,max:.7},
+  a17:{nom:"17 (Mélovigest NT)",ms:.87,ufl:.99,pdin:119,pdie:105,uem:0,p:7,ca:7,mat:170,max:.5},
+  a26:{nom:"26 (Ovipro 26 NT)",ms:.87,ufl:.90,pdin:185,pdie:132,uem:0,p:8,ca:9,mat:260}};
+const BB0={q:{luz:.7,a17:.5,a26:.1},ms:{},mat:{},remp:100,pAgx:90,pTr:90};
+const BBES={fg:{ufl:1.68,pdi:162,p:8,ca:16.6,uem:1.80,ms:1.66},agx:{ufl:2.28,pdi:290,p:8.925,ca:18.1,uem:2.87,ms:2.60},tr:{ufl:2.80,pdi:372,p:10.85,ca:23,uem:3.08,ms:2.95}};
+const BCOL=[["ms","kg MS",2],["ufl","UFL",2],["pdin","PDIN",0],["pdie","PDIE",0],["mat","MAT g",0],["uem","UEM",2],["p","P",1],["ca","Ca",1]];
+let BB=Object.assign(clone(BB0), load("baseCdeo")||{});
+function bVal(id){const a=BT[id], ms=BB.ms[id]!=null?BB.ms[id]:a.ms, f=ms/a.ms, v={ms};
+  ["ufl","pdin","pdie","uem","p","ca"].forEach(k=>v[k]=a[k]*f); v.matTable=a.mat*f/10; v.matPct=BB.mat[id]!=null?BB.mat[id]:v.matTable; v.mat=v.matPct*10; return v}
+function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
+  ["luz","a17","a26"].forEach(id=>{const v=bVal(id), q=+BB.q[id]||0; L.push({id,q,v}); BCOL.forEach(([k])=>fix[k]+=q*v[k])});
+  const e=bVal("enrb"), F=BBES.fg, xU=(F.ufl-fix.ufl)/e.ufl, xC=(F.uem*BB.remp/100-fix.uem)/e.uem, xe=Math.max(0,Math.min(xU,xC));
+  L.unshift({id:"enrb",q:xe,v:e,lim:xC<xU?"place":"énergie"});
+  const part={}; BCOL.forEach(([k])=>part[k]=L.reduce((s,l)=>s+l.q*l.v[k],0));
+  const alimKg=(+BB.q.a17||0)+(+BB.q.a26||0);
+  const st=(key,pct)=>{const b=BBES[key], k=key==="fg"?1:b.uem*pct/100/part.uem, ap={}; BCOL.forEach(([c])=>ap[c]=part[c]*k);
+    const manque=b.ufl-ap.ufl; return {b,k,ap,alim:alimKg*k,salle:manque>0?manque/BT.a26.ufl*(BT.a26.ms/(BB.ms.a26||BT.a26.ms)):0,manque}};
+  return {L,part,fg:st("fg"),agx:st("agx",BB.pAgx),tr:st("tr",BB.pTr)}}
+function renderMelBase(){const C=bCalcul(), n=BCOL.length+4;
+  const cells=o=>BCOL.map(([k,,d])=>`<td>${nf(o[k],d)}</td>`).join("");
+  const ligne=(titre,key,S,info)=>{const b=S.b, ref=k=>k==="pdin"||k==="pdie"?b.pdi:b[k];
+    return `<tr class="sep"><td colspan="${n}"><div class="info"><b>${titre}</b><br><span class="note">${info}</span></div></td></tr>
+    <tr><td>Apports</td><td>${nf(S.k,2)} part</td><td></td><td>${nf(S.ap.mat/S.ap.ms/10,1)} % MS</td>${cells(S.ap)}</tr>
+    <tr><td>Besoins</td><td></td><td></td><td></td>${BCOL.map(([k,,d])=>`<td>${k==="mat"?"":nf(ref(k),d)}</td>`).join("")}</tr>
+    <tr><td>Variation</td><td></td><td></td><td></td>${BCOL.map(([k,,d])=>{ if(k==="mat") return "<td></td>"; const x=S.ap[k]-ref(k), pc=S.ap[k]/ref(k)*100, cv=k==="ufl"||k==="pdin"||k==="pdie";
+      const bad=cv?(pc<95||pc>130):(k==="uem"&&x>0.01); return `<td class="${bad?"warn":"ok"}">${x>=0?"+":""}${nf(x,d)}${cv?`<br><small>${nf(pc)} %</small>`:""}</td>`}).join("")}</tr>
+    <tr><td colspan="${n}" class="infotd"><div class="info note">Aliment dans le mélange : ${nf(S.alim,2)} kg brut${key==="fg"?(S.manque>0.005?` · il manque ${nf(S.manque,2)} UFL`:" · énergie couverte"):(S.salle>0.005?` · pour couvrir l’énergie : + ${nf(S.salle,2)} kg brut de 26 en salle → aliment total ${nf(S.alim+S.salle,2)} kg${S.alim+S.salle>1?' <b class="warn">(plus de 1 kg)</b>':""}`:" · énergie couverte par le mélange")}</div></td></tr>`};
+  document.getElementById("baseBox").innerHTML = `<div class="btabw"><table class="btab"><thead><tr><th>Aliment</th><th>kg brut</th><th>MS %</th><th>MAT % brut</th>${BCOL.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>
+    ${C.L.map(l=>{const a=BT[l.id], v=l.v, t={}; BCOL.forEach(([k])=>t[k]=l.q*v[k]);
+      return `<tr><td>${esc(a.nom)}${l.id==="enrb"?`<br><small class="note">calculé (limité par ${l.lim})</small>`:a.max?`<br><small class="note">max ${nf(a.max*1000)} g</small>`:""}</td>
+      <td>${l.id==="enrb"?`<b>${nf(l.q,2)}</b>`:`<input data-bq="${l.id}" inputmode="decimal" value="${l.q}">`}</td>
+      <td><input data-bms="${l.id}" inputmode="decimal" value="${nf(v.ms*100)}"></td>
+      <td><input data-bmat="${l.id}" inputmode="decimal" value="${nf(v.matPct,1)}">${Math.abs(v.matPct-v.matTable)>v.matTable*.1?'<br><small class="warn">≠ table</small>':""}</td>${cells(t)}</tr>`}).join("")}
+    <tr><td><b>1 part</b></td><td>${nf(C.L.reduce((s,l)=>s+l.q,0),2)}</td><td></td><td>${nf(C.part.mat/C.part.ms/10,1)} % MS</td>${cells(C.part)}</tr>
+    ${ligne("Gestation","fg",C.fg,"les pleines mangent 1 part (besoins : fin de gestation, 75 kg, 1,6 agneau)")}
+    ${ligne("Mères d’agneaux","agx",C.agx,`même mélange, ${nf(BB.pAgx)} % de leur place (besoins : 65 kg, 1,9 L)`)}
+    ${ligne("Brebis à traire","tr",C.tr,`même mélange, ${nf(BB.pTr)} % de leur place (besoins : 65 kg, 2,6 L)`)}
+  </tbody></table></div>
+  <section class="panel"><h2>Réglages</h2><div class="grid">
+    <label class="f">Enrubannée jusqu’à (% de la place des pleines)<input data-bset="remp" inputmode="decimal" value="${BB.remp}"></label>
+    <label class="f">Mères d’agneaux (% de leur place)<input data-bset="pAgx" inputmode="decimal" value="${BB.pAgx}"></label>
+    <label class="f">Brebis à traire (% de leur place)<input data-bset="pTr" inputmode="decimal" value="${BB.pTr}"></label></div>
+    <p class="note">Faire glisser le tableau vers la gauche pour voir toutes les colonnes.</p>
+    <p class="note">Concentrés comptés à 0 en encombrement, comme sur les fiches du contrôleur. Si la MAT diffère de la table, PDIN et PDIE restent ceux de la table.</p>
+    <button class="btn btn-line" id="baseReset">Revenir aux valeurs du technicien</button></section>`;
+}
+function baseMaj(){store("baseCdeo",BB); const el=document.activeElement, k=el&&el.dataset?Object.keys(el.dataset)[0]:null, v=k?el.dataset[k]:null;
+  renderMelBase(); if(k){const nd=document.querySelector(`#baseBox [data-${k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase())}="${v}"]`); if(nd){nd.focus(); try{const L=nd.value.length; nd.setSelectionRange(L,L)}catch(e){}}}}
+document.getElementById("v-base").addEventListener("input",e=>{const d=e.target.dataset, s=e.target.value; if(s===""||s==="-") return; const x=num(s);
+  if(d.bq){let q=x; const m=BT[d.bq].max; if(m && q>m){q=m; document.getElementById("status").textContent="Maximum "+nf(m*1000)+" g";} BB.q[d.bq]=q; baseMaj();}
+  else if(d.bms){ if(x>5&&x<=100){BB.ms[d.bms]=x/100; baseMaj();} }
+  else if(d.bmat){ if(x>0&&x<60){BB.mat[d.bmat]=x; baseMaj();} }
+  else if(d.bset){ if(x>0&&x<=120){BB[d.bset]=x; baseMaj();} }});
+document.getElementById("v-base").addEventListener("click",e=>{ if(e.target.closest("#baseReset")){BB=clone(BB0); store("baseCdeo",BB); renderMelBase();} });
+
 /* ---------- Navigation : une seule fenêtre ouverte ---------- */
-const parent = {jour:"main", menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
+const parent = {base:"main", jour:"main", menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
 let current = "main", mainScroll = 0;
 /* Bouton retour du téléphone : chaque fenêtre ouverte ajoute une étape à l'historique,
    pour que le geste « retour » ferme la fenêtre au lieu de quitter l'appli. */
@@ -1405,6 +1487,7 @@ function open(v){
   if(v==="reperes"){ parent.reperes = current==="menu" ? "menu" : "main"; render(); renderNutri(); }
   if(v==="bilan"){ parent.bilan = current==="main" ? "main" : "menu"; seasonOffset = 0; renderBilan(); }
   if(v==="menu") renderMenu();
+  if(v==="base") renderMelBase();
   if(v==="refus"){ parent.refus = current==="reperes" ? "reperes" : "main"; show(v); renderRefus(); return; }
   show(v);
 }
