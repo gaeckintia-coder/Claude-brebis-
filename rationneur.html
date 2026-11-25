@@ -282,6 +282,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
     </div>
   </section>
   <div class="alert" id="capAlert" hidden></div>
+  <div class="alert" id="aliAlert" hidden></div>
   <button class="repbtn" data-go="jour" id="jourResume" hidden><span><span class="eyebrow">Pâture aujourd'hui</span><br><span id="jourTxt">–</span></span><b aria-hidden="true">›</b></button>
 
   <section class="panel" aria-label="Réglages du jour">
@@ -394,8 +395,9 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 <div class="wrap view" id="v-base" hidden>
   <div class="backbar"><button class="btn btn-rust" data-back>← Retour</button><h1>Ration</h1></div>
   <p class="note">1 part = la ration d’une brebis pleine.</p>
-  <p class="note">Valeurs : tables du technicien (fiches du contrôle laitier), ramenées au taux de MS et à la MAT réglés ici. Cet écran ne change rien au chargement de KEENAN.</p>
+  <p class="note">Valeurs : tables du technicien (fiches du contrôle laitier), ramenées au taux de MS et à la MAT réglés ici. <span id="rationEtat"></span></p>
   <div id="baseBox"></div>
+  <section class="panel" id="rationLien"></section>
 </div>
 
 <!-- MENU RÉGLAGES -->
@@ -671,7 +673,7 @@ function compute(c){
     return {...a, brutPart, total, bassines: a.bassine>0 ? total/a.bassine : null};
   });
   const traiteN = c.lots.reduce((s,l)=>s+(+l.traite||0)*(+l.effectif||0),0);
-  const tra = used.filter(a=>a.lieu==="traite").map(a=>({...a, total:(a.ms>0?a.sec/a.ms:0)*traiteN}));
+  const tra = used.filter(a=>a.lieu==="traite").map(a=>({...a, total: (c.ration&&c.ration.on) ? c.lots.reduce((s,l)=>s+(+l.effectif||0)*salleKg(c,l),0) : (a.ms>0?a.sec/a.ms:0)*traiteN}));
   const secAll = used.reduce((s,a)=>s+a.sec,0);
   const secMix = mix.reduce((s,a)=>s+a.sec,0);
   const conc = used.filter(a=>a.ms>=0.85 && a.bassine>0).reduce((s,a)=>s+a.sec,0);
@@ -710,7 +712,7 @@ function lotStat(c,l){
   const coef = cf(l), f = +l.traite||0;
   let sec = 0, matg = 0;
   c.aliments.filter(a=>a.actif && a.sec>0).forEach(a=>{
-    const q = a.lieu==="traite" ? a.sec*f : (a.condiment ? a.sec : a.sec*coef);
+    const q = a.lieu==="traite" ? ((c.ration&&c.ration.on) ? salleKg(c,l)*(+a.ms||0) : a.sec*f) : (a.condiment ? a.sec : a.sec*coef);
     sec += q; matg += q*(+a.mat||0);
   });
   return {sec, mat: sec>0 ? matg/sec : 0};
@@ -733,7 +735,7 @@ function apportsLot(c, l, coefOverride){
   const coef = coefOverride!==undefined ? coefOverride : cf(l), f = +l.traite||0;
   const r = {ufl:0, pdin:0, pdie:0, mat:0, ms:0, fMS:0, fUEM:0, cMS:0, mixU:0, condU:0, traU:0};
   c.aliments.filter(a=>a.actif && a.sec>0).forEach(a=>{
-    const q = a.lieu==="traite" ? a.sec*f : (a.condiment ? a.sec : a.sec*coef);
+    const q = a.lieu==="traite" ? ((c.ration&&c.ration.on) ? salleKg(c,l)*(+a.ms||0) : a.sec*f) : (a.condiment ? a.sec : a.sec*coef);
     r.ms += q; r.ufl += q*(+a.ufl||0); r.pdin += q*(+a.pdin||0); r.pdie += q*(+a.pdie||0); r.mat += q*(+a.mat||0);
     if(a.type==="fourrage"){ r.fMS += q; r.fUEM += q*(+a.uem||0); }
     else if(a.type==="concentre") r.cMS += q;
@@ -1031,6 +1033,7 @@ function render(){
   // Alerte capacité
   const cap = +cfg.capacite||0;
   $("capAlert").hidden = !(cap>0 && L.totalAct>cap);
+  { const al = aliAlerte(); $("aliAlert").hidden = !al; if(al) $("aliAlert").innerHTML = al; }
   if(cap>0 && L.totalAct>cap) $("capAlert").textContent = `Attention : ${nf(L.totalAct)} kg à charger, au-dessus de la capacité de la KEENAN (${nf(cap)} kg). Vérifie la ration, le % ou le nombre de jours.`;
   // Bandeau qui suit le défilement
   const next = L.items.find(it=>!done[it.key]);
@@ -1314,6 +1317,7 @@ $("list").addEventListener("click",e=>{
     const A = cfg.aliments[+m.dataset.msi]; if(!A) return;
     A.ms = Math.min(1, Math.max(0.2, Math.round(A.ms*100 + (+m.dataset.d))/100));
     A.msOk = true;
+    if(cfg.ration && cfg.ration.on){ const id = Object.keys(RMAP).find(k=>RMAP[k]===A.nom); if(id){ BB.ms[id] = A.ms; store("baseCdeo",BB); rationSync(); } }
     store("cfg",cfg); render();
     clearTimeout(pendingTimer); pendingTimer = setTimeout(saveRemote, 1500);
     return;
@@ -1398,6 +1402,7 @@ $("v-jour").addEventListener("click",e=>{
    Mères d'agneaux et traite : même mélange, mangé à 90 % de leur place (réglable). Besoins : fiches du contrôleur. */
 const BT={enrb:{nom:"Foin enrubanné",ms:.75,ufl:.53,pdin:60,pdie:56,uem:1.01,p:2.3,ca:4.9,mat:94},
   luz:{nom:"Luzerne",ms:.93,ufl:.61,pdin:110,pdie:90,uem:.90,p:2.3,ca:14,mat:177,max:.7},
+  reg:{nom:"Regain enrubanné",ms:.70,ufl:.63,pdin:74,pdie:74,uem:1.22,p:3.0,ca:5.3,mat:95},
   a17:{nom:"17 (Mélovigest NT)",ms:.87,ufl:.99,pdin:119,pdie:105,uem:0,p:7,ca:7,mat:170,max:.5},
   a26:{nom:"26 (Ovipro 26 NT)",ms:.87,ufl:.90,pdin:185,pdie:132,uem:0,p:8,ca:9,mat:260}};
 // 1 part = ce que mange une pleine d'après le contrôleur : 1,66 kg de MS (Jack 25/11). Mères d'agneaux et traite : rapport des MS des fiches.
@@ -1408,7 +1413,7 @@ let BB=Object.assign(clone(BB0), load("baseCdeo")||{}); if(!BB.salle) BB.salle=c
 function bVal(id){const a=BT[id], ms=BB.ms[id]!=null?BB.ms[id]:a.ms, f=ms/a.ms, v={ms};
   ["ufl","pdin","pdie","uem","p","ca"].forEach(k=>v[k]=a[k]*f); v.matTable=a.mat*f/10; v.matPct=BB.mat[id]!=null?BB.mat[id]:v.matTable; v.mat=v.matPct*10; return v}
 function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
-  ["luz","a17","a26"].forEach(id=>{const v=bVal(id), q=+BB.q[id]||0; L.push({id,q,v}); BCOL.forEach(([k])=>fix[k]+=q*v[k])});
+  ["luz","reg","a17","a26"].forEach(id=>{const v=bVal(id), q=+BB.q[id]||0; L.push({id,q,v}); BCOL.forEach(([k])=>fix[k]+=q*v[k])});
   // enrubannée : complète la part jusqu'à la MS d'une pleine (1,66 kg)
   const e=bVal("enrb"), xe=Math.max(0,(BB.cible-fix.ms)/e.ms);
   const man=BB.q.enrb!=null; L.unshift({id:"enrb",q:man?+BB.q.enrb||0:xe,v:e,man,auto:xe});
@@ -1448,8 +1453,9 @@ function renderMelBase(){const C=bCalcul(), n=BCOL.length+4, R=C.trop?' class="r
     <p class="note">Faire glisser le tableau vers la gauche pour voir toutes les colonnes.</p>
     <p class="note">Concentrés comptés à 0 en encombrement, comme sur les fiches du contrôleur. Si la MAT diffère de la table, PDIN et PDIE restent ceux de la table.</p>
     <button class="btn btn-line" id="baseReset">Revenir aux valeurs du technicien</button></section>`;
+  renderRationLien();
 }
-function baseMaj(){store("baseCdeo",BB); const el=document.activeElement, k=el&&el.dataset?Object.keys(el.dataset)[0]:null, v=k?el.dataset[k]:null;
+function baseMaj(){store("baseCdeo",BB); if(cfg.ration&&cfg.ration.on){ rationSync(); store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer=setTimeout(saveRemote,1500); } const el=document.activeElement, k=el&&el.dataset?Object.keys(el.dataset)[0]:null, v=k?el.dataset[k]:null;
   renderMelBase(); if(k){const nd=document.querySelector(`#baseBox [data-${k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase())}="${v}"]`); if(nd){nd.focus(); try{const L=nd.value.length; nd.setSelectionRange(L,L)}catch(e){}}}}
 /* ce qui est en train d'être tapé (ex. « 0, ») reste tel quel dans la case pendant la saisie */
 let BRAW={}; const bRaw=(t,id,def)=>{const k=t+":"+id; return BRAW[k]!=null?esc(BRAW[k]):def};
@@ -1463,6 +1469,52 @@ document.getElementById("v-base").addEventListener("input",e=>{const d=e.target.
 document.getElementById("v-base").addEventListener("change",e=>{ const d=e.target.dataset||{}; if(d.bsal){BB.salle.al=e.target.value; store("baseCdeo",BB); renderMelBase();} });
 document.getElementById("v-base").addEventListener("click",e=>{ if(e.target.closest("#baseReset")){BB=clone(BB0); BRAW={}; store("baseCdeo",BB); renderMelBase();}
   if(e.target.closest("[data-bauto]")){delete BB.q.enrb; delete BRAW["bq:enrb"]; store("baseCdeo",BB); renderMelBase();} });
+
+
+/* ---------- KEENAN charge la ration de l'onglet « Ration » (Jack 25/11, « vas-y ») ----------
+   1 part = 1 pleine = 1,66 kg MS. Lignes chargées = lignes de la Ration (kg brut × MS du jour → kg MS par part, base 100 %).
+   Coefficients : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78.
+   Salle : aliment par passage (agnelées 1, traite 2), réduit tout seul pour ne pas dépasser 1 kg d'aliment par brebis. */
+const RMAP={enrb:"Enrubannée foin",luz:"Luzerne",reg:"Enrubannée regain",a17:"Aliment 17",a26:"Aliment 26"};
+function salleKg(c,l){ const R=c.ration||{}, pas=(+l.traite||0)*2, q=+R.salleQ||0; if(!(pas>0)||!(q>0)) return 0;
+  return Math.max(0, Math.min(pas*q, 1 - cf(l)*(+R.aliPart||0))); }
+function rationSync(){ if(!(cfg.ration&&cfg.ration.on)) return false; const C=bCalcul(); cfg.base=1;
+  C.L.forEach(l=>{ const nom=RMAP[l.id], T=BT[l.id]; let a=cfg.aliments.find(x=>x.nom===nom);
+    if(!a){ a={nom,bassine:0,lieu:"melange",actif:true,condiment:false,unite:"kg"}; const i=cfg.aliments.findIndex(x=>x.lieu==="traite"||x.condiment); if(i<0) cfg.aliments.push(a); else cfg.aliments.splice(i,0,a); }
+    Object.assign(a,{ms:l.v.ms,msOk:true,sec:Math.round(l.q*l.v.ms*10000)/10000,actif:l.q>0,lieu:"melange",condiment:false,
+      type:T.uem>0?"fourrage":"concentre",ufl:T.ufl/T.ms,pdin:T.pdin/T.ms,pdie:T.pdie/T.ms,uem:T.uem/T.ms,mat:Math.round(l.v.matPct/l.v.ms*10)/10,vOk:true}); });
+  const S=cfg.aliments.find(x=>x.lieu==="traite"), T=BT[BB.salle.al], sv=bVal(BB.salle.al), q=+BB.salle.q||0;
+  if(S) Object.assign(S,{nom:BB.salle.al==="a17"?"Aliment traite 17":"Aliment traite 26",ms:sv.ms,msOk:true,sec:Math.round(2*q*sv.ms*10000)/10000,actif:true,
+    type:"concentre",ufl:T.ufl/T.ms,pdin:T.pdin/T.ms,pdie:T.pdie/T.ms,uem:0,mat:Math.round(sv.matPct/sv.ms*10)/10,vOk:true});
+  cfg.ration.salleQ=q; cfg.ration.aliPart=(+BB.q.a17||0)+(+BB.q.a26||0); return true; }
+function rationActiver(){ store("cfgAvantRation",clone(cfg));
+  cfg.ration={on:true,depuis:dayKey()};
+  cfg.lots.forEach(l=>{ const k=KN_CAT(l);
+    if(k==="beliers") l.coef=0.9; else if(k==="pleines") l.coef=1; else if(k==="antenaises"){ l.coef=1; l.nom="Brebis de 1 an pleines"; }
+    else if(k==="agnelees"){ l.coef=1.78; l.traite=0.5; } else if(k==="traite"){ l.coef=1.78; l.traite=1; } });
+  rationSync(); oviSync(true); commit(); }
+function rationDesactiver(){ const old=load("cfgAvantRation"); if(old&&old.lots){ cfg=fill(old); } else { cfg.ration={on:false}; }
+  if(cfg.ration) cfg.ration.on=false; oviSync(true); commit(); }
+function aliAlerte(){ if(!(cfg.ration&&cfg.ration.on)) return ""; const R=cfg.ration, msg=[];
+  cfg.lots.forEach(l=>{ const n=+l.effectif||0, pas=(+l.traite||0)*2; if(!n||!pas||!(R.salleQ>0)) return;
+    const mel=cf(l)*(+R.aliPart||0), sal=salleKg(cfg,l), voulu=pas*R.salleQ;
+    if(sal < voulu-0.005 && KN_CAT(l)==="traite") msg.push(`<b>${esc(l.nom)}</b> : le mélange leur donne déjà ${nf(mel,2)} kg d'aliment ; en salle ${nf(sal,2)} kg au lieu de ${nf(voulu,2)} pour rester à 1 kg.`); });
+  return msg.length ? msg.join("<br>")+`<br>Quand elles sont nombreuses : dans « Ration », baisser le 17 et le remplacer par du regain ou de la luzerne.` : ""; }
+function renderRationLien(){ const el=document.getElementById("rationLien"); if(!el) return; const on=cfg.ration&&cfg.ration.on;
+  { const s=document.getElementById("rationEtat"); if(s) s.textContent = on ? "KEENAN charge cette ration : chaque changement ici change le chargement." : "Pour l'instant, cet écran ne change rien au chargement de KEENAN."; }
+  el.innerHTML = on ? `<h2>Chargement de KEENAN</h2><p class="note">Cette ration est chargée par KEENAN depuis le ${String(cfg.ration.depuis||"").split("-").reverse().join("/")}.</p>
+    <p class="note">Parts : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 % par mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78.</p>
+    <p class="note">Salle : ${nf(BB.salle.q,2)} kg par passage (agnelées 1, traite 2), réduit tout seul pour ne pas dépasser 1 kg d'aliment par brebis.</p>
+    ${rationAsk?`<div class="actions"><button class="btn btn-rust" data-rgarde="1">Garder</button><button class="btn btn-red" data-roff="1">Revenir à l'ancien chargement</button></div>`:`<button class="linkbtn" data-roffask="1">Revenir à l'ancien chargement</button>`}`
+  : `<h2>Chargement de KEENAN</h2><p class="note">Aujourd'hui, KEENAN charge encore son ancienne ration.</p>
+    <p class="note">En passant sur cette ration : mêmes lignes de chargement, parts par lot calculées avec OviLink (béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78), salle limitée à 1 kg d'aliment par brebis. L'ancienne ration est gardée : on peut revenir en arrière.</p>
+    ${rationAsk?`<div class="actions"><button class="btn btn-rust" data-rgarde="1">Annuler</button><button class="btn btn-red" data-ron="1">Confirmer</button></div>`:`<button class="btn btn-red" data-ronask="1">Charger cette ration dans KEENAN</button>`}`; }
+let rationAsk=false;
+document.getElementById("rationLien").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.ronask||b.dataset.roffask){ rationAsk=true; renderRationLien(); return; }
+  if(b.dataset.rgarde){ rationAsk=false; renderRationLien(); return; }
+  if(b.dataset.ron){ rationAsk=false; rationActiver(); renderMelBase(); $("status").textContent="KEENAN charge maintenant la Ration"; return; }
+  if(b.dataset.roff){ rationAsk=false; rationDesactiver(); renderMelBase(); $("status").textContent="KEENAN est revenu à l'ancien chargement"; return; } });
 
 /* ---------- Navigation : une seule fenêtre ouverte ---------- */
 const parent = {base:"main", jour:"main", menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
@@ -1524,7 +1576,7 @@ function buildLots(fromDraft){
     <label class="f" for="lot-${i}-nom">Lot<input type="text" id="lot-${i}-nom" value="${esc(l.nom)}"></label>
     <div class="grid">
       <label class="f" for="lot-${i}-eff">Effectif${KN_CAT(l)&&l.auto!==false?' (OviLink)':''}<input type="number" inputmode="numeric" step="1" min="0" id="lot-${i}-eff" value="${l.effectif}"${KN_CAT(l)&&l.auto!==false?' readonly':''}></label>
-      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?'Coefficient cible après 10 jours':'Coefficient (part)'}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
+      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?(cfg.ration&&cfg.ration.on?'Coefficient cible après 20 jours':'Coefficient cible après 10 jours'):'Coefficient (part)'}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
     </div>
     <div class="seg3" role="group" aria-label="Ration traite du lot ${esc(l.nom)}">
       ${TRAITE.map(t=>`<button type="button" data-lot="${i}" data-tr="${t.v}" aria-pressed="${+l.traite===t.v}">${t.t}</button>`).join("")}
@@ -1539,7 +1591,7 @@ function buildLots(fromDraft){
       <label class="f" for="lot-${i}-tp">TP (g/l)<input type="number" inputmode="decimal" step="1" min="0" id="lot-${i}-tp" value="${l.tp}"></label>` : ""}
     </div>
     ${KN_CAT(l)?`<label class="check"><input type="checkbox" id="lot-${i}-auto"${l.auto!==false?' checked':''}> Effectif automatique depuis OviLink (bergerie seulement)</label>`:''}
-    ${l.coefAuto!=null&&l.auto!==false&&(+l.effectif||0)>0?`<p class="note">Coefficient du jour : <b>${nf(l.coefAuto,2)}</b> (montée sur 10 jours après l'agnelage, de la part des pleines à ${nf(l.coef,2)})</p>`:''}
+    ${l.coefAuto!=null&&l.auto!==false&&(+l.effectif||0)>0?`<p class="note">Coefficient du jour : <b>${nf(l.coefAuto,2)}</b> ${KN_CAT(l)==='agnelees'?`(montée sur ${cfg.ration&&cfg.ration.on?20:10} jours après l'agnelage, de la part des pleines à ${nf(l.coef,2)})`:KN_CAT(l)==='traite'?'(brebis de 1 an comptées à leur %)':'(90 % + 1 % par mois depuis le 1er octobre)'}</p>`:''}
     <div class="lotmat" id="lot-${i}-mat"></div>
     ${delLot===i
       ? `<div class="actions"><button type="button" class="btn btn-rust" data-lotkeep="${i}">Garder</button><button type="button" class="btn btn-red" data-lotdel="${i}">Supprimer ce lot</button></div>`
@@ -1927,7 +1979,7 @@ async function saveRemote(){
 /* ---------- Lien avec OviLink (même site) ----------
    OviLink écrit chaque jour les effectifs de la bergerie dans « cb_keenan » ; KEENAN les reprend tout seul.
    Agnelées : chaque brebis passe de la part des pleines à la part des agnelées en 10 jours après la mise bas. */
-function KN_CAT(l){ const n = (l&&l.nom)||""; return /b[ée]lier/i.test(n)?"beliers":/antenai/i.test(n)?"antenaises":/agnel/i.test(n)?"agnelees":/traite/i.test(n)?"traite":/plein/i.test(n)?"pleines":""; }
+function KN_CAT(l){ const n = (l&&l.nom)||""; return /b[ée]lier/i.test(n)?"beliers":/antenai|1 an/i.test(n)?"antenaises":/agnel/i.test(n)?"agnelees":/traite/i.test(n)?"traite":/plein/i.test(n)?"pleines":""; }
 let oviT = 0;
 function oviSync(noStore){
   let o = null; try{ o = JSON.parse(localStorage.getItem("cb_keenan")||"null"); }catch(e){}
@@ -1942,9 +1994,18 @@ function oviSync(noStore){
     const k = KN_CAT(l); if(!k) return;
     if(l.auto===false){ if(l.coefAuto!=null){ l.coefAuto = null; ch = true; } return; }
     const n = Math.max(0, +o[k]||0); if(l.effectif!==n){ l.effectif = n; ch = true; }
+    const R = cfg.ration && cfg.ration.on;
     if(k==="agnelees"){
-      const J = Array.isArray(o.jours) ? o.jours : [], ca = +l.coef||0;
-      const v = J.length ? Math.round(J.reduce((s,d)=>s + cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/10), 0)/J.length*1000)/1000 : null;
+      const ca = +l.coef||0; let v = null;
+      if(R && Array.isArray(o.agn)){ // mode Ration : montée de la pleine (1) à la traite (1,78) en 20 jours, brebis de 1 an à leur %
+        v = o.agn.length ? Math.round(o.agn.reduce((s,[d,f])=>s + (cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/20))*(+f||1), 0)/o.agn.length*1000)/1000 : null;
+      } else { const J = Array.isArray(o.jours) ? o.jours : [];
+        v = J.length ? Math.round(J.reduce((s,d)=>s + cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/10), 0)/J.length*1000)/1000 : null; }
+      if(l.coefAuto!==v){ l.coefAuto = v; ch = true; }
+    } else if(k==="traite" || k==="antenaises"){
+      let v = null;
+      if(R && k==="traite" && Array.isArray(o.trf) && o.trf.length) v = Math.round((+l.coef||0)*o.trf.reduce((s,f)=>s+(+f||1),0)/o.trf.length*1000)/1000;
+      if(R && k==="antenaises" && o.jeuneF) v = Math.round((+l.coef||0)*o.jeuneF*1000)/1000;
       if(l.coefAuto!==v){ l.coefAuto = v; ch = true; }
     }
   });
@@ -1954,6 +2015,7 @@ function oviSync(noStore){
 function oviNote(){ if(!oviT) return; const d = new Date(oviT); $("status").textContent = "Effectifs repris d'OviLink (bergerie) le " + d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
 function oviRefresh(){ if(oviSync()){ if(current==="main") render(); else if(current==="menu") renderMenu(); else if(current==="reperes" && typeof renderReperes==="function") renderReperes(); } oviNote(); }
 oviSync(); 
+if(cfg.ration && cfg.ration.on){ rationSync(); store("cfg",cfg); }
 window.addEventListener("storage", e=>{ if(e.key==="cb_keenan") oviRefresh(); });
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) oviRefresh(); });
 
