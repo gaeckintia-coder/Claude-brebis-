@@ -1253,9 +1253,12 @@ function keenanMaj(){ if(!DB) return; const o={beliers:0,pleines:0,antenaises:0,
   o.jours.sort((x,y)=>x-y); const nv=JSON.stringify(o); if(nv===keenanMaj.der) return; keenanMaj.der=nv; o.t=Date.now(); LS.set('cb_keenan',o)}
 function knOpen(){ keenanMaj(); let w=$('#kn-wrap');
   if(!w){ w=document.createElement('div'); w.id='kn-wrap'; w.style.cssText='position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column';
-    w.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)"><button type="button" class="btn2 b-retour" id="kn-back">← OviLink</button><b style="font-size:18px">KEENAN</b><span class="hint" style="margin-left:auto">les minuteurs continuent</span></div><iframe id="kn-if" src="rationneur.html" title="KEENAN" style="flex:1;width:100%;border:0"></iframe>';
+    w.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)"><button type="button" class="btn2 b-retour" id="kn-back">← OviLink</button><b style="font-size:18px">KEENAN</b><span class="hint" style="margin-left:auto">les minuteurs continuent</span></div><iframe id="kn-if" src="rationneur.html?v='+Date.now()+'" title="KEENAN" style="flex:1;width:100%;border:0"></iframe>';
     document.body.appendChild(w); $('#kn-back').onclick=knClose}
-  w.hidden=false; document.body.style.overflow='hidden'}
+  // nouvelle version de KEENAN déposée sur GitHub : on recharge la page à l'ouverture (si aucun minuteur ne tourne)
+  else { const g=k=>{try{return +JSON.parse(localStorage.getItem('kn_'+k)||'0')||0}catch(e){return 0}}, f=$('#kn-if');
+    if(f && Date.now()-(w._t||0)>60000 && !g('timerEnd') && !g('timerPause') && !g('eauEnd') && !g('eauPause')) f.src='rationneur.html?v='+Date.now() }
+  w._t=Date.now(); w.hidden=false; document.body.style.overflow='hidden'}
 // minuteurs de KEENAN visibles dans OviLink (en haut à droite) ; toucher = ouvrir KEENAN
 function knMinut(){ let el=$('#kn-min'); const g=k=>{try{return +JSON.parse(localStorage.getItem('kn_'+k)||'0')||0}catch(e){return 0}};
   const now=Date.now(), T=[['🥣',g('timerEnd'),g('timerPause')],['💧',g('eauEnd'),g('eauPause')]].filter(([,e,pz])=>e>0||pz>0);

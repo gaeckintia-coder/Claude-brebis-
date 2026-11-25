@@ -1399,10 +1399,10 @@ const BT={enrb:{nom:"Foin enrubanné",ms:.75,ufl:.53,pdin:60,pdie:56,uem:1.01,p:
   luz:{nom:"Luzerne",ms:.93,ufl:.61,pdin:110,pdie:90,uem:.90,p:2.3,ca:14,mat:177,max:.7},
   a17:{nom:"17 (Mélovigest NT)",ms:.87,ufl:.99,pdin:119,pdie:105,uem:0,p:7,ca:7,mat:170,max:.5},
   a26:{nom:"26 (Ovipro 26 NT)",ms:.87,ufl:.90,pdin:185,pdie:132,uem:0,p:8,ca:9,mat:260}};
-const BB0={q:{luz:.7,a17:.5,a26:.1},ms:{},mat:{},remp:100,pAgx:90,pTr:90};
+const BB0={q:{luz:.7,a17:.5,a26:.1},ms:{},mat:{},remp:100,pAgx:90,pTr:90,salle:{al:"a26",q:0}};
 const BBES={fg:{ufl:1.68,pdi:162,p:8,ca:16.6,uem:1.80,ms:1.66},agx:{ufl:2.28,pdi:290,p:8.925,ca:18.1,uem:2.87,ms:2.60},tr:{ufl:2.80,pdi:372,p:10.85,ca:23,uem:3.08,ms:2.95}};
 const BCOL=[["ms","kg MS",2],["ufl","UFL",2],["pdin","PDIN",0],["pdie","PDIE",0],["mat","MAT g",0],["uem","UEM",2],["p","P",1],["ca","Ca",1]];
-let BB=Object.assign(clone(BB0), load("baseCdeo")||{});
+let BB=Object.assign(clone(BB0), load("baseCdeo")||{}); if(!BB.salle) BB.salle=clone(BB0.salle);
 function bVal(id){const a=BT[id], ms=BB.ms[id]!=null?BB.ms[id]:a.ms, f=ms/a.ms, v={ms};
   ["ufl","pdin","pdie","uem","p","ca"].forEach(k=>v[k]=a[k]*f); v.matTable=a.mat*f/10; v.matPct=BB.mat[id]!=null?BB.mat[id]:v.matTable; v.mat=v.matPct*10; return v}
 function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
@@ -1411,9 +1411,11 @@ function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
   const man=BB.q.enrb!=null; L.unshift({id:"enrb",q:man?+BB.q.enrb||0:xe,v:e,man,auto:xe,lim:xC<xU?"place":"énergie"});
   const part={}; BCOL.forEach(([k])=>part[k]=L.reduce((s,l)=>s+l.q*l.v[k],0));
   const alimKg=(+BB.q.a17||0)+(+BB.q.a26||0);
-  const st=(key,pct)=>{const b=BBES[key], k=key==="fg"?1:b.uem*pct/100/part.uem, ap={}; BCOL.forEach(([c])=>ap[c]=part[c]*k);
-    const manque=b.ufl-ap.ufl; return {b,k,ap,alim:alimKg*k,salle:manque>0?manque/BT.a26.ufl*(BT.a26.ms/(BB.ms.a26||BT.a26.ms)):0,manque}};
-  return {L,part,fg:st("fg"),agx:st("agx",BB.pAgx),tr:st("tr",BB.pTr)}}
+  // salle de traite : aliment par passage ; pleines 0 passage, mères d'agneaux 1, brebis à traire 2 (Jack 25/11)
+  const sv=bVal(BB.salle.al), sq=+BB.salle.q||0, sal={}; BCOL.forEach(([c])=>sal[c]=sq*sv[c]); sal.uem=0;
+  const st=(key,pct,np)=>{const b=BBES[key], k=key==="fg"?1:b.uem*pct/100/part.uem, ap={}; BCOL.forEach(([c])=>ap[c]=part[c]*k+np*sal[c]);
+    const manque=b.ufl-ap.ufl; return {b,k,np,ap,alimMel:alimKg*k,alimSalle:np*sq,alim:alimKg*k+np*sq,manque,parPassage:np&&manque>0?manque/np/sv.ufl:0}};
+  return {L,part,sal,sv,sq,fg:st("fg",100,0),agx:st("agx",BB.pAgx,1),tr:st("tr",BB.pTr,2)}}
 function renderMelBase(){const C=bCalcul(), n=BCOL.length+4;
   const cells=o=>BCOL.map(([k,,d])=>`<td>${nf(o[k],d)}</td>`).join("");
   const ligne=(titre,key,S,info)=>{const b=S.b, ref=k=>k==="pdin"||k==="pdie"?b.pdi:b[k];
@@ -1422,7 +1424,7 @@ function renderMelBase(){const C=bCalcul(), n=BCOL.length+4;
     <tr><td>Besoins</td><td></td><td></td><td></td>${BCOL.map(([k,,d])=>`<td>${k==="mat"?"":nf(ref(k),d)}</td>`).join("")}</tr>
     <tr><td>Variation</td><td></td><td></td><td></td>${BCOL.map(([k,,d])=>{ if(k==="mat") return "<td></td>"; const x=S.ap[k]-ref(k), pc=S.ap[k]/ref(k)*100, cv=k==="ufl"||k==="pdin"||k==="pdie";
       const bad=cv?(pc<95||pc>130):(k==="uem"&&x>0.01); return `<td class="${bad?"warn":"ok"}">${x>=0?"+":""}${nf(x,d)}${cv?`<br><small>${nf(pc)} %</small>`:""}</td>`}).join("")}</tr>
-    <tr><td colspan="${n}" class="infotd"><div class="info note">Aliment dans le mélange : ${nf(S.alim,2)} kg brut${key==="fg"?(S.manque>0.005?` · il manque ${nf(S.manque,2)} UFL`:" · énergie couverte"):(S.salle>0.005?` · pour couvrir l’énergie : + ${nf(S.salle,2)} kg brut de 26 en salle → aliment total ${nf(S.alim+S.salle,2)} kg${S.alim+S.salle>1?' <b class="warn">(plus de 1 kg)</b>':""}`:" · énergie couverte par le mélange")}</div></td></tr>`};
+    <tr><td colspan="${n}" class="infotd"><div class="info note">Aliment : ${nf(S.alimMel,2)} kg dans le mélange${S.np?` + ${nf(S.alimSalle,2)} kg en salle (${S.np} passage${S.np>1?"s":""})`:""} = <b class="${S.alim>1.0001?"warn":""}">${nf(S.alim,2)} kg brut</b>${S.alim>1.0001?' <b class="warn">(plus de 1 kg)</b>':""}<br>${S.manque>0.005?`Il manque ${nf(S.manque,2)} UFL${S.np?` · environ + ${nf(S.parPassage,2)} kg brut de ${BB.salle.al==="a17"?"17":"26"} par passage pour couvrir l’énergie`:""}`:"Énergie couverte"}</div></td></tr>`};
   document.getElementById("baseBox").innerHTML = `<div class="btabw"><table class="btab"><thead><tr><th>Aliment</th><th>kg brut</th><th>MS %</th><th>MAT % brut</th>${BCOL.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>
     ${C.L.map(l=>{const a=BT[l.id], v=l.v, t={}; BCOL.forEach(([k])=>t[k]=l.q*v[k]);
       return `<tr><td>${esc(a.nom)}${l.id==="enrb"?(l.man?`<br><small class="note">réglé à la main (calcul : ${nf(l.auto,2)})</small><br><button type="button" class="linkbtn" data-bauto="1">↺ calcul automatique</button>`:`<br><small class="note">calculé (limité par ${l.lim}), modifiable</small>`):a.max?`<br><small class="${l.q>a.max+1e-9?"warn":"note"}">max conseillé ${nf(a.max*1000)} g</small>`:""}</td>
@@ -1430,6 +1432,9 @@ function renderMelBase(){const C=bCalcul(), n=BCOL.length+4;
       <td><input data-bms="${l.id}" inputmode="decimal" value="${bRaw("bms",l.id,nf(v.ms*100))}"></td>
       <td><input data-bmat="${l.id}" inputmode="decimal" value="${bRaw("bmat",l.id,nf(v.matPct,1))}">${Math.abs(v.matPct-v.matTable)>v.matTable*.1?'<br><small class="warn">≠ table</small>':""}</td>${cells(t)}</tr>`}).join("")}
     <tr><td><b>1 part</b></td><td>${nf(C.L.reduce((s,l)=>s+l.q,0),2)}</td><td></td><td>${nf(C.part.mat/C.part.ms/10,1)} % MS</td>${cells(C.part)}</tr>
+    <tr class="sep"><td><b>Salle de traite</b><br><small class="note">par passage · mères d’agneaux 1 · brebis à traire 2 · pleines 0</small><br><select data-bsal="al" style="font:inherit;font-size:14px;padding:4px;margin-top:4px"><option value="a26"${BB.salle.al==="a26"?" selected":""}>26 (Ovipro)</option><option value="a17"${BB.salle.al==="a17"?" selected":""}>17 (Mélovigest)</option></select></td>
+      <td><input data-bq="salle" inputmode="decimal" value="${bRaw("bq","salle",nf(C.sq,2))}"></td><td class="note">${nf(C.sv.ms*100)}</td><td class="note">${nf(C.sv.matPct,1)}</td>${cells(C.sal)}</tr>
+    <tr><td colspan="${n}" class="infotd"><div class="info note">MS et MAT de l’aliment de salle : ceux de sa ligne plus haut. En salle, l’aliment ne compte pas dans la place (comme sur les fiches).</div></td></tr>
     ${ligne("Gestation","fg",C.fg,"les pleines mangent 1 part (besoins : fin de gestation, 75 kg, 1,6 agneau)")}
     ${ligne("Mères d’agneaux","agx",C.agx,`même mélange, ${nf(BB.pAgx)} % de leur place (besoins : 65 kg, 1,9 L)`)}
     ${ligne("Brebis à traire","tr",C.tr,`même mélange, ${nf(BB.pTr)} % de leur place (besoins : 65 kg, 2,6 L)`)}
@@ -1449,10 +1454,11 @@ let BRAW={}; const bRaw=(t,id,def)=>{const k=t+":"+id; return BRAW[k]!=null?esc(
 document.getElementById("v-base").addEventListener("focusout",e=>{const d=e.target.dataset||{}; const t=["bq","bms","bmat","bset"].find(x=>d[x]!=null); if(t) delete BRAW[t+":"+d[t]]});
 document.getElementById("v-base").addEventListener("input",e=>{const d=e.target.dataset, s=e.target.value.trim(); const t=["bq","bms","bmat","bset"].find(x=>d[x]!=null); if(!t) return;
   BRAW[t+":"+d[t]]=e.target.value; if(s===""||s==="-"||!/\d/.test(s)) return; const x=num(s);
-  if(d.bq){ if(x>=0&&x<20){BB.q[d.bq]=x; baseMaj();} }
+  if(d.bq){ if(x>=0&&x<20){ if(d.bq==="salle") BB.salle.q=x; else BB.q[d.bq]=x; baseMaj();} }
   else if(d.bms){ if(x>5&&x<=100){BB.ms[d.bms]=x/100; baseMaj();} }
   else if(d.bmat){ if(x>=0&&x<60){BB.mat[d.bmat]=x; baseMaj();} }
   else if(d.bset){ if(x>0&&x<=120){BB[d.bset]=x; baseMaj();} }});
+document.getElementById("v-base").addEventListener("change",e=>{ const d=e.target.dataset||{}; if(d.bsal){BB.salle.al=e.target.value; store("baseCdeo",BB); renderMelBase();} });
 document.getElementById("v-base").addEventListener("click",e=>{ if(e.target.closest("#baseReset")){BB=clone(BB0); BRAW={}; store("baseCdeo",BB); renderMelBase();}
   if(e.target.closest("[data-bauto]")){delete BB.q.enrb; delete BRAW["bq:enrb"]; store("baseCdeo",BB); renderMelBase();} });
 
