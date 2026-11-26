@@ -247,6 +247,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
 .btab input{width:4em;padding:5px;font-size:15px}
 .btab small{font-size:11px}
 .btab .ok{color:var(--green)} .btab .warn{color:var(--warn);font-weight:700}
+.btab.bh td,.btab.bh th{padding:5px 4px;font-size:12px}.btab.bh td:first-child,.btab.bh th:first-child{min-width:70px}
 .btab tr.rouge td,.btab td.rouge{color:#c62828;font-weight:700}.btab tr.rouge input{border:2px solid #c62828;color:#c62828}
 </style>
 
@@ -398,6 +399,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
   <p class="note">Valeurs : tables du technicien (fiches du contrôle laitier), ramenées au taux de MS et à la MAT réglés ici. <span id="rationEtat"></span></p>
   <div id="baseBox"></div>
   <section class="panel" id="rationLien"></section>
+  <section class="panel" id="rationHist"></section>
 </div>
 
 <!-- MENU RÉGLAGES -->
@@ -1402,14 +1404,14 @@ $("v-jour").addEventListener("click",e=>{
    Mères d'agneaux et traite : même mélange, mangé à 90 % de leur place (réglable). Besoins : fiches du contrôleur. */
 const BT={enrb:{nom:"Foin enrubanné",ms:.75,ufl:.53,pdin:60,pdie:56,uem:1.01,p:2.3,ca:4.9,mat:94},
   luz:{nom:"Luzerne",ms:.93,ufl:.61,pdin:110,pdie:90,uem:.90,p:2.3,ca:14,mat:177,max:.7},
-  reg:{nom:"Regain enrubanné",ms:.70,ufl:.63,pdin:74,pdie:74,uem:1.22,p:3.0,ca:5.3,mat:95},
+  reg:{nom:"Regain enrubanné",ms:.70,ufl:.63,pdin:74,pdie:74,uem:.94 /* Jack 25/11 : comme le foin par kg de MS (fiche : 1,22, sûrement une erreur) */,p:3.0,ca:5.3,mat:95},
   a17:{nom:"17 (Mélovigest NT)",ms:.87,ufl:.99,pdin:119,pdie:105,uem:0,p:7,ca:7,mat:170,max:.5},
   a26:{nom:"26 (Ovipro 26 NT)",ms:.87,ufl:.90,pdin:185,pdie:132,uem:0,p:8,ca:9,mat:260}};
 // 1 part = ce que mange une pleine d'après le contrôleur : 1,66 kg de MS (Jack 25/11). Mères d'agneaux et traite : rapport des MS des fiches.
-const BB0={q:{luz:.7,a17:.4,a26:.1},ms:{},mat:{},cible:1.66,salle:{al:"a26",q:.15}};
+const BB0={q:{luz:.7,a17:.4,a26:.1},ms:{},mat:{},cible:1.66,ingAg:2.60,ingTr:2.95,salle:{al:"a26",q:.15}};
 const BBES={fg:{ufl:1.68,pdi:162,p:8,ca:16.6,uem:1.80,ms:1.66},agx:{ufl:2.28,pdi:290,p:8.925,ca:18.1,uem:2.87,ms:2.60},tr:{ufl:2.80,pdi:372,p:10.85,ca:23,uem:3.08,ms:2.95}};
 const BCOL=[["ms","kg MS",2],["ufl","UFL",2],["pdin","PDIN",0],["pdie","PDIE",0],["mat","MAT g",0],["uem","UEM",2],["p","P",1],["ca","Ca",1]];
-let BB=Object.assign(clone(BB0), load("baseCdeo")||{}); if(!BB.salle) BB.salle=clone(BB0.salle); if(!(BB.cible>0)) BB.cible=1.66;
+let BB=Object.assign(clone(BB0), load("baseCdeo")||{}); if(!BB.salle) BB.salle=clone(BB0.salle); if(!(BB.cible>0)) BB.cible=1.66; if(!(BB.ingAg>0)) BB.ingAg=2.60; if(!(BB.ingTr>0)) BB.ingTr=2.95;
 function bVal(id){const a=BT[id], ms=BB.ms[id]!=null?BB.ms[id]:a.ms, f=ms/a.ms, v={ms};
   ["ufl","pdin","pdie","uem","p","ca"].forEach(k=>v[k]=a[k]*f); v.matTable=a.mat*f/10; v.matPct=BB.mat[id]!=null?BB.mat[id]:v.matTable; v.mat=v.matPct*10; return v}
 function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
@@ -1421,7 +1423,7 @@ function bCalcul(){const L=[], fix={}; BCOL.forEach(([k])=>fix[k]=0);
   const alimKg=(+BB.q.a17||0)+(+BB.q.a26||0);
   // salle de traite : aliment par passage ; pleines 0 passage, mères d'agneaux 1, brebis à traire 2 (Jack 25/11)
   const sv=bVal(BB.salle.al), sq=+BB.salle.q||0, sal={}; BCOL.forEach(([c])=>sal[c]=sq*sv[c]); sal.uem=0;
-  const st=(key,np)=>{const b=BBES[key], k=b.ms/BBES.fg.ms, ap={}; BCOL.forEach(([c])=>ap[c]=part[c]*k+np*sal[c]);
+  const st=(key,np)=>{const b=BBES[key], k=key==="fg"?1:(key==="agx"?BB.ingAg:BB.ingTr)/BB.cible, ap={}; BCOL.forEach(([c])=>ap[c]=part[c]*k+np*sal[c]);
     const manque=b.ufl-ap.ufl; return {b,k,np,ap,alimMel:alimKg*k,alimSalle:np*sq,alim:alimKg*k+np*sq,manque,parPassage:np&&manque>0?manque/np/sv.ufl:0}};
   return {L,part,sal,sv,sq,fg:st("fg",0),agx:st("agx",1),tr:st("tr",2),trop:part.ms>BB.cible+0.005}}
 function renderMelBase(){const C=bCalcul(), n=BCOL.length+4, R=C.trop?' class="rouge"':"";
@@ -1445,17 +1447,20 @@ function renderMelBase(){const C=bCalcul(), n=BCOL.length+4, R=C.trop?' class="r
       <td><input data-bq="salle" inputmode="decimal" value="${bRaw("bq","salle",nf(C.sq,2))}"></td><td class="note">${nf(C.sv.ms*100)}</td><td class="note">${nf(C.sv.matPct,1)}</td>${cells(C.sal)}</tr>
     <tr><td colspan="${n}" class="infotd"><div class="info note">MS et MAT de l’aliment de salle : ceux de sa ligne plus haut. En salle, l’aliment ne compte pas dans la place (comme sur les fiches).</div></td></tr>
     ${ligne("Gestation","fg",C.fg,"les pleines mangent 1 part (besoins : fin de gestation, 75 kg, 1,6 agneau)")}
-    ${ligne("Mères d’agneaux","agx",C.agx,`même mélange × ${nf(C.agx.k,2)} (2,60 ÷ 1,66 kg MS, fiches du contrôleur ; besoins : 65 kg, 1,9 L)`)}
-    ${ligne("Brebis à traire","tr",C.tr,`même mélange × ${nf(C.tr.k,2)} (2,95 ÷ 1,66 kg MS, fiches du contrôleur ; besoins : 65 kg, 2,6 L)`)}
+    ${ligne("Mères d’agneaux","agx",C.agx,`mangent ${nf(BB.ingAg,2)} kg MS = ${nf(C.agx.k,2)} part (${nf(BB.ingAg,2)} ÷ ${nf(BB.cible,2)}) ; atteint pendant la montée vers la traite ; besoins : 65 kg, 1,9 L`)}
+    ${ligne("Brebis à traire","tr",C.tr,`mangent ${nf(BB.ingTr,2)} kg MS = ${nf(C.tr.k,2)} part (${nf(BB.ingTr,2)} ÷ ${nf(BB.cible,2)}) ; besoins : 65 kg, 2,6 L`)}
   </tbody></table></div>
-  <section class="panel"><h2>Réglages</h2><div class="grid">
-    <label class="f">1 part = une pleine (kg de MS ; contrôleur : 1,66)<input data-bset="cible" inputmode="decimal" value="${bRaw("bset","cible",nf(BB.cible,2))}"></label></div>
+  <section class="panel"><h2>Ce que mange une brebis</h2><p class="note">kg de matière sèche par brebis et par jour. 1 part = ce que mange une pleine ; les parts des autres se calculent toutes seules.</p><div class="grid">
+    <label class="f">Pleine = 1 part (contrôleur : 1,66)<input data-bset="cible" inputmode="decimal" value="${bRaw("bset","cible",nf(BB.cible,2))}"></label>
+    <label class="f">Mère d’agneaux (contrôleur : 2,60) → ${nf(BB.ingAg/BB.cible,2)} part<input data-bset="ingAg" inputmode="decimal" value="${bRaw("bset","ingAg",nf(BB.ingAg,2))}"></label>
+    <label class="f">Brebis à la traite (contrôleur : 2,95) → ${nf(BB.ingTr/BB.cible,2)} part<input data-bset="ingTr" inputmode="decimal" value="${bRaw("bset","ingTr",nf(BB.ingTr,2))}"></label></div>
+    <p class="note">Montée après l’agnelage : de 1 part au niveau des brebis à la traite en 20 jours. Béliers 0,90 part ; brebis de 1 an : 90 % au 1er octobre + 1 % par mois.</p>
     <p class="note">Faire glisser le tableau vers la gauche pour voir toutes les colonnes.</p>
     <p class="note">Concentrés comptés à 0 en encombrement, comme sur les fiches du contrôleur. Si la MAT diffère de la table, PDIN et PDIE restent ceux de la table.</p>
     <button class="btn btn-line" id="baseReset">Revenir aux valeurs du technicien</button></section>`;
-  renderRationLien();
+  renderRationLien(); renderHist();
 }
-function baseMaj(){store("baseCdeo",BB); if(cfg.ration&&cfg.ration.on){ rationSync(); store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer=setTimeout(saveRemote,1500); } const el=document.activeElement, k=el&&el.dataset?Object.keys(el.dataset)[0]:null, v=k?el.dataset[k]:null;
+function baseMaj(){store("baseCdeo",BB); if(cfg.ration&&cfg.ration.on){ rationSync(); oviSync(true); store("cfg",cfg); clearTimeout(pendingTimer); pendingTimer=setTimeout(saveRemote,1500); } const el=document.activeElement, k=el&&el.dataset?Object.keys(el.dataset)[0]:null, v=k?el.dataset[k]:null;
   renderMelBase(); if(k){const nd=document.querySelector(`#baseBox [data-${k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase())}="${v}"]`); if(nd){nd.focus(); try{const L=nd.value.length; nd.setSelectionRange(L,L)}catch(e){}}}}
 /* ce qui est en train d'être tapé (ex. « 0, ») reste tel quel dans la case pendant la saisie */
 let BRAW={}; const bRaw=(t,id,def)=>{const k=t+":"+id; return BRAW[k]!=null?esc(BRAW[k]):def};
@@ -1486,12 +1491,14 @@ function rationSync(){ if(!(cfg.ration&&cfg.ration.on)) return false; const C=bC
   const S=cfg.aliments.find(x=>x.lieu==="traite"), T=BT[BB.salle.al], sv=bVal(BB.salle.al), q=+BB.salle.q||0;
   if(S) Object.assign(S,{nom:BB.salle.al==="a17"?"Aliment traite 17":"Aliment traite 26",ms:sv.ms,msOk:true,sec:Math.round(2*q*sv.ms*10000)/10000,actif:true,
     type:"concentre",ufl:T.ufl/T.ms,pdin:T.pdin/T.ms,pdie:T.pdie/T.ms,uem:0,mat:Math.round(sv.matPct/sv.ms*10)/10,vOk:true});
-  cfg.ration.salleQ=q; cfg.ration.aliPart=(+BB.q.a17||0)+(+BB.q.a26||0); return true; }
+  cfg.ration.salleQ=q; cfg.ration.aliPart=(+BB.q.a17||0)+(+BB.q.a26||0);
+  const kt=Math.round(BB.ingTr/BB.cible*1000)/1000;
+  cfg.lots.forEach(l=>{ const k=KN_CAT(l); if(k==="beliers") l.coef=0.9; else if(k==="pleines"||k==="antenaises") l.coef=1; else if(k==="agnelees"||k==="traite") l.coef=kt; });
+  return true; }
 function rationActiver(){ store("cfgAvantRation",clone(cfg));
   cfg.ration={on:true,depuis:dayKey()};
   cfg.lots.forEach(l=>{ const k=KN_CAT(l);
-    if(k==="beliers") l.coef=0.9; else if(k==="pleines") l.coef=1; else if(k==="antenaises"){ l.coef=1; l.nom="Brebis de 1 an pleines"; }
-    else if(k==="agnelees"){ l.coef=1.78; l.traite=0.5; } else if(k==="traite"){ l.coef=1.78; l.traite=1; } });
+    if(k==="antenaises") l.nom="Brebis de 1 an pleines"; else if(k==="agnelees") l.traite=0.5; else if(k==="traite") l.traite=1; });
   rationSync(); oviSync(true); commit(); }
 function rationDesactiver(){ const old=load("cfgAvantRation"); if(old&&old.lots){ cfg=fill(old); } else { cfg.ration={on:false}; }
   if(cfg.ration) cfg.ration.on=false; oviSync(true); commit(); }
@@ -1503,7 +1510,7 @@ function aliAlerte(){ if(!(cfg.ration&&cfg.ration.on)) return ""; const R=cfg.ra
 function renderRationLien(){ const el=document.getElementById("rationLien"); if(!el) return; const on=cfg.ration&&cfg.ration.on;
   { const s=document.getElementById("rationEtat"); if(s) s.textContent = on ? "KEENAN charge cette ration : chaque changement ici change le chargement." : "Pour l'instant, cet écran ne change rien au chargement de KEENAN."; }
   el.innerHTML = on ? `<h2>Chargement de KEENAN</h2><p class="note">Cette ration est chargée par KEENAN depuis le ${String(cfg.ration.depuis||"").split("-").reverse().join("/")}.</p>
-    <p class="note">Parts : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 % par mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78.</p>
+    <p class="note">Parts : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 % par mois · agnelées de 1 à ${nf(BB.ingTr/BB.cible,2)} en 20 jours · traite ${nf(BB.ingTr/BB.cible,2)} (cases « Ce que mange une brebis »).</p>
     <p class="note">Salle : ${nf(BB.salle.q,2)} kg par passage (agnelées 1, traite 2), réduit tout seul pour ne pas dépasser 1 kg d'aliment par brebis.</p>
     ${rationAsk?`<div class="actions"><button class="btn btn-rust" data-rgarde="1">Garder</button><button class="btn btn-red" data-roff="1">Revenir à l'ancien chargement</button></div>`:`<button class="linkbtn" data-roffask="1">Revenir à l'ancien chargement</button>`}`
   : `<h2>Chargement de KEENAN</h2><p class="note">Aujourd'hui, KEENAN charge encore son ancienne ration.</p>
@@ -1515,6 +1522,44 @@ document.getElementById("rationLien").addEventListener("click",e=>{ const b=e.ta
   if(b.dataset.rgarde){ rationAsk=false; renderRationLien(); return; }
   if(b.dataset.ron){ rationAsk=false; rationActiver(); renderMelBase(); $("status").textContent="KEENAN charge maintenant la Ration"; return; }
   if(b.dataset.roff){ rationAsk=false; rationDesactiver(); renderMelBase(); $("status").textContent="KEENAN est revenu à l'ancien chargement"; return; } });
+
+
+/* ---------- Historique des rations (Jack 26/11) ----------
+   Chaque chargement enregistré en mode Ration compte un jour pour la ration en cours (quantités réglées dans l'onglet Ration, sans la MS du jour).
+   Ration servie moins de 3 jours : pas gardée (retouches) · 3 à 6 jours : « transition » · 7 jours et plus : « ration » · la plus longue de la saison : « ration type ». */
+function rationSig(R){ const q={}; Object.keys(R.q||{}).sort().forEach(k=>{ if(R.q[k]!=null) q[k]=Math.round(R.q[k]*100)/100; });
+  return JSON.stringify({q, cible:Math.round(R.cible*100)/100, ag:Math.round((R.ingAg||2.6)*100)/100, tr:Math.round((R.ingTr||2.95)*100)/100, sal:[R.salle.al, Math.round(R.salle.q*100)/100]}); }
+function rationJour(key){ const H = cfg.rationHist = cfg.rationHist || {list:[]}; const sig = rationSig(BB);
+  if(H.cur && H.cur.sig===sig){ if(!H.cur.dates.includes(key)) H.cur.dates.push(key); H.cur.snap = clone(BB); return; }
+  if(H.cur){ H.cur.dates = H.cur.dates.filter(d=>d!==key); // jour ré-enregistré avec une autre ration : il passe à la nouvelle
+    if(H.cur.dates.length>=3){ const D=H.cur.dates.slice().sort(); H.list.push({debut:D[0], fin:D[D.length-1], jours:D.length, snap:H.cur.snap}); } }
+  H.cur = {sig, snap:clone(BB), dates:[key]}; }
+const SAISONS = d => { const m=+d.slice(5,7), y=+d.slice(0,4); return m>=9&&m<=11 ? {k:y+"-3", t:"Automne "+y} : m===12 ? {k:y+"-4", t:"Hiver "+y+"-"+(y+1)} : m<=2 ? {k:(y-1)+"-4", t:"Hiver "+(y-1)+"-"+y} : m<=5 ? {k:y+"-1", t:"Printemps "+y} : {k:y+"-2", t:"Été "+y}; };
+let histAsk = null;
+function rationResume(snap){ const keep=BB; BB=Object.assign(clone(BB0), clone(snap)); if(!BB.salle) BB.salle=clone(BB0.salle); let C; try{ C=bCalcul(); } finally { BB=keep; } return C; }
+function renderHist(){ const el=document.getElementById("rationHist"); if(!el) return; const H=cfg.rationHist||{list:[]};
+  const L = H.list.map((x,i)=>({...x, i}));
+  if(H.cur && H.cur.dates.length){ const D=H.cur.dates.slice().sort(); L.push({debut:D[0], fin:D[D.length-1], jours:D.length, snap:H.cur.snap, enCours:true, i:"cur"}); }
+  if(!L.length){ el.innerHTML = `<h2>Historique des rations</h2><p class="note">Chaque ration servie au moins 3 jours (chargements enregistrés) sera gardée ici, rangée par saison, pour la retrouver les autres années.</p>`; return; }
+  const G = {}; L.forEach(x=>{ const s=SAISONS(x.debut); (G[s.k]=G[s.k]||{t:s.t, L:[]}).L.push(x); });
+  const fr = d => d.split("-").reverse().join("/");
+  el.innerHTML = `<h2>Historique des rations</h2><p class="note">Rations servies au moins 3 jours. Moins de 7 jours : transition. La plus longue de la saison : ration type.</p>` +
+    Object.keys(G).sort().reverse().map(k=>{ const g=G[k], max=Math.max(...g.L.filter(x=>x.jours>=7).map(x=>x.jours), 0);
+      return `<h3 style="margin:10px 0 4px">${g.t}</h3>` + g.L.sort((a,b)=>b.debut.localeCompare(a.debut)).map(x=>{
+        const C = rationResume(x.snap), S=x.snap, typ = x.jours>=7 && x.jours===max ? "Ration type" : x.jours>=7 ? "Ration" : x.enCours && x.jours<3 ? "En cours" : "Transition";
+        const comp = C.L.filter(l=>l.q>0).map(l=>`${esc(BT[l.id].nom)} ${nf(l.q,2)}`).join(" · ");
+        const row = (t,Sx,k) => `<tr><td>${t}</td><td>${nf(k,2)}</td><td>${nf(Sx.ap.ufl/Sx.b.ufl*100)} %</td><td>${nf(Sx.ap.pdie/Sx.b.pdi*100)} %</td><td>${nf(Sx.ap.uem/Sx.b.uem*100)} %</td><td>${nf(Sx.alim,2)}</td></tr>`;
+        return `<div class="dayrow"><div><b>${typ}</b>${x.enCours?' <span class="st ok">en cours</span>':''}<br><span class="note">du ${fr(x.debut)} au ${fr(x.fin)} · ${x.jours} jour${x.jours>1?"s":""} servi${x.jours>1?"s":""}</span></div>
+          <span class="note">Par part (kg brut) : ${comp} · salle ${S.salle.al==="a17"?"17":"26"} ${nf(S.salle.q,2)} par passage · 1 part = ${nf(S.cible,2)} kg MS</span>
+          <div class="btabw"><table class="btab bh"><thead><tr><th>Stade</th><th>Part</th><th>Énerg.</th><th>PDIE</th><th>Place</th><th>Alim. kg</th></tr></thead><tbody>
+          ${row("Brebis pleines",C.fg,1)}${row("Brebis agnelées",C.agx,C.agx.k)}${row("Brebis à la traite",C.tr,C.tr.k)}</tbody></table></div>
+          ${histAsk===x.i ? `<div class="actions"><button class="btn btn-rust" data-hno="1">Garder la ration actuelle</button><button class="btn btn-red" data-hok="${x.i}">Reprendre celle-ci</button></div>` : `<button class="linkbtn" data-hask="${x.i}">Reprendre cette ration</button>`}</div>`; }).join(""); }).join("");
+}
+document.getElementById("rationHist").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const H=cfg.rationHist||{list:[]};
+  if(b.dataset.hask!=null){ histAsk = b.dataset.hask==="cur" ? "cur" : +b.dataset.hask; renderHist(); return; }
+  if(b.dataset.hno){ histAsk=null; renderHist(); return; }
+  if(b.dataset.hok!=null){ const x = b.dataset.hok==="cur" ? H.cur : H.list[+b.dataset.hok]; histAsk=null; if(!x) return;
+    BB = Object.assign(clone(BB0), clone(x.snap)); BRAW={}; baseMaj(); window.scrollTo(0,0); $("status").textContent="Ration reprise : ajuste-la aux fourrages de l'année"; } });
 
 /* ---------- Navigation : une seule fenêtre ouverte ---------- */
 const parent = {base:"main", jour:"main", menu:"main", lots:"menu", alims:"menu", alim:"alims", eau:"menu", bilan:"menu", reperes:"main", pesee:"main", refus:"main"};
@@ -1576,7 +1621,7 @@ function buildLots(fromDraft){
     <label class="f" for="lot-${i}-nom">Lot<input type="text" id="lot-${i}-nom" value="${esc(l.nom)}"></label>
     <div class="grid">
       <label class="f" for="lot-${i}-eff">Effectif${KN_CAT(l)&&l.auto!==false?' (OviLink)':''}<input type="number" inputmode="numeric" step="1" min="0" id="lot-${i}-eff" value="${l.effectif}"${KN_CAT(l)&&l.auto!==false?' readonly':''}></label>
-      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?(cfg.ration&&cfg.ration.on?'Coefficient cible après 20 jours':'Coefficient cible après 10 jours'):'Coefficient (part)'}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"></label>
+      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?(cfg.ration&&cfg.ration.on?'Coefficient cible après 20 jours':'Coefficient cible après 10 jours'):'Coefficient (part)'}${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' · calculé (onglet Ration)':''}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' readonly':''}></label>
     </div>
     <div class="seg3" role="group" aria-label="Ration traite du lot ${esc(l.nom)}">
       ${TRAITE.map(t=>`<button type="button" data-lot="${i}" data-tr="${t.v}" aria-pressed="${+l.traite===t.v}">${t.t}</button>`).join("")}
@@ -1853,6 +1898,7 @@ function saveDay(mode){
   const key = mode==="demain" ? lendemainKey() : dayKey();
   $("saveChoice").hidden = true; $("saveDay").hidden = false;
   writeDay(key, [snapshotLoad()]);
+  if(cfg.ration && cfg.ration.on){ rationJour(key); commit(); }
   if(mode==="demain") $("status").textContent = `Chargement enregistré pour ${jourTxt(key)}`;
 }
 $("saveDay").addEventListener("click",()=>{
@@ -2015,7 +2061,7 @@ function oviSync(noStore){
 function oviNote(){ if(!oviT) return; const d = new Date(oviT); $("status").textContent = "Effectifs repris d'OviLink (bergerie) le " + d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
 function oviRefresh(){ if(oviSync()){ if(current==="main") render(); else if(current==="menu") renderMenu(); else if(current==="reperes" && typeof renderReperes==="function") renderReperes(); } oviNote(); }
 oviSync(); 
-if(cfg.ration && cfg.ration.on){ rationSync(); store("cfg",cfg); }
+if(cfg.ration && cfg.ration.on){ rationSync(); oviSync(true); store("cfg",cfg); }
 window.addEventListener("storage", e=>{ if(e.key==="cb_keenan") oviRefresh(); });
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) oviRefresh(); });
 
