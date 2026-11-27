@@ -279,6 +279,7 @@ select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:
     <div class="eyebrow">Total mélange</div>
     <div class="total" id="total">–</div>
     <button class="lotline" id="lotline">–</button>
+    <div class="note" id="chgLine" hidden></div>
     <div class="progress" aria-hidden="true"><span id="bar"></span></div>
     <div class="progress-row"><span id="progressTxt">–</span><button class="lotline" id="reset">Recommencer</button></div>
     <div id="resetConfirm" hidden class="danger">
@@ -818,6 +819,11 @@ const ST_TXT = {ok:"OK", warn:"À surveiller", crit:"À corriger"};
 /* ---------- Ingestion observée ----------
    kg de MS chargés ÷ (parts × jours nourris), sur les chargements enregistrés de la période.
    Pour un lot : × coefficient de part (+ condiments par animal). Les références sont gardées dans les réglages. */
+/* MS des refus (Jack 26/11) : les aliments (granulés) sont mangés, les refus sont des tiges des fourrages un peu humides,
+   qui sèchent un peu au tapis → MS des fourrages du mélange avec leur part d'eau ajoutée, + 5 points (sans dépasser la MS des fourrages secs). */
+function msRefus(){ const r=compute(cfg), F=r.mix.filter(a=>!a.condiment&&a.type==="fourrage"), B=r.mix.reduce((s,a)=>s+a.total,0);
+  const Bf=F.reduce((s,a)=>s+a.total,0), Mf=F.reduce((s,a)=>s+a.total*(a.ms||1),0); if(!(Bf>0)||!(B>0)) return 0.7;
+  const mouille=Mf/(Bf+r.eau*Bf/B); return Math.min(Mf/Bf, mouille+0.05); }
 let ingJours = 1, ingDelAsk = null;
 function ingestionObservee(nbJours){
   const fin = dayKey(), d0 = new Date(workDate()); d0.setDate(d0.getDate() - (nbJours-1));
@@ -831,8 +837,7 @@ function ingestionObservee(nbJours){
   }));
   if(!(partJours>0)) return null;
   // Refus : kg brut par jour de grossier laissé à l'auge, au % de MS du fourrage principal
-  const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
-  const refusMs = four ? four.ms : 0.86, refusMS = (+cfg.refusKg||0)*refusMs*jours;
+  const refusMs = msRefus(), refusMS = (+cfg.refusKg||0)*refusMs*jours;
   return {debut, fin, nb, jours, refusMs, refusMS, msPart: Math.max(0, ms-refusMS)/partJours, condAnimal: brebisJours>0 ? msCond/brebisJours : 0};
 }
 /* Pesée des refus : on vide l'auge (date de départ), puis au vidage suivant on pèse le tas ;
@@ -882,12 +887,13 @@ function renderRefus(){
   renderRefusBox();
   { const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
     $("refusVal").textContent = nf(cfg.refusKg, Number.isInteger(+cfg.refusKg)?0:1)+" kg";
-    $("refusNote").textContent = `${(cfg.refusPesees||[]).length ? "dernière pesée" : "estimation, en attendant la première pesée"} · retiré de l'ingestion${four ? ` (≈ ${nf(cfg.refusKg*four.ms,1)} kg MS à ${nf(four.ms*100)} % comme ${four.nom.toLowerCase()})` : ""}`; }
+    $("refusNote").textContent = `${(cfg.refusPesees||[]).length ? "dernière pesée" : "estimation, en attendant la première pesée"} · retiré de l'ingestion (≈ ${nf(cfg.refusKg*msRefus(),1)} kg MS à ${nf(msRefus()*100)} % : tiges des fourrages un peu humides)`; }
   const R = refusPct(), c = $("refusConseil");
   if(!R){ c.innerHTML = `<p class="note">Pas encore assez de chargements enregistrés pour comparer.</p>`; return; }
   const p = R.pct, pctAct = +cfg.pct||100;
   let txt, propose = null;
   if(p > 10){ propose = Math.max(50, Math.round(pctAct*(1-(p-7)/100)/5)*5); txt = `<span class="st warn">${nf(p,1)} % de refus</span> C'est beaucoup : au-delà de 10 %, une partie de la ration est gaspillée.`; }
+  else if(p < 5 && p >= 4) txt = `<span class="st ok">${nf(p,1)} % de refus</span> Un peu sous la plage habituelle de 5 à 10 % : elles mangent presque tout. On peut augmenter un peu la ration.`;
   else if(p < 4){ propose = Math.round(pctAct*(1+(6-p)/100)/5)*5; txt = `<span class="st warn">${nf(p,1)} % de refus</span> C'est peu : les brebis risquent de manquer, ou de manger aussi le plus grossier.`; }
   else txt = `<span class="st ok">${nf(p,1)} % de refus</span> Dans la plage habituelle de 5 à 10 % : elles mangent à volonté et laissent le plus grossier. Rien à changer.`;
   c.innerHTML = `<p>${txt}</p><p class="note">${nf(cfg.refusKg,0)} kg de refus sur ${nf(R.parJour)} kg distribués par jour en moyenne (eau comprise).</p>`
@@ -965,6 +971,37 @@ function pireStatut(){
 }
 
 /* ---------- Écran principal ---------- */
+/* « Depuis la dernière fois » (Jack 27/11 14 h 50) : on compare le total et ce qui le fait bouger
+   (effectifs et parts de chaque lot, réglages de l'onglet Ration, MS du jour, % du jour, jours, humidité)
+   à l'état laissé à la fin de la dernière ouverture de KEENAN. */
+const SNAP_REF = load("snap");
+const MONTEE_J = 14;   // Jack 27/11 14 h 53 : montée des agnelées jusqu'au niveau traite en 14 jours (au lieu de 20)
+function snapNow(r,L){ const B=(typeof BB!=="undefined")?BB:{};
+  return {t:Date.now(), total:Math.round(L.totalAct), parts:Math.round(r.parts*10)/10,
+    lots:cfg.lots.map(l=>({n:l.nom, e:+l.effectif||0, c:Math.round(cf(l)*1000)/1000})),
+    al:cfg.aliments.filter(a=>a.actif).map(a=>({n:a.nom, ms:Math.round((+a.ms||0)*100), q:Math.round((+a.sec||0)*1000)/1000})),
+    cible:B.cible, ingTr:B.ingTr, pct:cfg.pct, jours:r.jours, hum:cfg.humCible}; }
+function chgMaj(r,L){ const N=snapNow(r,L), R=SNAP_REF, el=$("chgLine"); store("snap",N);
+  if(!el) return; if(!R||R.total==null){ el.hidden=true; return; }
+  const d=N.total-R.total, why=[], f2=v=>nf(v,2);
+  const kgPart = N.parts>0 ? N.total/N.parts : 0;
+  N.lots.forEach(l=>{ const o=(R.lots||[]).find(x=>x.n===l.n); if(!o||(!o.e&&!l.e)) return;
+    if(o.e!==l.e) why.push(`${l.n} : ${o.e} → ${l.e}`);
+    else if(Math.abs(o.c-l.c)>=0.005) why.push(`${l.n} : part ${f2(o.c)} → ${f2(l.c)}${/agnel/i.test(l.n)?" (montée après l'agnelage)":""}`); });
+  if(R.cible!=null&&Math.abs((R.cible||0)-(N.cible||0))>=0.005) why.push(`Pleine = 1 part : ${f2(R.cible)} → ${f2(N.cible)} kg MS`);
+  if(R.ingTr!=null&&Math.abs((R.ingTr||0)-(N.ingTr||0))>=0.005) why.push(`Brebis à la traite : ${f2(R.ingTr)} → ${f2(N.ingTr)} kg MS`);
+  N.al.forEach(a=>{ const o=(R.al||[]).find(x=>x.n===a.n); if(!o){ why.push(`${a.n} ajouté`); return; }
+    if(o.ms!==a.ms) why.push(`MS ${a.n} : ${o.ms} → ${a.ms} %`); else if(Math.abs(o.q-a.q)>=0.005) why.push(`${a.n} : ${f2(o.q)} → ${f2(a.q)} kg MS par part`); });
+  (R.al||[]).forEach(o=>{ if(!N.al.find(a=>a.n===o.n)) why.push(`${o.n} retiré`); });
+  if(R.pct!==N.pct) why.push(`Ration du jour : ${nf(R.pct)} → ${nf(N.pct)} %`);
+  if(R.jours!==N.jours) why.push(`Mélange pour : ${R.jours} → ${N.jours} j`);
+  if(R.hum!==N.hum) why.push(`Humidité visée : ${nf(R.hum)} → ${nf(N.hum)} %`);
+  if(Math.abs(d)<1 && !why.length){ el.hidden=true; return; }
+  const dp=Math.round((N.parts-(R.parts||0))*10)/10;
+  el.hidden=false;
+  el.innerHTML = `<b>Depuis la dernière fois (${new Date(R.t).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})} ${new Date(R.t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}) : ${d>0?"+":""}${nf(d)} kg</b>`
+    + (dp? `<br>Parts : ${nf(R.parts,1)} → ${nf(N.parts,1)} (${dp>0?"+":""}${nf(dp,1)}, ≈ ${dp>0?"+":""}${nf(dp*kgPart)} kg)` : "")
+    + (why.length? why.map(w=>"<br>· "+esc(w)).join("") : "<br>· aucune cause trouvée (à signaler à Claude)"); }
 function render(){
   const r = compute(cfg);
   $("today").textContent = "Chargement du " + workDate().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
@@ -982,6 +1019,7 @@ function render(){
 
   const L = loadItems(r);
   $("total").innerHTML = nf(L.totalAct)+' <small>kg</small>';
+  try{ chgMaj(r,L); }catch(e){}
   let cum = 0;
   // Minuteur de mélange : placé juste après le dernier fourrage
   let lastFour = -1;
@@ -1458,7 +1496,7 @@ function renderMelBase(){const C=bCalcul(), n=BCOL.length+4, R=C.trop?' class="r
     <label class="f">Pleine = 1 part (contrôleur : 1,66)<input data-bset="cible" inputmode="decimal" value="${bRaw("bset","cible",nf(BB.cible,2))}"></label>
     <label class="f">Mère d’agneaux (contrôleur : 2,60) → ${nf(BB.ingAg/BB.cible,2)} part<input data-bset="ingAg" inputmode="decimal" value="${bRaw("bset","ingAg",nf(BB.ingAg,2))}"></label>
     <label class="f">Brebis à la traite (contrôleur : 2,95) → ${nf(BB.ingTr/BB.cible,2)} part<input data-bset="ingTr" inputmode="decimal" value="${bRaw("bset","ingTr",nf(BB.ingTr,2))}"></label></div>
-    <p class="note">Montée après l’agnelage : de 1 part au niveau des brebis à la traite en 20 jours. Béliers 0,90 part ; brebis de 1 an : 90 % au 1er octobre + 1 % par mois.</p>
+    <p class="note">Montée après l’agnelage : de 1 part au niveau des brebis à la traite en ${MONTEE_J} jours. Béliers 0,90 part ; brebis de 1 an : 90 % au 1er octobre + 1 % par mois.</p>
     <p class="note">Faire glisser le tableau vers la gauche pour voir toutes les colonnes.</p>
     <p class="note">Concentrés comptés à 0 en encombrement, comme sur les fiches du contrôleur. Si la MAT diffère de la table, PDIN et PDIE restent ceux de la table.</p>
     <button class="btn btn-line" id="baseReset">Revenir aux valeurs du technicien</button></section>`;
@@ -1482,7 +1520,7 @@ document.getElementById("v-base").addEventListener("click",e=>{ if(e.target.clos
 
 /* ---------- KEENAN charge la ration de l'onglet « Ration » (Jack 25/11, « vas-y ») ----------
    1 part = 1 pleine = 1,66 kg MS. Lignes chargées = lignes de la Ration (kg brut × MS du jour → kg MS par part, base 100 %).
-   Coefficients : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78.
+   Coefficients : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 au niveau traite en MONTEE_J jours · traite.
    Salle : aliment par passage (agnelées 1, traite 2), réduit tout seul pour ne pas dépasser 1 kg d'aliment par brebis. */
 const RMAP={enrb:"Enrubannée foin",luz:"Luzerne",reg:"Enrubannée regain",a17:"Aliment 17",a26:"Aliment 26"};
 function salleKg(c,l){ const R=c.ration||{}, pas=(+l.traite||0)*2, q=+R.salleQ||0; if(!(pas>0)||!(q>0)) return 0;
@@ -1514,11 +1552,11 @@ function aliAlerte(){ if(!(cfg.ration&&cfg.ration.on)) return ""; const R=cfg.ra
 function renderRationLien(){ const el=document.getElementById("rationLien"); if(!el) return; const on=cfg.ration&&cfg.ration.on;
   { const s=document.getElementById("rationEtat"); if(s) s.textContent = on ? "KEENAN charge cette ration : chaque changement ici change le chargement." : "Pour l'instant, cet écran ne change rien au chargement de KEENAN."; }
   el.innerHTML = on ? `<h2>Chargement de KEENAN</h2><p class="note">Cette ration est chargée par KEENAN depuis le ${String(cfg.ration.depuis||"").split("-").reverse().join("/")}.</p>
-    <p class="note">Parts : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 % par mois · agnelées de 1 à ${nf(BB.ingTr/BB.cible,2)} en 20 jours · traite ${nf(BB.ingTr/BB.cible,2)} (cases « Ce que mange une brebis »).</p>
+    <p class="note">Parts : béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 % par mois · agnelées de 1 à ${nf(BB.ingTr/BB.cible,2)} en ${MONTEE_J} jours · traite ${nf(BB.ingTr/BB.cible,2)} (cases « Ce que mange une brebis »).</p>
     <p class="note">Salle : ${nf(BB.salle.q,2)} kg par passage (agnelées 1, traite 2), réduit tout seul pour ne pas dépasser 1 kg d'aliment par brebis.</p>
     ${rationAsk?`<div class="actions"><button class="btn btn-rust" data-rgarde="1">Garder</button><button class="btn btn-red" data-roff="1">Revenir à l'ancien chargement</button></div>`:`<button class="linkbtn" data-roffask="1">Revenir à l'ancien chargement</button>`}`
   : `<h2>Chargement de KEENAN</h2><p class="note">Aujourd'hui, KEENAN charge encore son ancienne ration.</p>
-    <p class="note">En passant sur cette ration : mêmes lignes de chargement, parts par lot calculées avec OviLink (béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 à 1,78 en 20 jours · traite 1,78), salle limitée à 1 kg d'aliment par brebis. L'ancienne ration est gardée : on peut revenir en arrière.</p>
+    <p class="note">En passant sur cette ration : mêmes lignes de chargement, parts par lot calculées avec OviLink (béliers 0,90 · pleines 1 · brebis de 1 an 90 % + 1 %/mois · agnelées de 1 à ${nf(BB.ingTr/BB.cible,2)} en ${MONTEE_J} jours · traite ${nf(BB.ingTr/BB.cible,2)}), salle limitée à 1 kg d'aliment par brebis. L'ancienne ration est gardée : on peut revenir en arrière.</p>
     ${rationAsk?`<div class="actions"><button class="btn btn-rust" data-rgarde="1">Annuler</button><button class="btn btn-red" data-ron="1">Confirmer</button></div>`:`<button class="btn btn-red" data-ronask="1">Charger cette ration dans KEENAN</button>`}`; }
 let rationAsk=false;
 document.getElementById("rationLien").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
@@ -1625,7 +1663,7 @@ function buildLots(fromDraft){
     <label class="f" for="lot-${i}-nom">Lot<input type="text" id="lot-${i}-nom" value="${esc(l.nom)}"></label>
     <div class="grid">
       <label class="f" for="lot-${i}-eff">Effectif${KN_CAT(l)&&l.auto!==false?' (OviLink)':''}<input type="number" inputmode="numeric" step="1" min="0" id="lot-${i}-eff" value="${l.effectif}"${KN_CAT(l)&&l.auto!==false?' readonly':''}></label>
-      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?(cfg.ration&&cfg.ration.on?'Coefficient cible après 20 jours':'Coefficient cible après 10 jours'):'Coefficient (part)'}${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' · calculé (onglet Ration)':''}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' readonly':''}></label>
+      <label class="f" for="lot-${i}-coef">${KN_CAT(l)==='agnelees'?(cfg.ration&&cfg.ration.on?'Coefficient cible après '+MONTEE_J+' jours':'Coefficient cible après 10 jours'):'Coefficient (part)'}${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' · calculé (onglet Ration)':''}<input type="number" inputmode="decimal" step="0.05" min="0" id="lot-${i}-coef" value="${l.coef}"${cfg.ration&&cfg.ration.on&&KN_CAT(l)?' readonly':''}></label>
     </div>
     <div class="seg3" role="group" aria-label="Ration traite du lot ${esc(l.nom)}">
       ${TRAITE.map(t=>`<button type="button" data-lot="${i}" data-tr="${t.v}" aria-pressed="${+l.traite===t.v}">${t.t}</button>`).join("")}
@@ -1640,7 +1678,7 @@ function buildLots(fromDraft){
       <label class="f" for="lot-${i}-tp">TP (g/l)<input type="number" inputmode="decimal" step="1" min="0" id="lot-${i}-tp" value="${l.tp}"></label>` : ""}
     </div>
     ${KN_CAT(l)?`<label class="check"><input type="checkbox" id="lot-${i}-auto"${l.auto!==false?' checked':''}> Effectif automatique depuis OviLink (bergerie seulement)</label>`:''}
-    ${l.coefAuto!=null&&l.auto!==false&&(+l.effectif||0)>0?`<p class="note">Coefficient du jour : <b>${nf(l.coefAuto,2)}</b> ${KN_CAT(l)==='agnelees'?`(montée sur ${cfg.ration&&cfg.ration.on?20:10} jours après l'agnelage, de la part des pleines à ${nf(l.coef,2)})`:KN_CAT(l)==='traite'?'(brebis de 1 an comptées à leur %)':'(90 % + 1 % par mois depuis le 1er octobre)'}</p>`:''}
+    ${l.coefAuto!=null&&l.auto!==false&&(+l.effectif||0)>0?`<p class="note">Coefficient du jour : <b>${nf(l.coefAuto,2)}</b> ${KN_CAT(l)==='agnelees'?`(montée sur ${cfg.ration&&cfg.ration.on?MONTEE_J:10} jours après l'agnelage, de la part des pleines à ${nf(l.coef,2)})`:KN_CAT(l)==='traite'?'(brebis de 1 an comptées à leur %)':'(90 % + 1 % par mois depuis le 1er octobre)'}</p>`:''}
     <div class="lotmat" id="lot-${i}-mat"></div>
     ${delLot===i
       ? `<div class="actions"><button type="button" class="btn btn-rust" data-lotkeep="${i}">Garder</button><button type="button" class="btn btn-red" data-lotdel="${i}">Supprimer ce lot</button></div>`
@@ -1942,7 +1980,7 @@ function refusSaison(off){
     }));
   });
   const four = cfg.aliments.filter(a=>a.actif && a.type==="fourrage" && a.sec>0).sort((a,b)=>b.sec-a.sec)[0];
-  return {label, n:P.length, kg, jours, parJour: jours>0 ? kg/jours : 0, pct: distrib>0 ? kg/distrib*100 : null, ms: kg*(four ? four.ms : 0.86)};
+  return {label, n:P.length, kg, jours, parJour: jours>0 ? kg/jours : 0, pct: distrib>0 ? kg/distrib*100 : null, ms: kg*msRefus()};
 }
 function refusSaisonHtml(off){
   const R = refusSaison(off), Rp = refusSaison(off-1);
@@ -2047,8 +2085,8 @@ function oviSync(noStore){
     const R = cfg.ration && cfg.ration.on;
     if(k==="agnelees"){
       const ca = +l.coef||0; let v = null;
-      if(R && Array.isArray(o.agn)){ // mode Ration : montée de la pleine (1) à la traite (1,78) en 20 jours, brebis de 1 an à leur %
-        v = o.agn.length ? Math.round(o.agn.reduce((s,[d,f])=>s + (cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/20))*(+f||1), 0)/o.agn.length*1000)/1000 : null;
+      if(R && Array.isArray(o.agn)){ // mode Ration : montée de la pleine (1) à la traite en MONTEE_J jours (14 depuis le 27/11, avant 20), brebis de 1 an à leur %
+        v = o.agn.length ? Math.round(o.agn.reduce((s,[d,f])=>s + (cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/MONTEE_J))*(+f||1), 0)/o.agn.length*1000)/1000 : null;
       } else { const J = Array.isArray(o.jours) ? o.jours : [];
         v = J.length ? Math.round(J.reduce((s,d)=>s + cp + (ca-cp)*Math.min(1, Math.max(0,+d||0)/10), 0)/J.length*1000)/1000 : null; }
       if(l.coefAuto!==v){ l.coefAuto = v; ch = true; }

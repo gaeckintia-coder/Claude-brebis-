@@ -236,6 +236,13 @@ tr.sel td{background:var(--okbg)}
 .ags-ok{border:3px solid #2e7d32}.ags-non{border:3px solid #c62828;opacity:.8}.ags-off{opacity:.55}
 .ags-b{padding:6px 10px}.ags-b.on-ok{background:#2e7d32;color:#fff}.ags-b.on-non{background:#c62828;color:#fff}
 .ags-note{background:#fff8e1;border-radius:8px;padding:4px 8px}
+.ags-tbl{max-height:75vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin:6px 0}
+.ags-tbl th{position:sticky;top:0;background:var(--card);z-index:2;white-space:normal;min-width:4.5em;vertical-align:bottom}
+.ags-tbl td{vertical-align:top;white-space:nowrap}
+.ags-tbl .ags-fix{position:sticky;left:0;background:var(--card);z-index:1}.ags-tbl th.ags-fix{z-index:3}
+.ags-tbl tr.ags-ok td{background:#e3f3e6}.ags-tbl tr.ags-non td{background:#fbe3e1}.ags-tbl tr.ags-off td{opacity:.55}
+.ags-neg{font-weight:800}.ags-pere{font-size:13px}
+.ags-cols{display:grid;grid-template-columns:1fr 1fr;gap:4px;border:1px solid var(--line);border-radius:10px;padding:8px}
 </style>
 </head>
 <body>
@@ -710,7 +717,7 @@ tr.sel td{background:var(--okbg)}
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const BK_IGN=/^cb_(where|bk|bkn|bkt|tab|tv|smode|liste|rech|rch|trbi|keenan|data|lreg|son|spar|ttp|tb|esess_vue)$/; let BK_PRET=false; setTimeout(()=>{BK_PRET=true},4000);
+const BK_IGN=/^cb_(where|bk|bkn|bkt|tab|tv|smode|liste|rech|rch|trbi|keenan|data|lreg|son|spar|ttp|tb|esess_vue|agsort|agstop|agscol)$/; let BK_PRET=false; setTimeout(()=>{BK_PRET=true},4000);
 // chaque enregistrement de données compte comme une modification à sauvegarder (pas pendant le démarrage)
 function bkInc(k){ if(!BK_PRET||!k.startsWith('cb_')||BK_IGN.test(k)) return; try{localStorage.setItem('cb_bkn',String(+(localStorage.getItem('cb_bkn')||0)+1)); if(typeof bkCheck==='function') clearTimeout(bkInc.t), bkInc.t=setTimeout(bkCheck,300)}catch(e){} }
 /* Commentaires libres sur un animal (ex. « patte tordue ») : {plaque:[{d:'AAAA-MM-JJ',t:'texte'}]} */
@@ -940,8 +947,8 @@ function rangLait(k){if(!_rgL){_rgL={};const l=Object.entries(A()).filter(([kk,v
 function descL(k){const d=Object.values(A()).filter(v=>enfant(v,k)).map(v=>{const f=ecL(v),m=ecL(A()[v.mere]);return f!=null&&m!=null?f-m:null}).filter(n=>n!=null);return d.length?{m:d.reduce((a,b)=>a+b,0)/d.length,n:d.length}:null}
 const fL=n=>(n>=0?'+':'−')+Math.abs(Math.round(n))+' L';
 function idxHtml(p,x){const e=ecL(x),rg=rangLait(p),dl=descL(p),g=x.gen26||{},c=x.cl26||{};let h='';
- if(e!=null) h+=`<dt>Index lait 100 j</dt><dd><b class="${e>=0?'c-ok':'c-warn'}">${fL(e)}</b>${rg?' · rang '+rg[0]+' sur '+rg[1]:''}<br><span class="hint">estimé (lait moyen par jour × 100), comparé aux brebis du même nombre de lactations</span></dd>`;
- if(dl) h+=`<dt>Descendance</dt><dd><b class="${dl.m>=0?'c-ok':'c-warn'}">${fL(dl.m)}</b> · ${dl.n} fille${dl.n>1?'s':''} comparée${dl.n>1?'s':''} à leur mère</dd>`;
+ if(e!=null) h+=`<dt>Index lait 100 j</dt><dd><b class="${e>=0?'c-ok':'c-warn'}">${fL(e)}</b>${rg?' · rang '+rg[0]+' sur '+rg[1]:''}${typeof cdLact==='function'&&CD_ON&&cdLact(nC(x))?' · CD '+cdLact(nC(x))+' %':''}<br><span class="hint">estimé (lait moyen par jour × 100), comparé aux brebis du même nombre de lactations</span></dd>`;
+ if(dl) h+=`<dt>Descendance</dt><dd><b class="${dl.m>=0?'c-ok':'c-warn'}">${fL(dl.m)}</b> · ${dl.n} fille${dl.n>1?'s':''} comparée${dl.n>1?'s':''} à leur mère${typeof cdFilles==='function'&&CD_ON?' · CD '+cdFilles(dl.n)+' %':''}</dd>`;
  if(c.lait) h+=`<dt>Campagne 2026</dt><dd>${String(c.lait).replace('.',',')} L en ${c.duree} j</dd>`;
  if(x.laitmoy) h+=`<dt>Moyenne toutes campagnes</dt><dd>${x.laitmoy} L en ${x.dureemoy} j${nC(x)?' ('+fC(nC(x))+')':''}</dd>`;
  const o=[];if(x.ioff||x.msu) o.push('lait '+(x.ioff||'–')+' · MSU '+(x.msu||'–')+' (ancien)');if(g.index_prod||g.index_isol) o.push('2026 : prod '+(g.index_prod||'–')+' · ISOL '+(g.index_isol||'–'));
@@ -2769,6 +2776,10 @@ let AGS=LS.get('cb_agsel',{});   // {agnelle:{v:'ok'|'non'|'', t:'note', d:'date
 const saveAGS=()=>LS.set('cb_agsel',AGS);
 const AGS_OBJ={ant:'10 à 15',tr:65}, AGS_NEG=-250;
 let AGS_NOTE=null;
+// Jack 27/11 14 h 32 : agnelle médaillée dans la série des mâles = pas gardée (décision à la naissance) → ✘ d'office.
+// Les ✘ vont toujours en fin de liste ; Jack peut quand même la passer en ✔.
+const agsAuto=k=>typeof serDe==='function'&&serDe(k,'F')==='m';
+function agsV(k){const v=(AGS[k]||{}).v; if(v==='ok'||v==='non') return v; if(v==='-') return ''; return agsAuto(k)?'non':''}
 // Index croisé (Jack 27/11 14 h 09) : moyenne de l'amélioration des filles de la mère (par rapport à elle) et de celles du père (par rapport à leurs mères)
 function descPere(k){const d=Object.values(A()).filter(v=>v.pere===k).map(v=>{const f=ecL(v),m=ecL(A()[v.mere]);return f!=null&&m!=null?f-m:null}).filter(n=>n!=null);return d.length?{m:d.reduce((a,b)=>a+b,0)/d.length,n:d.length}:null}
 function croise(x){const dm=x.mere?descL(x.mere):null, dp=x.pere?descPere(x.pere):null; if(!dm&&!dp) return null;
@@ -2788,30 +2799,78 @@ function agsAlertes(o){const a=[], g=o.m.gen26||{}, n=v=>{const z=parseFloat(v);
   if(o.x.mere&&mpis(o.x.mere)) a.push(['c-bad','Mère : mauvais pis']);
   if(o.x.mere&&mam(o.x.mere)) a.push(['c-warn','Mère : mammite']);
   if(o.x.mere&&deter(o.x.mere)) a.push(['c-warn','Mère détérioratrice']);
+  if(agsAuto(o.k)&&(AGS[o.k]||{}).v!=='ok') a.push(['c-bad','Médaillée série des mâles']);
   if(comsOf(o.k).length) a.push(['c-warn','💬 '+comsOf(o.k).map(c=>c.t).join(' · ')]);
   if(!o.vivante) a.push(['c-bad',MORT[o.k]||/mort/i.test(o.x.statut||'')?'Morte':VEN[o.k]?'Vendue':o.x.statut]);
   return a}
 const agsTri=(a,b)=>(b.vivante-a.vivante)||((b.s1??-1e9)-(a.s1??-1e9))||((b.s2??-1e9)-(a.s2??-1e9))||a.k.localeCompare(b.k);
-function agsLigne(o,i){const S=AGS[o.k]||{}, v=S.v||'';
-  const mere=o.x.mere?`Mère ${lien(o.x.mere)}`:'Mère inconnue';
-  const val=o.ant?`${o.fv?'famille '+(o.fv.m>=0?'+':'')+Math.round(o.fv.m*100)+' %':'famille : pas de données'}${o.I?' · père IA iProd '+o.I.iprod+' · iSol '+o.I.isol:''}`
-    :`${o.e!=null?'<b class="'+(o.e>=0?'c-ok':'c-warn')+'">'+fL(o.e)+'</b> (index 100 j'+(o.rg?', rang '+o.rg[0]+' sur '+o.rg[1]:'')+')':'index : pas de données'}${o.dl?' · descendance '+fL(o.dl.m)+' ('+o.dl.n+')':''}`;
-  return `<div class="ags-l${v==='ok'?' ags-ok':v==='non'?' ags-non':''}${o.vivante?'':' ags-off'}">
-   <div><b class="ags-r">${o.vivante?i+1:'–'}</b> ${lien(o.k)}</div><div class="hint">née le ${esc(o.x.ne||'?')} · père ${o.x.pere?esc(o.I?nomPere(o.x.pere):o.x.pere):'inconnu'}</div>
-   <div>${mere}</div><div class="hint">${val}</div>${o.cr?`<div>Index croisé : <b class="${o.cr.v>=0?'c-ok':'c-warn'}">${fL(o.cr.v)}</b>${o.cr.seul?' <span class="hint">('+o.cr.seul+')</span>':''}</div><div class="hint">mère ${o.cr.dm?fL(o.cr.dm.m)+' ('+o.cr.dm.n+' fille'+(o.cr.dm.n>1?'s':'')+')':'—'} · père ${o.cr.dp?fL(o.cr.dp.m)+' ('+o.cr.dp.n+' fille'+(o.cr.dp.n>1?'s':'')+')':'—'}</div>`:''}
-   ${agsAlertes(o).map(([c,t])=>`<span class="chip ${c}">${esc(t)}</span>`).join('')}
-   ${S.t?`<div class="ags-note">📝 ${esc(S.t)}</div>`:''}
-   <div class="row" style="margin-top:4px"><button type="button" class="btn2 ags-b${v==='ok'?' on-ok':''}" data-agsv="ok" data-k="${o.k}">✔ Gardée</button><button type="button" class="btn2 ags-b${v==='non'?' on-non':''}" data-agsv="non" data-k="${o.k}">✘ Non</button><button type="button" class="btn2 ags-b" data-agsn="${o.k}">📝 Note</button></div>
-   ${AGS_NOTE===o.k?`<div class="row"><input class="ags-in" value="${esc(S.t||'')}" placeholder="ex. patte tordue, très belle…" style="flex:1;font:inherit;padding:8px"><button type="button" class="btn b-valid" data-agsok="${o.k}">Enregistrer</button></div>`:''}</div>`}
-function renderAgs(){ if(!$('#ags-body')||!DB) return; const L=agsListe(), ant=L.filter(o=>o.ant).sort(agsTri), tr=L.filter(o=>!o.ant).sort(agsTri);
-  const nb=(l,v)=>l.filter(o=>(AGS[o.k]||{}).v===v).length;
-  const bloc=(t,l,obj)=>`<h2>${t}</h2><div class="hint">${l.filter(o=>o.vivante).length} vivante${l.filter(o=>o.vivante).length>1?'s':''} · objectif ${obj}</div><div class="hint"><b class="c-ok">✔ ${nb(l,'ok')} gardée${nb(l,'ok')>1?'s':''}</b> · <b class="c-bad">✘ ${nb(l,'non')}</b></div>${l.map(agsLigne).join('')||'<div class="hint">Aucune agnelle née pour l’instant.</div>'}`;
-  $('#ags-body').innerHTML=`<div class="hint">Campagne ${CV} · de la meilleure à la moins bonne</div><div class="hint">Orange : index du centre très négatif (${AGS_NEG} ou moins) ou souci à voir</div><div class="hint">Rouge : mère à réformer, mauvais pis, agnelle morte</div>
-   <div class="tend">Total gardées : <b>${nb(L,'ok')}</b> sur 80</div>`+bloc('Filles du troupeau',tr,'~'+AGS_OBJ.tr)+bloc('Filles des antenaises (IA)',ant,AGS_OBJ.ant)}
-$('#v-ags').addEventListener('click',e=>{const b=e.target.closest('[data-agsv],[data-agsn],[data-agsok]'); if(!b) return;
-  if(b.dataset.agsv){const k=b.dataset.k, v=b.dataset.agsv, S=AGS[k]=AGS[k]||{}; S.v=S.v===v?'':v; S.d=auj(); saveAGS(); renderAgs(); return}
+// CD (coefficient de détermination, Jack 27/11 14 h 24) : la confiance qu'on peut avoir dans l'index, en %.
+// Calcul simple, valeurs de départ À VÉRIFIER : héritabilité du lait 0,30 et répétabilité 0,50.
+// Index de la brebis (ses lactations) : n×h² / (1 + (n−1)×t) · Descendance (n filles) : n / (n + (4−h²)/h²)
+const H2=0.30, REP_L=0.50;
+const cdLact=n=>n>0?Math.round(100*n*H2/(1+(n-1)*REP_L)):null;
+const cdFilles=n=>n>0?Math.round(100*n/(n+(4-H2)/H2)):null;
+const CD_ON=false;   // Jack 27/11 14 h 29 : CD mis de côté pour plus tard (calcul gardé, pas affiché)
+const fCD=c=>c==null||!CD_ON?'':'<span class="hint"> · CD '+c+' %</span>';
+let AGS_SORT=LS.get('cb_agsort',{c:'',d:-1}), AGS_TOP=LS.get('cb_agstop',false), AGS_COLV=null, AGS_COLOUV=false;
+const num=v=>{const z=parseFloat(v);return isNaN(z)?null:z};
+const AGS_COLS=[
+ ['rang','N°',o=>o.rang,o=>o.vivante?o.rang:'–'],
+ ['mere','Mère',o=>o.x.mere,o=>o.x.mere?lien(o.x.mere):'?'],
+ ['i100','Index 100 j mère',o=>o.e,o=>o.e!=null?`<b class="${o.e>=0?'c-ok':'c-warn'}">${fL(o.e)}</b>${fCD(cdLact(nC(o.m)))}`:''],
+ ['rgm','Rang mère',o=>o.rg?-o.rg[0]:null,o=>o.rg?o.rg[0]:''],
+ ['fam','Famille (antenaise)',o=>o.fv?o.fv.m:null,o=>o.fv?(o.fv.m>=0?'+':'')+Math.round(o.fv.m*100)+' %':''],
+ ['lmoy','Lait moyen mère',o=>num(o.m.laitmoy),o=>o.m.laitmoy?o.m.laitmoy+' L / '+o.m.dureemoy+' j<br><span class="hint">'+fC(nC(o.m))+'</span>':''],
+ ['l26','Lait 2026 mère',o=>num((o.m.cl26||{}).lait),o=>(o.m.cl26||{}).lait?String(o.m.cl26.lait).replace('.',',')+' L / '+o.m.cl26.duree+' j':''],
+ ['dm','Descend. mère',o=>o.dl?o.dl.m:null,o=>o.dl?fL(o.dl.m)+' <span class="hint">('+o.dl.n+')</span>'+fCD(cdFilles(o.dl.n)):''],
+ ['dp','Descend. père',o=>o.cr&&o.cr.dp?o.cr.dp.m:null,o=>o.cr&&o.cr.dp?fL(o.cr.dp.m)+' <span class="hint">('+o.cr.dp.n+')</span>'+fCD(cdFilles(o.cr.dp.n)):''],
+ ['cr','Index croisé',o=>o.cr?o.cr.v:null,o=>o.cr?`<b class="${o.cr.v>=0?'c-ok':'c-warn'}">${fL(o.cr.v)}</b>${o.cr.seul?'<br><span class="hint">'+o.cr.seul+'</span>':''}`:''],
+ ['ilait','Index lait centre',o=>num((o.m.gen26||{}).index_lait??o.m.ioff),o=>esc((o.m.gen26||{}).index_lait??o.m.ioff??'')],
+ ['msu','MSU mère',o=>num((o.m.gen26||{}).index_prod),o=>{const v=num((o.m.gen26||{}).index_prod);return v==null?'':`<span class="${v<=AGS_NEG?'c-warn ags-neg':''}">${v}</span>`}],
+ ['isol','ISOL mère',o=>num((o.m.gen26||{}).index_isol),o=>{const v=num((o.m.gen26||{}).index_isol);return v==null?'':`<span class="${v<=AGS_NEG?'c-warn ags-neg':''}">${v}</span>`}],
+ ['pere','Père',o=>o.x.pere,o=>o.x.pere?`<span class="ags-pere">${esc(nomPere(o.x.pere))}</span>`:'inconnu'],
+ ['ip','Index père',o=>{const C=o.C;return C&&C.cd?C.index:null},o=>{const C=o.C;return C?(C.cd?C.index+fCD(C.cd):'<span class="hint">pas encore</span>'):(o.I?'iProd '+o.I.iprod:'')}],
+ ['gm','Génotype mère',o=>(o.m.gen26||{}).typage||o.m.prp||'',o=>esc((o.m.gen26||{}).typage||o.m.prp||'')],
+ ['gp','Génotype père',o=>o.C?o.C.prp:'',o=>esc(o.C&&o.C.prp||'')],
+ ['al','Alertes',o=>-agsAlertes(o).length,o=>agsAlertes(o).map(([c,t])=>`<span class="chip ${c}">${esc(t)}</span>`).join(' ')],
+ ['note','Note',o=>(AGS[o.k]||{}).t||'',o=>`<button type="button" class="btn2 ags-b" data-agsn="${o.k}">📝</button> ${esc((AGS[o.k]||{}).t||'')}`]];
+const AGS_DEF=['rang','mere','i100','rgm','fam','lmoy','dm','dp','cr','msu','isol','pere','ip','gm','al','note'];
+function agsColsVis(){ if(!AGS_COLV) AGS_COLV=LS.get('cb_agscol',null)||AGS_DEF; return AGS_COLS.filter(c=>AGS_COLV.includes(c[0]))}
+function agsTable(l){ const C=agsColsVis(), S=AGS_SORT; let r=l.slice();
+  if(S.c){const col=AGS_COLS.find(c=>c[0]===S.c); if(col) r.sort((a,b)=>{const x=col[2](a),y=col[2](b); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1; return (typeof x==='string'?String(x).localeCompare(y,'fr',{numeric:true}):(x-y))*S.d})}
+  r.sort((a,b)=>(agsV(a.k)==='non')-(agsV(b.k)==='non')||(AGS_TOP?(agsV(b.k)==='ok')-(agsV(a.k)==='ok'):0));
+  return `<div class="tbl ags-tbl"><table><thead><tr><th class="ags-fix">Agnelle</th><th>✔ / ✘</th>${C.map(c=>`<th data-agsort="${c[0]}">${c[1]}${S.c===c[0]?(S.d<0?' ▼':' ▲'):''}</th>`).join('')}</tr></thead><tbody>${r.map(o=>{const v=agsV(o.k);
+   return `<tr class="${v==='ok'?'ags-ok':v==='non'?'ags-non':''}${o.vivante?'':' ags-off'}"><td class="ags-fix">${lien(o.k)}<br><span class="hint">${esc((o.x.ne||'').slice(0,5))}</span></td><td style="white-space:nowrap"><button type="button" class="btn2 ags-b${v==='ok'?' on-ok':''}" data-agsv="ok" data-k="${o.k}" aria-label="Gardée">✔</button> <button type="button" class="btn2 ags-b${v==='non'?' on-non':''}" data-agsv="non" data-k="${o.k}" aria-label="Non">✘</button></td>${C.map(c=>`<td>${c[3](o)}</td>`).join('')}</tr>${AGS_NOTE===o.k?`<tr><td colspan="${C.length+2}"><div class="row"><input class="ags-in" value="${esc((AGS[o.k]||{}).t||'')}" placeholder="ex. patte tordue, très belle…" style="flex:1;font:inherit;padding:8px"><button type="button" class="btn2 b-retour" data-agsnx="1">Annuler</button><button type="button" class="btn b-valid" data-agsok="${o.k}">Enregistrer</button></div></td></tr>`:''}`}).join('')||`<tr><td colspan="${C.length+2}" class="hint">Aucune agnelle née pour l’instant.</td></tr>`}</tbody></table></div>`}
+function renderAgs(){ if(!$('#ags-body')||!DB) return; const L=agsListe();
+  L.forEach(o=>o.C=DB.ipereCdeo&&DB.ipereCdeo[o.x.pere]);
+  const ant=L.filter(o=>o.ant).sort(agsTri), tr=L.filter(o=>!o.ant).sort(agsTri); [tr,ant].forEach(l=>l.forEach((o,i)=>o.rang=i+1));
+  const nb=(l,v)=>l.filter(o=>agsV(o.k)===v).length;
+  const bloc=(t,l,obj)=>`<h2>${t}</h2><div class="hint">${l.filter(o=>o.vivante).length} vivantes · objectif ${obj}</div><div class="hint"><b class="c-ok">✔ ${nb(l,'ok')}</b> · <b class="c-bad">✘ ${nb(l,'non')}</b></div>${agsTable(l)}`;
+  const cv=agsColsVis().map(c=>c[0]);
+  $('#ags-body').innerHTML=`<div class="tend">Total gardées : <b>${nb(L,'ok')}</b> sur 80</div>
+   <div class="hint">N° = classement de départ (index 100 j de la mère, puis index croisé)</div><div class="hint">Toucher le titre d’une colonne pour trier, encore une fois pour inverser</div>
+   <div class="row"><button type="button" class="btn2" data-agstop="1">${AGS_TOP?'✔ Gardées en haut : oui':'Gardées en haut : non'}</button><button type="button" class="btn2" data-agscol="1">⚙ Colonnes</button>${AGS_SORT.c?'<button type="button" class="btn2 b-retour" data-agsraz="1">Classement de départ</button>':''}<button type="button" class="btn2" data-agsprint="1">🖨 Imprimer les gardées</button></div>
+   ${AGS_COLOUV?`<div class="ags-cols">${AGS_COLS.map(c=>`<label><input type="checkbox" data-agsc="${c[0]}" ${cv.includes(c[0])?'checked':''}> ${c[1]}</label>`).join('')}</div>`:''}
+   <div class="hint">Orange : index du centre très négatif (${AGS_NEG} ou moins). </div>`
+   +bloc('Filles du troupeau',tr,'~'+AGS_OBJ.tr)+bloc('Filles des antenaises (IA)',ant,AGS_OBJ.ant)}
+$('#v-ags').addEventListener('change',e=>{const c=e.target.dataset.agsc; if(!c) return; const v=agsColsVis().map(x=>x[0]); AGS_COLV=e.target.checked?[...v,c]:v.filter(x=>x!==c); LS.set('cb_agscol',AGS_COLV); renderAgs()});
+$('#v-ags').addEventListener('click',e=>{const b=e.target.closest('[data-agsv],[data-agsn],[data-agsok],[data-agsnx],[data-agsort],[data-agstop],[data-agscol],[data-agsraz],[data-agsprint]'); if(!b) return;
+  if(b.dataset.agsprint){agsImprimer(); return}
+  if(b.dataset.agsort){const c=b.dataset.agsort; AGS_SORT=AGS_SORT.c===c?{c,d:-AGS_SORT.d}:{c,d:-1}; LS.set('cb_agsort',AGS_SORT); renderAgs(); return}
+  if(b.dataset.agsraz){AGS_SORT={c:'',d:-1}; LS.set('cb_agsort',AGS_SORT); renderAgs(); return}
+  if(b.dataset.agstop){AGS_TOP=!AGS_TOP; LS.set('cb_agstop',AGS_TOP); renderAgs(); return}
+  if(b.dataset.agscol){AGS_COLOUV=!AGS_COLOUV; renderAgs(); return}
+  if(b.dataset.agsnx){AGS_NOTE=null; renderAgs(); return}
+  if(b.dataset.agsv){const k=b.dataset.k, v=b.dataset.agsv, S=AGS[k]=AGS[k]||{}; S.v=agsV(k)===v?(agsAuto(k)?'-':''):v; S.d=auj(); saveAGS(); renderAgs(); return}
   if(b.dataset.agsn){AGS_NOTE=AGS_NOTE===b.dataset.agsn?null:b.dataset.agsn; renderAgs(); const i=$('#v-ags .ags-in'); if(i) i.focus(); return}
   if(b.dataset.agsok){const k=b.dataset.agsok, S=AGS[k]=AGS[k]||{}; S.t=($('#v-ags .ags-in').value||'').trim(); S.d=auj(); saveAGS(); AGS_NOTE=null; renderAgs()}});
+// 🖨 Imprimer seulement les agnelles gardées (✔), dans l'ordre du tableau
+function agsImprimer(){ const L=agsListe(); L.forEach(o=>o.C=DB.ipereCdeo&&DB.ipereCdeo[o.x.pere]); const ok=L.filter(o=>agsV(o.k)==='ok').sort(agsTri);
+  const lig=ok.map((o,i)=>`<tr><td>${i+1}</td><td><b>${o.k}</b></td><td>${esc(o.x.ne||'')}</td><td>${esc(o.x.mere||'')}</td><td>${o.e!=null?fL(o.e):''}</td><td>${o.x.pere?esc(nomPere(o.x.pere)):'inconnu'}</td><td>${esc((o.m.gen26||{}).typage||o.m.prp||'')}</td><td>${esc((AGS[o.k]||{}).t||'')}</td></tr>`).join('');
+  $('#print-reg').innerHTML=`<h1>Agnelles gardées pour le renouvellement – campagne ${CV}</h1><div style="margin-bottom:6px">GAEC KINTIA – édité le ${fdate()} – ${ok.length} agnelle${ok.length>1?'s':''}</div>
+   <table><thead><tr><th>N°</th><th>Agnelle</th><th>Née le</th><th>Mère</th><th>Index 100 j mère</th><th>Père</th><th>Génotype mère</th><th>Note</th></tr></thead><tbody>${lig||'<tr><td colspan="8">Aucune agnelle cochée.</td></tr>'}</tbody></table>`;
+  let st=$('#pagesz'); if(!st){st=document.createElement('style'); st.id='pagesz'; document.head.appendChild(st)} st.textContent='@page{size:A4 portrait;margin:10mm}';
+  const fin=()=>{st.textContent=''; window.removeEventListener('afterprint',fin)}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),100)}
 
 /* Reprise après une fermeture imprévue (téléphone éteint, page rechargée) : l'appli garde en permanence où on était
    (onglet, saisie/consultation, contrôle laitier avec le chiffre tapé, saisie ✏️ en cours, mise à la traite)
