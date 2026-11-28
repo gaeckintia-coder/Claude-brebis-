@@ -2790,7 +2790,7 @@ function agsListe(){
     const e=ecL(m), rg=x.mere?rangLait(x.mere):null, dl=x.mere?descL(x.mere):null, fv=ant&&x.mere?famille_val(x.mere):null, I=DB&&DB.ixb&&DB.ixb[x.pere];
     const vivante=pres(x)&&!MORT[k]&&!VEN[k];
     const cr=croise(x), s1=ant?(fv?fv.m*100:null):e, s2=cr?cr.v:(ant&&I?I.iprod/100:null);
-    return {k,x,m,ant,e,rg,dl,fv,I,vivante,s1,s2,cr}})}
+    return {k,x,m,ant,e,rg,dl,fv,I,vivante,s1,s2,cr}}).filter(o=>o.vivante)}   // Jack 27/11 15 h 36 : seulement les agnelles présentes
 function agsAlertes(o){const a=[], g=o.m.gen26||{}, n=v=>{const z=parseFloat(v);return isNaN(z)?null:z};
   if(n(g.index_prod)!=null&&n(g.index_prod)<=AGS_NEG) a.push(['c-warn','Mère : index prod '+g.index_prod]);
   if(n(g.index_isol)!=null&&n(g.index_isol)<=AGS_NEG) a.push(['c-warn','Mère : ISOL '+g.index_isol]);
